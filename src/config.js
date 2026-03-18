@@ -119,6 +119,43 @@ const config = convict({
     default: null,
     env: 'HTTP_PROXY'
   },
+  aws: {
+    endpointUrl: {
+      doc: 'AWS Endpoint URL used for LocalStack',
+      format: String,
+      nullable: true,
+      default: null,
+      env: 'AWS_ENDPOINT_URL'
+    },
+    region: {
+      doc: 'AWS Region',
+      format: String,
+      default: 'eu-west-2',
+      env: 'AWS_REGION'
+    },
+    sns: {
+      configUpdateTopicArn: {
+        doc: 'ARN of the SNS topic to publish case created events',
+        format: String,
+        default: 'arn:aws:sns:eu-west-2:000000000000:gfr__sns___config_update',
+        env: 'GFR__SNS__CONFIG_UPDATE_TOPIC_ARN'
+      }
+    },
+    s3: {
+      bucketName: {
+        doc: 'Configs S3 bucket name',
+        format: String,
+        default: 'configs-bucket',
+        env: 'CONFIG_BUCKET_NAME'
+      },
+      forcePathStyle: {
+        doc: 'Force path style on S3 bucket',
+        format: Boolean,
+        default: true,
+        env: 'FORCE_PATH_STYLE'
+      }
+    }
+  },
   tracing: {
     header: {
       doc: 'CDP tracing header name',
