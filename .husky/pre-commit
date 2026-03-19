@@ -1,1 +1,5 @@
-npm run git:pre-commit-hook
+currentUser="$(git config user.name)"
+
+if [ "$currentUser" != "github-actions[bot]" ]; then
+  npm run git:pre-commit-hook
+fi
