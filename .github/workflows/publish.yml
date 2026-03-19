@@ -16,15 +16,13 @@ env:
 
 jobs:
   build:
-    if: github.run_number != 1
+    if: github.run_number != 1 && github.actor != 'github-actions[bot]' && !contains(github.event.head_commit.message, 'Archive release.yml')
     name: CDP-build-workflow
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
         uses: actions/checkout@v6
 
-#      Uncomment this section if you are going to also run sonarqube as it
-#      requires the output from the test coverage.
       - name: Test code and Create Test Coverage Reports
         uses: actions/setup-node@v6
         with:
@@ -34,6 +32,30 @@ jobs:
           npm ci
           npm test
 
+      - name: Parse release info
+        id: parse_release
+        run: |
+          node scripts/parse_release_info.cjs
+
+      - name: Checkout target repository
+        if: steps.parse_release.outputs.exists == 'true'
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ steps.parse_release.outputs.repository }}
+          ref: ${{ steps.parse_release.outputs.grant_version }}
+          path: grant-config-checkout
+
+      - name: Verify checkout
+        if: steps.parse_release.outputs.exists == 'true'
+        run: |
+          echo "Successfully checked out ${{ steps.parse_release.outputs.repository }} at tag ${{ steps.parse_release.outputs.grant_version }}"
+          ls -R grant-config-checkout
+
+      - name: Move grant config files
+        if: steps.parse_release.outputs.exists == 'true'
+        run: |
+          cp release/release.yml config/
+          cp -r grant-config-checkout/${{ steps.parse_release.outputs.directory }} config/
 
       - name: Build and Publish
         uses: DEFRA/cdp-build-action/build@main
@@ -46,3 +68,25 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Move release.yml if it exists
+        id: move_release
+        if: steps.parse_release.outputs.exists == 'true'
+        run: |
+          if [ -f release/release.yml ]; then
+            timestamp=$(date +%Y_%m_%d__%H%M)
+            mkdir -p release/previous
+            mv release/release.yml release/previous/${timestamp}_release.yml
+            echo "moved_file=true\n" >> $GITHUB_OUTPUT
+            echo "previous_file=release/previous/${timestamp}_release.yml\n" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit release log
+        if: steps.move_release.outputs.moved_file == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git rm release/release.yml
+          git add ${{ steps.move_release.outputs.previous_file }}
+          git commit -m "Archive release.yml [skip ci]"
+          git push
