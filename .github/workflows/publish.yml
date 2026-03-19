@@ -75,8 +75,8 @@ jobs:
         run: |
           timestamp=$(date +%Y_%m_%d__%H%M)
           mv release/release.yml release/previous/${timestamp}_release.yml
-          echo "moved_file=true\n" >> $GITHUB_OUTPUT
-          echo "previous_file=release/previous/${timestamp}_release.yml\n" >> $GITHUB_OUTPUT
+          echo "moved_file=true" >> $GITHUB_OUTPUT
+          echo "previous_file=release/previous/${timestamp}_release.yml" >> $GITHUB_OUTPUT
 
       - name: Commit release log
         if: steps.move_release.outputs.moved_file == 'true'
