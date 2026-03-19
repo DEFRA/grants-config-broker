@@ -31,6 +31,7 @@ USER node
 
 COPY --from=development /home/node/package*.json ./
 COPY --from=development /home/node/src ./src/
+COPY --from=development /home/node/config ./config/
 
 RUN npm ci --omit=dev
 
