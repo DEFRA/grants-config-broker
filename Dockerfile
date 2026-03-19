@@ -15,6 +15,8 @@ COPY --chown=node:node package*.json ./
 RUN npm install
 COPY --chown=node:node ./src ./src
 
+COPY --chown=node:node ./config ./config
+
 CMD [ "npm", "run", "docker:dev" ]
 
 FROM defradigital/node:${PARENT_VERSION} AS production

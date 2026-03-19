@@ -1,0 +1,7 @@
+repositories:
+  - name: example-grant-with-auth
+    repository: DEFRA/grant-config-example-grants
+    path: example-grant-with-auth
+  - name: flying-pigs
+    repository: DEFRA/grant-config-example-grants
+    path: flying-pigs
