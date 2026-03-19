@@ -83,7 +83,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git rm release/release.yml
           git add ${{ steps.move_release.outputs.previous_file }}
           git commit -m "Archive release.yml [skip ci]"
           git push
