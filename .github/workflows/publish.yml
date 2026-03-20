@@ -45,12 +45,6 @@ jobs:
           ref: ${{ steps.parse_release.outputs.grant_version }}
           path: grant-config-checkout
 
-      - name: Verify checkout
-        if: steps.parse_release.outputs.exists == 'true'
-        run: |
-          echo "Successfully checked out ${{ steps.parse_release.outputs.repository }} at tag ${{ steps.parse_release.outputs.grant_version }}"
-          ls -R grant-config-checkout
-
       - name: Move grant config files
         if: steps.parse_release.outputs.exists == 'true'
         run: |
@@ -83,6 +77,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add ${{ steps.move_release.outputs.previous_file }}
+          git add release/
           git commit -m "Archive release.yml [skip ci]"
           git push
