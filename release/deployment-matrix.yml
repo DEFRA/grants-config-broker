@@ -1,2 +1,22 @@
-lastUpdated: 'never'
-grants: []
+lastUpdated: '2026_03_20__1559'
+grants:
+  - name: example-grant-with-auth
+    envs:
+      - name: dev
+        versions:
+          - number: 0.0.4
+            status: active
+      - name: test
+        versions:
+          - number: 0.0.4
+            status: active
+      - name: ext-test
+        versions:
+          - number: 0.0.4
+            status: draft
+      - name: perf-test
+        versions:
+          - number: 0.0.4
+            status: draft
+      - name: prod
+        versions: []
