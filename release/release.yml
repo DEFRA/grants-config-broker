@@ -1,7 +1,7 @@
 # Grant name must match one of those defined in .github/grant-locations.yml
 name: example-grant-with-auth
-version: 0.0.1
-notes: Some info about your release
+version: 0.0.3
+notes: Just checking out the release process
 environments:
   -
     name: dev
