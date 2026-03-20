@@ -51,7 +51,8 @@ services:
     environment:
       PORT: 3001
       NODE_ENV: development
-      LOCALSTACK_ENDPOINT: http://localstack:4566
+      AWS_ENDPOINT_URL: http://localstack:4566
+      CONFIG_BUCKET_NAME: configs-bucket
       MONGO_URI: mongodb://mongodb:27017/
     networks:
       - grants-framework

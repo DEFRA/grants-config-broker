@@ -27,7 +27,7 @@ export const uploadBlob = async (logger, filename, contents) => {
   }
 
   const result = await client.send(new PutObjectCommand(params))
-  logger.info(`Generated document: ${filename}, ETag: ${result.ETag}`)
+  logger.info(`Uploaded document: ${filename}, ETag: ${result.ETag}`)
 
   return result
 }

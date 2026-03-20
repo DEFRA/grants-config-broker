@@ -44,7 +44,7 @@ describe('s3-interactions', () => {
       )
       expect(result).toEqual(mockPutObjectResponse)
       expect(mockLogger.info).toHaveBeenCalledWith(
-        `Generated document: ${key}, ETag: ${mockPutObjectResponse.ETag}`
+        `Uploaded document: ${key}, ETag: ${mockPutObjectResponse.ETag}`
       )
     })
 
