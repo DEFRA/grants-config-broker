@@ -11,6 +11,9 @@ import { pulse } from './common/helpers/pulse.js'
 import { requestTracing } from './common/helpers/request-tracing.js'
 import { setupProxy } from './common/helpers/proxy/setup-proxy.js'
 import { metrics } from '@defra/cdp-metrics'
+import { createLogger } from './common/helpers/logging/logger.js'
+import { deployNewVersion } from './deploy-version.js'
+import { notifyVersion } from './notify-version.js'
 
 async function createServer() {
   setupProxy()
@@ -59,6 +62,19 @@ async function createServer() {
     },
     router
   ])
+
+  server.events.on('start', async () => {
+    const { db } = server
+    const logger = createLogger()
+
+    const releaseVersionDetails = await deployNewVersion(db, logger)
+    if (releaseVersionDetails) {
+      logger.info(
+        `Deployed version ${releaseVersionDetails.version} successfully, notifying clients`
+      )
+      await notifyVersion(releaseVersionDetails, logger)
+    }
+  })
 
   return server
 }

@@ -18,6 +18,8 @@ const initialiseClient = () => {
   return s3client
 }
 
+export const getBucketName = () => bucketName
+
 export const uploadBlob = async (logger, filename, contents) => {
   const client = initialiseClient()
   const params = {
@@ -27,7 +29,7 @@ export const uploadBlob = async (logger, filename, contents) => {
   }
 
   const result = await client.send(new PutObjectCommand(params))
-  logger.info(`Generated document: ${filename}, ETag: ${result.ETag}`)
+  logger.info(`Uploaded document: ${filename}, ETag: ${result.ETag}`)
 
   return result
 }

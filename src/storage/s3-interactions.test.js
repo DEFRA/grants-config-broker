@@ -1,4 +1,4 @@
-import { deleteBlob, uploadBlob } from './s3-interactions.js'
+import { deleteBlob, getBucketName, uploadBlob } from './s3-interactions.js'
 import { createS3Client } from '../common/helpers/s3/s3-client.js'
 import { DeleteObjectCommand } from '@aws-sdk/client-s3'
 
@@ -44,7 +44,7 @@ describe('s3-interactions', () => {
       )
       expect(result).toEqual(mockPutObjectResponse)
       expect(mockLogger.info).toHaveBeenCalledWith(
-        `Generated document: ${key}, ETag: ${mockPutObjectResponse.ETag}`
+        `Uploaded document: ${key}, ETag: ${mockPutObjectResponse.ETag}`
       )
     })
 
@@ -147,6 +147,13 @@ describe('s3-interactions', () => {
         { err: mockError },
         `Unable to delete document: ${bucketName}/${key}`
       )
+    })
+  })
+
+  describe('getBucketName', () => {
+    it('should return the bucket name', async () => {
+      const result = getBucketName()
+      expect(result).toEqual('configs-bucket')
     })
   })
 })
