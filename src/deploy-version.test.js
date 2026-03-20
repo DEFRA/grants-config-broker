@@ -2,8 +2,10 @@ import { load } from 'js-yaml'
 import { readFileSync, existsSync, lstatSync, readdirSync } from 'node:fs'
 import { deployNewVersion } from './deploy-version.js'
 import { config } from './config.js'
-import { uploadBlob } from './storage/s3-interactions.js'
+import { uploadBlob, getBucketName } from './storage/s3-interactions.js'
+import { hasVersionJobAlreadyRun } from './repositories/version-management-repository.js'
 
+vi.mock('./repositories/version-management-repository.js')
 vi.mock('./storage/s3-interactions.js')
 vi.mock('node:fs')
 vi.mock('js-yaml')
@@ -19,12 +21,26 @@ describe('deploy-version', () => {
 
   beforeEach(() => {
     config.set('cdpEnvironment', 'test')
+    hasVersionJobAlreadyRun.mockResolvedValueOnce(false)
   })
   afterEach(() => {
     vi.clearAllMocks()
+    vi.resetAllMocks()
   })
 
   describe('deployNewVersion', () => {
+    it('should print log message and return if job already run', async () => {
+      hasVersionJobAlreadyRun.mockReset()
+      hasVersionJobAlreadyRun.mockReturnValueOnce(true)
+
+      await deployNewVersion(mockDb, mockLogger)
+
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Release version job already run, no need to run again'
+      )
+      expect(existsSync).not.toHaveBeenCalled()
+    })
+
     it('should print log message and return if no release file found', async () => {
       existsSync.mockReturnValueOnce(false)
 
@@ -113,13 +129,14 @@ describe('deploy-version', () => {
           }
         ]
       })
-      await deployNewVersion(mockDb, mockLogger)
+      const result = await deployNewVersion(mockDb, mockLogger)
 
       expect(mockLogger.info).toHaveBeenCalledWith('Release file found')
       expect(mockLogger.warn).toHaveBeenCalledWith(
         'Config folder for example-grant-with-auth not found, so not doing any upload'
       )
       expect(uploadBlob).not.toHaveBeenCalled()
+      expect(result).toBeNull()
     })
 
     it('should call through to upload each of the files to S3 for the release', async () => {
@@ -139,6 +156,8 @@ describe('deploy-version', () => {
         .mockReturnValueOnce('content1')
         .mockReturnValueOnce('content2')
 
+      getBucketName.mockReturnValueOnce('s3://test-bucket')
+
       load.mockReturnValueOnce({
         name: 'example-grant-with-auth',
         version: '0.0.1',
@@ -150,7 +169,7 @@ describe('deploy-version', () => {
           }
         ]
       })
-      await deployNewVersion(mockDb, mockLogger)
+      const result = await deployNewVersion(mockDb, mockLogger)
 
       expect(uploadBlob).toHaveBeenCalledTimes(3)
       expect(uploadBlob).toHaveBeenCalledWith(
@@ -168,6 +187,17 @@ describe('deploy-version', () => {
         'example-grant-with-auth/0.0.1/metadata.json',
         '{"status":"active","releaseNotes":"Some info about your release"}'
       )
+      expect(result).to.eql({
+        grant: 'example-grant-with-auth',
+        manifest: [
+          'example-grant-with-auth/0.0.1/grants-ui/file1.txt',
+          'example-grant-with-auth/0.0.1/grants-ui/file2.txt',
+          'example-grant-with-auth/0.0.1/metadata.json'
+        ],
+        path: 's3://test-bucket',
+        version: '0.0.1',
+        status: 'active'
+      })
     })
   })
 })

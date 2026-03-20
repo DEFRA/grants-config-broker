@@ -13,6 +13,7 @@ import { setupProxy } from './common/helpers/proxy/setup-proxy.js'
 import { metrics } from '@defra/cdp-metrics'
 import { createLogger } from './common/helpers/logging/logger.js'
 import { deployNewVersion } from './deploy-version.js'
+import { notifyVersion } from './notify-version.js'
 
 async function createServer() {
   setupProxy()
@@ -66,7 +67,13 @@ async function createServer() {
     const { db } = server
     const logger = createLogger()
 
-    await deployNewVersion(db, logger)
+    const releaseVersionDetails = await deployNewVersion(db, logger)
+    if (releaseVersionDetails) {
+      logger.info(
+        `Deployed version ${releaseVersionDetails.version} successfully, notifying clients`
+      )
+      await notifyVersion(releaseVersionDetails, logger)
+    }
   })
 
   return server

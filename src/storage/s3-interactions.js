@@ -18,6 +18,8 @@ const initialiseClient = () => {
   return s3client
 }
 
+export const getBucketName = () => bucketName
+
 export const uploadBlob = async (logger, filename, contents) => {
   const client = initialiseClient()
   const params = {
