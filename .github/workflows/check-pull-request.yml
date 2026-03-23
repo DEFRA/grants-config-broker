@@ -42,13 +42,15 @@ jobs:
             echo "no release.yml found in changes"
           fi
 
-      - name: Test code and Create Test Coverage Reports
+      - name: Setup Node environment
         if: steps.release_yml.outputs.release_only != 'true'
         uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
           cache: npm
-      - run: |
+      - name: Test code and Create Test Coverage Reports
+        if: steps.release_yml.outputs.release_only != 'true'
+        run: |
           npm ci
           npm run format:check
           npm run lint
