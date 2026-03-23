@@ -1,4 +1,4 @@
-lastUpdated: '2026_03_20__1559'
+lastUpdated: '2026_03_23__1021'
 grants:
   - name: example-grant-with-auth
     envs:
@@ -6,17 +6,25 @@ grants:
         versions:
           - number: 0.0.4
             status: active
+          - number: 0.0.5
+            status: active
       - name: test
         versions:
           - number: 0.0.4
+            status: active
+          - number: 0.0.5
             status: active
       - name: ext-test
         versions:
           - number: 0.0.4
             status: draft
+          - number: 0.0.5
+            status: draft
       - name: perf-test
         versions:
           - number: 0.0.4
+            status: draft
+          - number: 0.0.5
             status: draft
       - name: prod
         versions: []
