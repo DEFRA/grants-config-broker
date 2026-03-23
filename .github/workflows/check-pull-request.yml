@@ -18,10 +18,15 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Check release.yml
         run: |
-          files_changed=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+          BASE=${{ github.event.pull_request.base.sha }}
+          HEAD=${{ github.event.pull_request.head.sha }}
+
+          files_changed=$(git diff --name-only $BASE $HEAD)
           files_changed_length=$(echo "$files_changed" | wc -l)
           echo $files_changed
           echo $files_changed_length
