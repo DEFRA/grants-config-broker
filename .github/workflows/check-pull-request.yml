@@ -21,8 +21,8 @@ jobs:
 
       - name: Check release.yml
         run: |
-          files_changed=$(git diff --name-only HEAD^1)
-          files_changed_length=$(git diff --name-only HEAD^1 | wc -l)
+          files_changed=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+          files_changed_length=$(echo "$files_changed" | wc -l)
           echo $files_changed
           echo $files_changed_length
           if [[ "$files_changed" = *"release/release.yml"* ]]; then
