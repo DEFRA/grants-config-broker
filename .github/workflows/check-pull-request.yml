@@ -19,6 +19,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Check release.yml
+        run: |
+          files_changed=$(git diff --name-only HEAD)
+          files_changed_length=$(git diff --name-only HEAD | wc -l)
+          echo $files_changed
+          echo $files_changed_length
+          if [[ "$files_changed" = *"release/release.yml"* ]]; then
+            echo "release/release.yml present in changes"
+            yamllint release/release.yml
+
+            if [ $files_changed_length -eq 1 ]; then
+              echo "no other files present so skipping some redundant steps"
+            fi
+          echo "release_only=true" >> $GITHUB_OUTPUT
+          else
+            echo "no release.yml found in changes"
+          fi
+
       - name: Test code and Create Test Coverage Reports
         uses: actions/setup-node@v6
         with:
