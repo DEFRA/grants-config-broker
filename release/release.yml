@@ -1,0 +1,20 @@
+# Grant name must match one of those defined in .github/grant-locations.yml
+name: example-grant-with-auth
+version: 0.0.1
+notes: check flow
+environments:
+  -
+    name: dev
+    status: active
+  -
+    name: test
+    status: active
+  -
+    name: ext-test
+    status: draft
+  -
+    name: perf-test
+    status: draft
+  -
+    name: prod
+    status: none
