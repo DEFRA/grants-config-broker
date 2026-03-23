@@ -18,8 +18,32 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Check release.yml
+        id: release_yml
+        run: |
+          BASE=${{ github.event.pull_request.base.sha }}
+          HEAD=${{ github.event.pull_request.head.sha }}
+
+          files_changed=$(git diff --name-only $BASE $HEAD)
+          files_changed_length=$(echo "$files_changed" | wc -l)
+
+          if [[ "$files_changed" = *"release/release.yml"* ]]; then
+            echo "release/release.yml present in changes"
+            yamllint release/release.yml
+
+            if [ $files_changed_length -eq 1 ]; then
+              echo "no other files present so skipping some redundant steps"
+              echo "release_only=true" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "no release.yml found in changes"
+          fi
 
       - name: Test code and Create Test Coverage Reports
+        if: steps.release_yml.outputs.release_only != 'true'
         uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
@@ -31,16 +55,18 @@ jobs:
           npm test
 
       - name: Security audit
+        if: steps.release_yml.outputs.release_only != 'true'
         run: npm run security-audit
 
       - name: Test Docker Image Build
+        if: steps.release_yml.outputs.release_only != 'true'
         run: |
           set +e
           docker build --no-cache --tag cdp-node-backend-template .
           exit $?
 
       - name: SonarCloud Scan
-        if: github.actor != 'dependabot[bot]'
+        if: github.actor != 'dependabot[bot]' && steps.release_yml.outputs.release_only != 'true'
         uses: SonarSource/sonarqube-scan-action@v7.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
