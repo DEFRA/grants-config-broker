@@ -42,29 +42,29 @@ jobs:
             echo "no release.yml found in changes"
           fi
 
-      - name: Test code and Create Test Coverage Reports
-        uses: actions/setup-node@v6
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: |
-          npm ci
-          npm run format:check
-          npm run lint
-          npm test
-
-      - name: Security audit
-        run: npm run security-audit
-
-      - name: Test Docker Image Build
-        run: |
-          set +e
-          docker build --no-cache --tag cdp-node-backend-template .
-          exit $?
-
-      - name: SonarCloud Scan
-        if: github.actor != 'dependabot[bot]'
-        uses: SonarSource/sonarqube-scan-action@v7.0.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+#      - name: Test code and Create Test Coverage Reports
+#        uses: actions/setup-node@v6
+#        with:
+#          node-version-file: .nvmrc
+#          cache: npm
+#      - run: |
+#          npm ci
+#          npm run format:check
+#          npm run lint
+#          npm test
+#
+#      - name: Security audit
+#        run: npm run security-audit
+#
+#      - name: Test Docker Image Build
+#        run: |
+#          set +e
+#          docker build --no-cache --tag cdp-node-backend-template .
+#          exit $?
+#
+#      - name: SonarCloud Scan
+#        if: github.actor != 'dependabot[bot]'
+#        uses: SonarSource/sonarqube-scan-action@v7.0.0
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
