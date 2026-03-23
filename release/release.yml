@@ -17,4 +17,4 @@ environments:
     status: draft
   -
     name: prod
-  status: none
+    status: none
