@@ -81,43 +81,59 @@ export const deployNewVersion = async (db, logger) => {
     logger.warn('Version already deployed to S3, no status change')
     return null
   } else {
-    logger.info(
-      `${releaseInfo.name} ${releaseInfo.version} will be deployed to S3 with status ${envDeployDetail.status}`
-    )
-    const manifest = await uploadVersionFilesToS3(
-      releaseInfo,
-      envDeployDetail.status,
-      logger
-    )
-
-    const versionStoreInfo = createVersionStoreInfo(
+    return deployUnreleasedVersion(
       releaseInfo,
       envDeployDetail,
-      manifest
+      serviceVersion,
+      db,
+      logger
     )
-    if (versionStoreInfo) {
-      const { path, ...rest } = versionStoreInfo
-      await storeVersion(
-        {
-          ...rest,
-          lastUpdated: new Date(),
-          createdInBrokerVersion: serviceVersion,
-          updatedInBrokerVersion: serviceVersion
-        },
+  }
+}
+
+const deployUnreleasedVersion = async (
+  releaseInfo,
+  envDeployDetail,
+  serviceVersion,
+  db,
+  logger
+) => {
+  logger.info(
+    `${releaseInfo.name} ${releaseInfo.version} will be deployed to S3 with status ${envDeployDetail.status}`
+  )
+  const manifest = await uploadVersionFilesToS3(
+    releaseInfo,
+    envDeployDetail.status,
+    logger
+  )
+
+  const versionStoreInfo = createVersionStoreInfo(
+    releaseInfo,
+    envDeployDetail,
+    manifest
+  )
+  if (versionStoreInfo) {
+    const { path, ...rest } = versionStoreInfo
+    await storeVersion(
+      {
+        ...rest,
+        lastUpdated: new Date(),
+        createdInBrokerVersion: serviceVersion,
+        updatedInBrokerVersion: serviceVersion
+      },
+      db
+    )
+    return {
+      ...versionStoreInfo,
+      isLatest: await isLatestVersion(
+        releaseInfo.name,
+        releaseInfo.version,
+        envDeployDetail.status,
         db
       )
-      return {
-        ...versionStoreInfo,
-        isLatest: await isLatestVersion(
-          releaseInfo.name,
-          releaseInfo.version,
-          envDeployDetail.status,
-          db
-        )
-      }
     }
-    return null
   }
+  return null
 }
 
 const createVersionStoreInfo = (releaseInfo, envDeployDetail, manifest) => {
