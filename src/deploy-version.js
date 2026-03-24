@@ -1,8 +1,16 @@
-import { readFileSync, existsSync, lstatSync, readdirSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 import { config } from './config.js'
 import { load } from 'js-yaml'
-import { getBucketName, uploadBlob } from './storage/s3-interactions.js'
-import { hasVersionJobAlreadyRun } from './repositories/version-management-repository.js'
+import { getBucketName } from './storage/s3-interactions.js'
+import {
+  findVersion,
+  hasVersionJobAlreadyRun,
+  storeVersion
+} from './repositories/version-management-repository.js'
+import {
+  uploadMetaDataToS3,
+  uploadVersionFilesToS3
+} from './upload-version-files-to-s3.js'
 
 const RELEASE_FILE = 'config/release.yml'
 
@@ -39,56 +47,64 @@ export const deployNewVersion = async (db, logger) => {
     return null
   }
 
-  logger.info(
-    `${releaseInfo.name} ${releaseInfo.version} will be deployed to S3 with status ${envDeployDetail.status}`
+  //at this point we have a version to release, but we need to check if already released on this env
+  const existingRecord = await findVersion(
+    releaseInfo.version,
+    releaseInfo.name,
+    db
   )
-  const manifest = await uploadToS3(releaseInfo, envDeployDetail.status, logger)
 
-  return manifest.length
-    ? {
+  if (existingRecord) {
+    //if already released, we may need to update the status
+    if (existingRecord.status !== envDeployDetail.status) {
+      existingRecord.status = envDeployDetail.status
+      existingRecord.updatedInBrokerVersion = serviceVersion
+      existingRecord.lastUpdated = new Date()
+
+      await uploadMetaDataToS3(releaseInfo, envDeployDetail.status, logger)
+      await storeVersion(existingRecord, db)
+      return {
         grant: releaseInfo.name,
         version: releaseInfo.version,
         path: getBucketName(),
         status: envDeployDetail.status,
-        manifest
+        manifest: existingRecord.manifest
+        // return isLatest - if older version was made active this would be false, if later semantically than others return true
       }
-    : null
-}
-
-const uploadToS3 = async (releaseInfo, status, logger) => {
-  //using the name of grant, upload all the config items under config/grant-name to s3
-  logger.info(`Uploading config for ${releaseInfo.name} to S3`)
-  const manifest = []
-  if (
-    existsSync(`config/${releaseInfo.name}`) &&
-    lstatSync(`config/${releaseInfo.name}`).isDirectory()
-  ) {
-    for (const file of readdirSync(`config/${releaseInfo.name}`, {
-      recursive: true
-    }).filter(
-      (maybeFile) =>
-        !lstatSync(`config/${releaseInfo.name}/${maybeFile}`).isDirectory()
-    )) {
-      logger.info(`Uploading ${file} to version ${releaseInfo.version} in S3`)
-      const fullFileName = `${releaseInfo.name}/${releaseInfo.version}/${file}`
-      await uploadBlob(
-        logger,
-        fullFileName,
-        readFileSync(`config/${releaseInfo.name}/${file}`, 'utf8')
-      )
-      manifest.push(fullFileName)
     }
-
-    await uploadBlob(
-      logger,
-      `${releaseInfo.name}/${releaseInfo.version}/metadata.json`,
-      JSON.stringify({ status, releaseNotes: releaseInfo.notes })
-    )
-    manifest.push(`${releaseInfo.name}/${releaseInfo.version}/metadata.json`)
+    logger.warn('Version already deployed to S3, no status change')
+    return null
   } else {
-    logger.warn(
-      `Config folder for ${releaseInfo.name} not found, so not doing any upload`
+    logger.info(
+      `${releaseInfo.name} ${releaseInfo.version} will be deployed to S3 with status ${envDeployDetail.status}`
     )
+    const manifest = await uploadVersionFilesToS3(
+      releaseInfo,
+      envDeployDetail.status,
+      logger
+    )
+
+    const versionStoreInfo = manifest.length
+      ? {
+          grant: releaseInfo.name,
+          version: releaseInfo.version,
+          path: getBucketName(),
+          status: envDeployDetail.status,
+          manifest
+        }
+      : null
+    if (versionStoreInfo) {
+      const { path, ...rest } = versionStoreInfo
+      await storeVersion(
+        {
+          ...rest,
+          lastUpdated: new Date(),
+          createdInBrokerVersion: serviceVersion,
+          updatedInBrokerVersion: serviceVersion
+        },
+        db
+      )
+    }
+    return versionStoreInfo
   }
-  return manifest
 }

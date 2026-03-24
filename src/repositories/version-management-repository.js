@@ -1,4 +1,5 @@
 const APPLIED_VERSION_COLLECTION = 'applied-versions'
+const CONFIG_VERSION_COLLECTION = 'config-versions'
 
 export const hasVersionJobAlreadyRun = async (serviceVersion, db) => {
   let hasRun
@@ -16,4 +17,23 @@ export const hasVersionJobAlreadyRun = async (serviceVersion, db) => {
   }
 
   return hasRun
+}
+
+export const findVersion = async (configVersion, grant, db) => {
+  return db.collection(CONFIG_VERSION_COLLECTION).findOne(
+    {
+      version: configVersion,
+      grant
+    },
+    {},
+    {
+      sort: {
+        lastUpdated: -1
+      }
+    }
+  )
+}
+
+export const storeVersion = async (data, db) => {
+  return db.collection(CONFIG_VERSION_COLLECTION).insertOne(data)
 }

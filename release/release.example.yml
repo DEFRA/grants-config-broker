@@ -1,3 +1,4 @@
+---
 # Grant name must match one of those defined in .github/grant-locations.yml
 name: example-grant-with-auth
 version: 0.0.1
