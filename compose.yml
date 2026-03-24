@@ -54,6 +54,7 @@ services:
       AWS_ENDPOINT_URL: http://localstack:4566
       CONFIG_BUCKET_NAME: configs-bucket
       MONGO_URI: mongodb://mongodb:27017/
+      SERVICE_VERSION: 1.0.0
     networks:
       - grants-framework
     volumes:

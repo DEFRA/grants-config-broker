@@ -9,6 +9,7 @@ export const notifyVersion = async (notifyDetails, logger) => {
     config.get('aws.sns.configUpdateTopicArn')
   )
 
-  const { manifest, ...rest } = notifyDetails
+  const { manifest, versionMajor, versionMinor, versionPatch, ...rest } =
+    notifyDetails
   await publishMessage(manifest, rest)
 }
