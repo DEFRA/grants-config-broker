@@ -42,6 +42,11 @@ jobs:
             echo "no release.yml found in changes"
           fi
 
+      - name: Parse release info
+        id: parse_release
+        run: |
+          node scripts/parse_release_info.cjs
+
       - name: Setup Node environment
         if: steps.release_yml.outputs.release_only != 'true'
         uses: actions/setup-node@v6

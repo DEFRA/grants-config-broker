@@ -1,21 +1,15 @@
 ---
-# Grant name must match one of those defined in .github/grant-locations.yml
 name: example-grant-with-auth
 version: 0.0.1
 notes: Some info about your release
 environments:
-  -
-    name: dev
+  - name: dev
     status: active
-  -
-    name: test
+  - name: test
     status: active
-  -
-    name: ext-test
+  - name: ext-test
     status: draft
-  -
-    name: perf-test
+  - name: perf-test
     status: draft
-  -
-    name: prod
+  - name: prod
     status: none
