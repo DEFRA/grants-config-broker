@@ -59,6 +59,7 @@ services:
       - grants-framework
     volumes:
       - ./src:/home/node/src
+      - ./compose:/home/node/config
       - ./package.json:/home/node/package.json
 
 ################################################################################

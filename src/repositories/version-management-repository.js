@@ -20,7 +20,7 @@ export const hasVersionJobAlreadyRun = async (serviceVersion, db) => {
 }
 
 export const findVersion = async (configVersion, grant, db) => {
-  return db
+  const versionRecords = await db
     .collection(CONFIG_VERSION_COLLECTION)
     .find({
       version: configVersion,
@@ -29,7 +29,8 @@ export const findVersion = async (configVersion, grant, db) => {
     .sort({
       lastUpdated: -1
     })
-    .toArray()[0]
+    .toArray()
+  return versionRecords[0]
 }
 
 export const storeVersion = async (data, db) => {

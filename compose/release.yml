@@ -1,0 +1,6 @@
+name: example-grant-with-auth
+version: 0.0.8
+notes: Example for local usage
+environments:
+  - name: local
+    status: active

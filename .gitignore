@@ -9,3 +9,5 @@ coverage
 .cache
 .eslintcache
 .env
+compose/example-grant-with-auth
+!compose/example-grant-with-auth/add_your_local_files_here
