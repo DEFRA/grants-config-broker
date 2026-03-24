@@ -3,18 +3,14 @@ name: example-grant-with-auth
 version: 0.0.7
 notes: New version for a demo
 environments:
-  -
-    name: dev
+  - name: dev
     status: active
-  -
-    name: test
+  - name: test
     status: active
-  -
-    name: ext-test
+  - name: ext-test
     status: draft
-  -
-    name: perf-test
+  - name: perf-test
     status: draft
-  -
-    name: prod
+  - name: prod
     status: none
+brokerVersion: 0.2.6
