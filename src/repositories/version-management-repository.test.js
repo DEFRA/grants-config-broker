@@ -1,5 +1,6 @@
 import {
   findVersion,
+  getLatestVersion,
   hasVersionJobAlreadyRun,
   storeVersion
 } from './version-management-repository.js'
@@ -33,10 +34,12 @@ describe('version-management-repository', () => {
 
   describe('findVersion', () => {
     it('should return version if found', async () => {
-      const findOne = vi.fn().mockResolvedValue({ version: '1.0.0' })
+      const toArray = vi.fn().mockReturnValue([{ version: '1.0.0' }])
+      const sort = vi.fn().mockReturnValue({ toArray })
+      const find = vi.fn().mockReturnValue({ sort })
       const db = {
         collection: vi.fn().mockReturnValue({
-          findOne
+          find
         })
       }
       const configVersion = '1.0.0'
@@ -44,11 +47,9 @@ describe('version-management-repository', () => {
       const result = await findVersion(configVersion, grant, db)
       expect(result).toEqual({ version: '1.0.0' })
       expect(db.collection).toHaveBeenCalledWith('config-versions')
-      expect(findOne).toHaveBeenCalledWith(
-        { version: '1.0.0', grant },
-        {},
-        { sort: { lastUpdated: -1 } }
-      )
+      expect(find).toHaveBeenCalledWith({ version: '1.0.0', grant })
+      expect(sort).toHaveBeenCalledWith({ lastUpdated: -1 })
+      expect(toArray).toHaveBeenCalled()
     })
   })
 
@@ -65,6 +66,34 @@ describe('version-management-repository', () => {
       expect(result).toEqual({ added: 1 })
       expect(db.collection).toHaveBeenCalledWith('config-versions')
       expect(insertOne).toHaveBeenCalledWith(data)
+    })
+  })
+
+  describe('getLatestVersion', () => {
+    it('should return version if found', async () => {
+      const toArray = vi.fn().mockReturnValue([{ version: '1.0.0' }])
+      const limit = vi.fn().mockReturnValue({ toArray })
+      const sort = vi.fn().mockReturnValue({ limit })
+      const find = vi.fn().mockReturnValue({ sort })
+      const db = {
+        collection: vi.fn().mockReturnValue({
+          find
+        })
+      }
+
+      const grant = 'test-grant'
+      const status = 'active'
+      const result = await getLatestVersion(grant, status, db)
+      expect(result).toEqual([{ version: '1.0.0' }])
+      expect(db.collection).toHaveBeenCalledWith('config-versions')
+      expect(find).toHaveBeenCalledWith({ grant, status })
+      expect(sort).toHaveBeenCalledWith({
+        versionMajor: -1,
+        versionMinor: -1,
+        versionPatch: -1
+      })
+      expect(limit).toHaveBeenCalledWith(1)
+      expect(toArray).toHaveBeenCalled()
     })
   })
 })

@@ -27,6 +27,9 @@ describe('notify-version', () => {
           manifest,
           path: 's3://test-bucket',
           version: '0.0.1',
+          versionMajor: 0,
+          versionMinor: 0,
+          versionPatch: 1,
           status: 'draft'
         },
         mockLogger

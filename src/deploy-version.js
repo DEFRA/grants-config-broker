@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { config } from './config.js'
 import { load } from 'js-yaml'
 import { getBucketName } from './storage/s3-interactions.js'
@@ -11,6 +11,7 @@ import {
   uploadMetaDataToS3,
   uploadVersionFilesToS3
 } from './upload-version-files-to-s3.js'
+import { isLatestVersion } from './service/latest-version.js'
 
 const RELEASE_FILE = 'config/release.yml'
 
@@ -64,12 +65,17 @@ export const deployNewVersion = async (db, logger) => {
       await uploadMetaDataToS3(releaseInfo, envDeployDetail.status, logger)
       await storeVersion(existingRecord, db)
       return {
-        grant: releaseInfo.name,
-        version: releaseInfo.version,
-        path: getBucketName(),
-        status: envDeployDetail.status,
-        manifest: existingRecord.manifest
-        // return isLatest - if older version was made active this would be false, if later semantically than others return true
+        ...createVersionStoreInfo(
+          releaseInfo,
+          envDeployDetail,
+          existingRecord.manifest
+        ),
+        isLatest: await isLatestVersion(
+          releaseInfo.name,
+          releaseInfo.version,
+          envDeployDetail.status,
+          db
+        )
       }
     }
     logger.warn('Version already deployed to S3, no status change')
@@ -84,15 +90,11 @@ export const deployNewVersion = async (db, logger) => {
       logger
     )
 
-    const versionStoreInfo = manifest.length
-      ? {
-          grant: releaseInfo.name,
-          version: releaseInfo.version,
-          path: getBucketName(),
-          status: envDeployDetail.status,
-          manifest
-        }
-      : null
+    const versionStoreInfo = createVersionStoreInfo(
+      releaseInfo,
+      envDeployDetail,
+      manifest
+    )
     if (versionStoreInfo) {
       const { path, ...rest } = versionStoreInfo
       await storeVersion(
@@ -104,7 +106,33 @@ export const deployNewVersion = async (db, logger) => {
         },
         db
       )
+      return {
+        ...versionStoreInfo,
+        isLatest: await isLatestVersion(
+          releaseInfo.name,
+          releaseInfo.version,
+          envDeployDetail.status,
+          db
+        )
+      }
     }
-    return versionStoreInfo
+    return null
   }
+}
+
+const createVersionStoreInfo = (releaseInfo, envDeployDetail, manifest) => {
+  const versionSplit = releaseInfo.version.split('.')
+
+  return manifest.length
+    ? {
+        grant: releaseInfo.name,
+        version: releaseInfo.version,
+        versionMajor: Number.parseInt(versionSplit[0]),
+        versionMinor: Number.parseInt(versionSplit[1]),
+        versionPatch: Number.parseInt(versionSplit[2]),
+        path: getBucketName(),
+        status: envDeployDetail.status,
+        manifest
+      }
+    : null
 }

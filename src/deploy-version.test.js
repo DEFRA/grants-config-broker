@@ -12,8 +12,10 @@ import {
   uploadMetaDataToS3,
   uploadVersionFilesToS3
 } from './upload-version-files-to-s3.js'
+import { isLatestVersion } from './service/latest-version.js'
 
 vi.mock('./repositories/version-management-repository.js')
+vi.mock('./service/latest-version.js')
 vi.mock('./storage/s3-interactions.js')
 vi.mock('./upload-version-files-to-s3.js')
 vi.mock('node:fs')
@@ -142,6 +144,7 @@ describe('deploy-version', () => {
         manifest: ['some/existing/file.txt']
       })
       getBucketName.mockReturnValueOnce('s3://test-bucket')
+      isLatestVersion.mockResolvedValueOnce(false)
 
       const result = await deployNewVersion(mockDb, mockLogger)
 
@@ -179,7 +182,11 @@ describe('deploy-version', () => {
         manifest: ['some/existing/file.txt'],
         path: 's3://test-bucket',
         status: 'active',
-        version: '0.0.1'
+        version: '0.0.1',
+        versionMajor: 0,
+        versionMinor: 0,
+        versionPatch: 1,
+        isLatest: false
       })
     })
 
@@ -194,6 +201,7 @@ describe('deploy-version', () => {
       ])
 
       mockLoadFileWithStatus()
+      isLatestVersion.mockResolvedValueOnce(true)
 
       const result = await deployNewVersion(mockDb, mockLogger)
 
@@ -216,6 +224,9 @@ describe('deploy-version', () => {
         {
           grant: 'example-grant-with-auth',
           version: '0.0.1',
+          versionMajor: 0,
+          versionMinor: 0,
+          versionPatch: 1,
           status: 'active',
           updatedInBrokerVersion: '1.0.0',
           createdInBrokerVersion: '1.0.0',
@@ -229,7 +240,11 @@ describe('deploy-version', () => {
         manifest: ['some/existing/file.txt', 'some/other/file.txt'],
         path: 's3://test-bucket',
         version: '0.0.1',
-        status: 'active'
+        status: 'active',
+        versionMajor: 0,
+        versionMinor: 0,
+        versionPatch: 1,
+        isLatest: true
       })
     })
 
