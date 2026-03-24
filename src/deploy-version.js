@@ -12,11 +12,12 @@ import {
   uploadVersionFilesToS3
 } from './upload-version-files-to-s3.js'
 import { isLatestVersion } from './service/latest-version.js'
+import { getServiceVersion } from './utils/get-service-version.js'
 
 const RELEASE_FILE = 'config/release.yml'
 
 export const deployNewVersion = async (db, logger) => {
-  const serviceVersion = config.get('serviceVersion')
+  const serviceVersion = getServiceVersion()
   const versionAlreadyRun = await hasVersionJobAlreadyRun(serviceVersion, db)
 
   // Prevents the version work from executing in multiple instances, or if app is restarted etc

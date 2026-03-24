@@ -55,8 +55,20 @@ npm install
 To run the application in `development` mode run:
 
 ```bash
-npm run dev
+./scripts/start
 ```
+
+This will start the application on port `3001`. The application will automatically reload if you make
+any changes to the source code.
+
+#### local config
+
+The compose directory will be mounted inside the config broker container, and will initially contain
+an example release.yml that will get picked up by the config broker and published to the localstack
+S3 bucket. You can add/amend the config available in the local bucket by simply adding any files you
+want under `compose/example-grant-with-auth`. You can amend the release.yml file in here if you wish
+to play around with versions too. After updating either, make a simple change to any code file and
+nodemon will restart the app and pick up your new config.
 
 ### Testing
 
@@ -64,14 +76,6 @@ To test the application run:
 
 ```bash
 npm run test
-```
-
-### Production
-
-To mimic the application running in `production` mode locally run:
-
-```bash
-npm start
 ```
 
 ### Npm scripts
