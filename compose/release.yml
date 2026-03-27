@@ -1,5 +1,5 @@
 name: example-grant-with-auth
-version: 0.0.8
+version: 1.0.0
 notes: Example for local usage
 environments:
   - name: local
