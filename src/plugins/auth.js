@@ -1,8 +1,9 @@
 import Boom from '@hapi/boom'
-import crypto from 'crypto'
+import crypto from 'node:crypto'
 import { config } from '../config.js'
 import { createLogger } from '../common/helpers/logging/logger.js'
 
+const EXPECTED_TOKEN_PARTS = 3
 /**
  * Decrypts an encrypted bearer token using AES-256-GCM
  * @param {string} encryptedToken - Token in format: iv:authTag:encryptedData (base64)
@@ -16,7 +17,9 @@ function decryptToken(encryptedToken) {
 
   try {
     const parts = encryptedToken.split(':')
-    if (parts.length !== 3) throw new Error('Malformed encrypted token')
+    if (parts.length !== EXPECTED_TOKEN_PARTS) {
+      throw new Error('Malformed encrypted token')
+    }
 
     const [ivB64, authTagB64, encryptedData] = encryptedToken.split(':')
     if (!ivB64 || !authTagB64 || !encryptedData) {
@@ -91,7 +94,7 @@ export const auth = {
   plugin: {
     name: 'auth',
     register: (server, _options) => {
-      server.auth.scheme('bearer', (server, options) => {
+      server.auth.scheme('bearer', (_server, _options) => {
         return {
           authenticate: (request, h) => {
             const authHeader = request.headers.authorization

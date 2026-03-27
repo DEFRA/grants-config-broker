@@ -1,6 +1,7 @@
 import { config } from '../config.js'
 
 const LOCAL_SUFFIX_LIMIT = 9999
+const LOCAL_SUFFIX_TAKE_FOUR = -4
 export const getServiceVersion = () => {
   let serviceVersion = config.get('serviceVersion')
   if (config.get('cdpEnvironment') === 'local') {
@@ -12,4 +13,6 @@ export const getServiceVersion = () => {
 }
 
 const padToFour = (number) =>
-  number <= 9999 ? `000${number}`.slice(-4) : number
+  number <= LOCAL_SUFFIX_LIMIT
+    ? `000${number}`.slice(LOCAL_SUFFIX_TAKE_FOUR)
+    : number

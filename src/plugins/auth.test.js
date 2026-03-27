@@ -10,7 +10,7 @@ import {
   AUTH_HEADER,
   HTTP_401_UNAUTHORIZED
 } from '../../test/test-helpers/http-header-constants.js'
-import crypto from 'crypto'
+import crypto from 'node:crypto'
 import { createServer } from '../server.js'
 import { config } from '../config.js'
 
