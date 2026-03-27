@@ -14,6 +14,7 @@ import { metrics } from '@defra/cdp-metrics'
 import { createLogger } from './common/helpers/logging/logger.js'
 import { deployNewVersion } from './deploy-version.js'
 import { notifyVersion } from './notify-version.js'
+import { auth } from './plugins/auth.js'
 
 async function createServer() {
   setupProxy()
@@ -51,6 +52,7 @@ async function createServer() {
   // mongoDb        - sets up mongo connection pool and attaches to `server` and `request` objects
   // router         - routes used in the app
   await server.register([
+    auth,
     requestLogger,
     requestTracing,
     metrics,
