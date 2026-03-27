@@ -94,7 +94,7 @@ export const auth = {
   plugin: {
     name: 'auth',
     register: (server, _options) => {
-      server.auth.scheme('bearer', (_server, _options) => {
+      server.auth.scheme('bearer', (_server, __options) => {
         return {
           authenticate: (request, h) => {
             const authHeader = request.headers.authorization
