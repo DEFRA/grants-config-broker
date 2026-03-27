@@ -16,12 +16,21 @@ const generateNotFoundResponse = (params) => {
   }
 }
 
+const getStatusOption = (draft) => {
+  if (draft === 'only') {
+    return DRAFT_STATUS
+  } else if (draft === 'include') {
+    return null
+  } else {
+    return ACTIVE_STATUS
+  }
+}
+
 export const getLatestVersionHandler = async (req, h) => {
   const { grant, draft, constrainMajor, constrainMinor } = req.query
 
   //Fetch the latest version from the database
-  const status =
-    draft === 'only' ? DRAFT_STATUS : draft === 'include' ? null : ACTIVE_STATUS
+  const status = getStatusOption(draft)
   const latestVersion = await getLatestVersionWithConstraints(
     grant,
     status,
@@ -70,8 +79,7 @@ export const getSpecificVersionHandler = async (req, h) => {
 
 export const getAllVersionsHandler = async (req, h) => {
   const { grant, draft, constrainMajor, constrainMinor } = req.query
-  const status =
-    draft === 'only' ? DRAFT_STATUS : draft === 'include' ? null : ACTIVE_STATUS
+  const status = getStatusOption(draft)
   const allVersions = await getAllVersionsWithConstraints(
     grant,
     status,
@@ -84,8 +92,7 @@ export const getAllVersionsHandler = async (req, h) => {
 
 export const getAllGrantsHandler = async (req, h) => {
   const { draft } = req.query
-  const status =
-    draft === 'only' ? DRAFT_STATUS : draft === 'include' ? null : ACTIVE_STATUS
+  const status = getStatusOption(draft)
   const allVersions = await getAllGrantsAllVersions(status, req.db)
 
   return h.response(allVersions).code(StatusCodes.OK)

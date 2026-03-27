@@ -36,7 +36,7 @@ export const findVersion = async (configVersion, grant, db) => {
 }
 
 export const findVersionHistory = async (configVersion, grant, db) => {
-  return await db
+  return db
     .collection(CONFIG_VERSION_COLLECTION)
     .find({
       version: configVersion,
