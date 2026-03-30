@@ -15,6 +15,11 @@ import { createLogger } from './common/helpers/logging/logger.js'
 import { deployNewVersion } from './deploy-version.js'
 import { notifyVersion } from './notify-version.js'
 import { auth } from './plugins/auth.js'
+import Inert from '@hapi/inert'
+import Scalar from 'hapi-scalar'
+import yaml from 'js-yaml'
+import fs from 'node:fs'
+import path from 'node:path'
 
 async function createServer() {
   setupProxy()
@@ -44,14 +49,26 @@ async function createServer() {
     }
   })
 
-  // Hapi Plugins:
-  // requestLogger  - automatically logs incoming requests
-  // requestTracing - trace header logging and propagation
-  // secureContext  - loads CA certificates from environment config
-  // pulse          - provides shutdown handlers
-  // mongoDb        - sets up mongo connection pool and attaches to `server` and `request` objects
-  // router         - routes used in the app
+  // hapi-scalar   - serves API documentation using Scalar
+  // inert         - serves static files (required by scalar)
+  const swaggerPath = path.resolve(process.cwd(), 'src/routes/api/swagger.yaml')
+  const swaggerFile = fs.readFileSync(swaggerPath, 'utf8')
+  const swaggerDocument = yaml.load(swaggerFile)
+
   await server.register([
+    Inert,
+    {
+      plugin: Scalar,
+      options: {
+        scalarConfig: {
+          content: swaggerDocument
+        },
+        routePrefix: '/documentation',
+        routeConfig: {
+          auth: false
+        }
+      }
+    },
     auth,
     requestLogger,
     requestTracing,

@@ -8,7 +8,6 @@ Core delivery platform Node.js Backend Template.
   - [Setup](#setup)
   - [Development](#development)
   - [Testing](#testing)
-  - [Production](#production)
   - [Npm scripts](#npm-scripts)
   - [Update dependencies](#update-dependencies)
   - [Formatting](#formatting)
@@ -110,11 +109,15 @@ git config --global core.autocrlf false
 
 ## API endpoints
 
-| Endpoint             | Description                    |
-| :------------------- | :----------------------------- |
-| `GET: /health`       | Health                         |
-| `GET: /example    `  | Example API (remove as needed) |
-| `GET: /example/<id>` | Example API (remove as needed) |
+| Endpoint                   | Description                                |
+| :------------------------- | :----------------------------------------- |
+| `GET: /health`             | Health check                               |
+| `GET: /documentation`      | API Documentation (Scalar)                 |
+| `GET: /api/latestVersion`  | Get latest version of config for a grant   |
+| `GET: /api/version`        | Get specific version of config for a grant |
+| `GET: /api/allVersions`    | Get all versions of config for a grant     |
+| `GET: /api/allGrants`      | Get all versions of all grants             |
+| `GET: /api/versionHistory` | Get version history for a grant            |
 
 ## Development helpers
 
