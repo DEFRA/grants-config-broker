@@ -104,6 +104,19 @@ describe('Auth Integration Tests', () => {
       expect(response.statusCode).not.toBe(HTTP_401_UNAUTHORIZED)
       restoreConfigValue('cdpEnvironment')
     })
+
+    it('should authenticate automatically for documentation endpoint', async () => {
+      removeAndPreserveConfigValue('cdpEnvironment')
+      const response = await server.inject({
+        ...getBasicRequestWithHeaders({
+          [CONTENT_TYPE_HEADER]: CONTENT_TYPE_JSON
+        }),
+        url: '/documentation'
+      })
+
+      expect(response.statusCode).not.toBe(HTTP_401_UNAUTHORIZED)
+      restoreConfigValue('cdpEnvironment')
+    })
   })
 
   describe('Invalid Authentication', () => {

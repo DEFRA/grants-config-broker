@@ -11,7 +11,7 @@ import { pulse } from './common/helpers/pulse.js'
 import { requestTracing } from './common/helpers/request-tracing.js'
 import { setupProxy } from './common/helpers/proxy/setup-proxy.js'
 import { metrics } from '@defra/cdp-metrics'
-import { createLogger } from './common/helpers/logging/logger.js'
+import { getLogger } from './common/helpers/logging/logger.js'
 import { deployNewVersion } from './deploy-version.js'
 import { notifyVersion } from './notify-version.js'
 import { auth } from './plugins/auth.js'
@@ -84,7 +84,7 @@ async function createServer() {
 
   server.events.on('start', async () => {
     const { db } = server
-    const logger = createLogger()
+    const logger = getLogger()
 
     const releaseVersionDetails = await deployNewVersion(db, logger)
     if (releaseVersionDetails) {
