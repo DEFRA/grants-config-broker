@@ -9,5 +9,8 @@ coverage
 .cache
 .eslintcache
 .env
-compose/example-grant-with-auth
+compose
 !compose/example-grant-with-auth/add_your_local_files_here
+!compose/start-localstack.sh
+!compose/aws.env
+!compose/release.yml
