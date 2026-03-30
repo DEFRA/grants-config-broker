@@ -99,9 +99,12 @@ export const auth = {
           authenticate: (request, h) => {
             const authHeader = request.headers.authorization
             const isLocalEnvironment = config.get('cdpEnvironment') === 'local'
-            const validation = isLocalEnvironment
-              ? { isValid: true }
-              : validateAuthToken(authHeader)
+            const isDocumentationPath =
+              request.path.startsWith('/documentation')
+            const validation =
+              isLocalEnvironment || isDocumentationPath
+                ? { isValid: true }
+                : validateAuthToken(authHeader)
 
             if (!validation.isValid) {
               throw Boom.unauthorized('Invalid authentication credentials')
