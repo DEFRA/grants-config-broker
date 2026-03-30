@@ -13,7 +13,26 @@ const formatters = {
       serviceName
     })
   },
-  'pino-pretty': { transport: { target: 'pino-pretty' } }
+  'pino-pretty': {
+    transport: {
+      target: 'pino-pretty',
+      options: {
+        singleLine: true,
+        colorize: true
+      }
+    }
+  }
+}
+
+const logError = (err) => {
+  if (err instanceof Error) {
+    return {
+      message: err.message,
+      stack_trace: err.stack,
+      type: err.name
+    }
+  }
+  return err
 }
 
 export const loggerOptions = {
@@ -26,6 +45,10 @@ export const loggerOptions = {
   level: logConfig.level,
   ...formatters[logConfig.format],
   nesting: true,
+  serializers: {
+    error: logError,
+    err: logError
+  },
   mixin() {
     const mixinValues = {}
     const traceId = getTraceId()

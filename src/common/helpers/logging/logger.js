@@ -4,8 +4,16 @@ import { loggerOptions } from './logger-options.js'
 
 const logger = pino(loggerOptions)
 
-function createLogger() {
+export function getLogger() {
   return logger
 }
 
-export { createLogger }
+export const trackEvent = (loggerInstance, type, category, properties) => {
+  loggerInstance.info({
+    event: {
+      type,
+      category,
+      ...properties
+    }
+  })
+}

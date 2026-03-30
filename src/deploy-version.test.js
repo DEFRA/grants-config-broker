@@ -13,6 +13,7 @@ import {
   uploadVersionFilesToS3
 } from './upload-version-files-to-s3.js'
 import { isLatestVersion } from './service/latest-version.js'
+import { trackEvent } from './common/helpers/logging/logger.js'
 
 vi.mock('./repositories/version-management-repository.js')
 vi.mock('./service/latest-version.js')
@@ -20,6 +21,7 @@ vi.mock('./storage/s3-interactions.js')
 vi.mock('./upload-version-files-to-s3.js')
 vi.mock('node:fs')
 vi.mock('js-yaml')
+vi.mock('./common/helpers/logging/logger.js')
 
 describe('deploy-version', () => {
   const mockLogger = {
@@ -177,6 +179,16 @@ describe('deploy-version', () => {
         mockDb
       )
       expect(uploadVersionFilesToS3).not.toHaveBeenCalled()
+      expect(trackEvent).toHaveBeenCalledWith(
+        mockLogger,
+        'version-update',
+        'status-change',
+        {
+          kind: 'active',
+          reference:
+            'grant: example-grant-with-auth, version: 0.0.1, brokerVersion: 1.0.0'
+        }
+      )
       expect(result).to.eql({
         grant: 'example-grant-with-auth',
         manifest: ['some/existing/file.txt'],
@@ -234,6 +246,16 @@ describe('deploy-version', () => {
           manifest: ['some/existing/file.txt', 'some/other/file.txt']
         },
         mockDb
+      )
+      expect(trackEvent).toHaveBeenCalledWith(
+        mockLogger,
+        'version-update',
+        'new-version',
+        {
+          kind: 'active',
+          reference:
+            'grant: example-grant-with-auth, version: 0.0.1, brokerVersion: 1.0.0'
+        }
       )
       expect(result).to.eql({
         grant: 'example-grant-with-auth',

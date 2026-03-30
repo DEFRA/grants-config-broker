@@ -13,6 +13,7 @@ import {
 } from './upload-version-files-to-s3.js'
 import { isLatestVersion } from './service/latest-version.js'
 import { getServiceVersion } from './utils/get-service-version.js'
+import { trackEvent } from './common/helpers/logging/logger.js'
 
 const RELEASE_FILE = 'config/release.yml'
 
@@ -65,6 +66,12 @@ export const deployNewVersion = async (db, logger) => {
 
       await uploadMetaDataToS3(releaseInfo, envDeployDetail.status, logger)
       await storeVersion(existingRecord, db)
+
+      trackEvent(logger, 'version-update', 'status-change', {
+        reference: `grant: ${releaseInfo.name}, version: ${releaseInfo.version}, brokerVersion: ${serviceVersion}`,
+        kind: envDeployDetail.status
+      })
+
       return {
         ...createVersionStoreInfo(
           releaseInfo,
@@ -124,6 +131,12 @@ const deployUnreleasedVersion = async (
       },
       db
     )
+
+    trackEvent(logger, 'version-update', 'new-version', {
+      reference: `grant: ${releaseInfo.name}, version: ${releaseInfo.version}, brokerVersion: ${serviceVersion}`,
+      kind: envDeployDetail.status
+    })
+
     return {
       ...versionStoreInfo,
       isLatest: await isLatestVersion(

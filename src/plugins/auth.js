@@ -1,7 +1,7 @@
 import Boom from '@hapi/boom'
 import crypto from 'node:crypto'
 import { config } from '../config.js'
-import { createLogger } from '../common/helpers/logging/logger.js'
+import { getLogger } from '../common/helpers/logging/logger.js'
 
 const EXPECTED_TOKEN_PARTS = 3
 /**
@@ -38,7 +38,7 @@ function decryptToken(encryptedToken) {
 
     return decrypted
   } catch (error) {
-    createLogger().error(error, 'Token decryption failed')
+    getLogger().error(error, 'Token decryption failed')
     return null
   }
 }
@@ -53,7 +53,7 @@ function validateAuthToken(authHeader) {
 
   const expectedToken = config.get('auth.token')
   if (!expectedToken) {
-    createLogger().error('Server auth token not configured')
+    getLogger().error('Server auth token not configured')
     return {
       isValid: false,
       error: 'Server authentication token not configured'
@@ -62,7 +62,7 @@ function validateAuthToken(authHeader) {
 
   const encryptionKey = config.get('auth.encryptionKey')
   if (!encryptionKey) {
-    createLogger().error(
+    getLogger().error(
       'Encryption key not configured - encrypted tokens are required'
     )
     return { isValid: false, error: 'Server encryption not configured' }
