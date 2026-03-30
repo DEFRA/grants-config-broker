@@ -1,0 +1,346 @@
+openapi: 3.0.0
+info:
+  title: Grants Config Broker API
+  description: API for managing and retrieving grant configurations and versions.
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:3001'
+    description: Local server URL
+  - url: https://ephemeral-protected.api.dev.cdp-int.defra.cloud/grants-config-broker
+    description: Dev environment - must supply developer API key in x-api-key header
+  - url: https://ephemeral-protected.api.test.cdp-int.defra.cloud/grants-config-broker
+    description: Test environment - must supply developer API key in x-api-key header
+  - url: https://ephemeral-protected.api.ext-test.cdp-int.defra.cloud/grants-config-broker
+    description: Ext-test environment - must supply developer API key in x-api-key header
+  - url: https://ephemeral-protected.api.perf-test.cdp-int.defra.cloud/grants-config-broker
+    description: Perf-test environment - must supply developer API key in x-api-key header
+paths:
+  /api/latestVersion:
+    get:
+      summary: Get latest version of config for a given grant
+      description: Returns the latest configuration version for a specified grant, with options to include draft versions and apply version constraints.
+      security:
+        - bearerAuth: []
+          apiKey: []
+      parameters:
+        - $ref: '#/components/parameters/cdpRequestId'
+        - name: grant
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The name of the grant.
+        - name: draft
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [include, only]
+          description: Filter for draft versions.
+        - name: constrainMajor
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+          description: Constraint for the major version. Required if constrainMinor is provided.
+        - name: constrainMinor
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+          description: Constraint for the minor version.
+      responses:
+        '200':
+          description: Successfully retrieved the latest version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionResponse'
+        '400':
+          description: Bad Request - Validation error.
+        '401':
+          description: Unauthorized - Invalid or missing authentication credentials.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found - Grant or version not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/version:
+    get:
+      summary: Get specific version of config for a given grant
+      description: Returns a specific version of the configuration for a given grant, identified by either a full version string or major, minor, and patch components.
+      security:
+        - bearerAuth: []
+          apiKey: []
+      parameters:
+        - $ref: '#/components/parameters/cdpRequestId'
+        - name: grant
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The name of the grant.
+        - name: version
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Full version string (e.g., "1.2.3"). If not provided, major, minor, and patch are required.
+        - name: major
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+          description: Major version component.
+        - name: minor
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+          description: Minor version component.
+        - name: patch
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+          description: Patch version component.
+      responses:
+        '200':
+          description: Successfully retrieved the specific version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionResponse'
+        '400':
+          description: Bad Request - Validation error.
+        '401':
+          description: Unauthorized - Invalid or missing authentication credentials.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found - Grant or version not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/allVersions:
+    get:
+      summary: Get info on all versions of config for a given grant
+      description: Returns a list of all configuration versions for a specified grant, with filtering options.
+      security:
+        - bearerAuth: []
+          apiKey: []
+      parameters:
+        - $ref: '#/components/parameters/cdpRequestId'
+        - name: grant
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The name of the grant.
+        - name: draft
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [include, only]
+          description: Filter for draft versions.
+        - name: constrainMajor
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+          description: Constraint for the major version.
+        - name: constrainMinor
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+          description: Constraint for the minor version.
+      responses:
+        '200':
+          description: Successfully retrieved all versions.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VersionResponse'
+        '400':
+          description: Bad Request - Validation error.
+        '401':
+          description: Unauthorized - Invalid or missing authentication credentials.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/allGrants:
+    get:
+      summary: Get info on all versions of all grants
+      description: Returns a list of all versions for all grants.
+      security:
+        - bearerAuth: []
+          apiKey: []
+      parameters:
+        - $ref: '#/components/parameters/cdpRequestId'
+        - name: draft
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [include, only]
+          description: Filter for draft versions.
+      responses:
+        '200':
+          description: Successfully retrieved all grants versions.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VersionResponse'
+        '400':
+          description: Bad Request - Validation error.
+        '401':
+          description: Unauthorized - Invalid or missing authentication credentials.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/versionHistory:
+    get:
+      summary: Get version history for a version of a grant
+      description: Returns the history of changes for a specific version of a grant.
+      security:
+        - bearerAuth: []
+          apiKey: []
+      parameters:
+        - $ref: '#/components/parameters/cdpRequestId'
+        - name: grant
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The name of the grant.
+        - name: version
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Full version string.
+        - name: major
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+          description: Major version component.
+        - name: minor
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+          description: Minor version component.
+        - name: patch
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+          description: Patch version component.
+      responses:
+        '200':
+          description: Successfully retrieved version history.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  description: Details of the version history entry.
+        '400':
+          description: Bad Request - Validation error.
+        '401':
+          description: Unauthorized - Invalid or missing authentication credentials.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found - Grant or version not found.
+
+components:
+  schemas:
+    VersionResponse:
+      type: object
+      properties:
+        grant:
+          type: string
+          description: The name of the grant.
+        version:
+          type: string
+          description: The version string.
+        status:
+          type: string
+          description: The status of the version (e.g., active, draft).
+        path:
+          type: string
+          description: The bucket name or path to the configuration.
+        manifest:
+          type: object
+          description: The configuration manifest details.
+        lastUpdated:
+          type: string
+          format: date-time
+          description: The timestamp of the last update.
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: The error message.
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Bearer <iv>:<authTag>:<encryptedData>
+      description: |
+        The API uses a Bearer token for authentication.
+        The token is an encrypted string in the format `iv:authTag:encryptedData`, which is then base64 encoded.
+        Example: `Bearer aXY6YXV0aFRhZzplbmNyeXB0ZWREYXRh` (base64 encoded value of `iv:authTag:encryptedData`).
+    apiKey:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: Dev API key for use on deployed environments
+  parameters:
+    cdpRequestId:
+      name: x-cdp-request-id
+      in: header
+      required: false
+      schema:
+        type: string
+      description: A unique identifier for the request, used for tracing.
+security:
+  - bearerAuth: []
+    apiKey: []
+  - {} # Allows request without security to show headers in Scalar, though auth is usually required.
+    # Note: Scalar might need these headers to be explicitly added to each operation or defined globally.
+    # Since we want them "modifiable", we'll add them as parameters.
