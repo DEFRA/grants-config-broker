@@ -59,7 +59,7 @@ jobs:
       - name: Parse release info
         id: parse_release
         run: |
-          node scripts/parse_release_info.cjs
+          node scripts/parse_release_info.js
 
       - name: Checkout target repository
         if: steps.parse_release.outputs.exists == 'true'
@@ -91,7 +91,7 @@ jobs:
       - name: Update deployment matrix
         if: steps.parse_release.outputs.exists == 'true'
         run: |
-          node scripts/update_deployment_matrix.cjs
+          node scripts/update_deployment_matrix.js
 
       - name: Move release.yml if it exists
         id: move_release

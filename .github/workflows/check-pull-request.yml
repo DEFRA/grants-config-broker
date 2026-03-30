@@ -55,7 +55,7 @@ jobs:
       - name: Parse release info
         id: parse_release
         run: |
-          node scripts/parse_release_info.cjs
+          node scripts/parse_release_info.js
 
       - name: Test code and Create Test Coverage Reports
         if: steps.release_yml.outputs.release_only != 'true'
