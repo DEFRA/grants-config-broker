@@ -164,6 +164,12 @@ const config = convict({
       env: 'TRACING_HEADER'
     }
   },
+  isMetricsEnabled: {
+    doc: 'Enable metrics reporting',
+    format: Boolean,
+    default: isProduction,
+    env: 'ENABLE_METRICS'
+  },
   auth: {
     token: {
       doc: 'Bearer token for service-to-service authentication',

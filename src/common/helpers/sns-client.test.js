@@ -1,6 +1,8 @@
 import { PublishCommand, SNSClient } from '@aws-sdk/client-sns'
 import { publishMessage, setupClient } from './sns-client.js'
+import { metricsCounter } from './metrics.js'
 
+vi.mock('./metrics.js')
 vi.mock('@aws-sdk/client-sns', () => ({
   SNSClient: vi.fn(),
   PublishCommand: vi.fn()
@@ -63,6 +65,10 @@ describe('publish', () => {
       Message: '{"key":"value"}',
       MessageAttributes: {}
     })
+
+    expect(metricsCounter).toHaveBeenCalledWith(
+      'notification_published-version'
+    )
   })
 
   it('publishes a message including custom message attribute', async () => {
@@ -108,5 +114,8 @@ describe('publish', () => {
         }
       }
     })
+    expect(metricsCounter).toHaveBeenCalledWith(
+      'notification_published-version'
+    )
   })
 })
