@@ -1,4 +1,5 @@
 import { PublishCommand, SNSClient } from '@aws-sdk/client-sns'
+import { metricsCounter } from './metrics.js'
 
 let defaultTopic
 let loggerInstance
@@ -34,6 +35,7 @@ export const publishMessage = async (
       MessageAttributes: convertMessageAttributes(messageAttributes)
     })
   )
+  await metricsCounter('notification_published-version')
 }
 
 /* Converts a simple key-value object into the format required by SNS for message attributes.
