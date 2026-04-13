@@ -13,3 +13,4 @@ environments:
     status: active
   - name: prod
     status: none
+brokerVersion: 0.6.3
