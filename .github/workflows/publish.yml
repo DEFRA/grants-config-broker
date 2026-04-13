@@ -105,11 +105,13 @@ jobs:
           echo "moved_file=true" >> $GITHUB_OUTPUT
           echo "previous_file=$new_file" >> $GITHUB_OUTPUT
 
-      - name: Commit release log
+      - name: Create post-release PR
         if: steps.move_release.outputs.moved_file == 'true'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add release/
-          git commit -m "Archive release.yml [skip ci]"
-          git push
+        uses: peter-evans/create-pull-request@v8
+        with:
+          sign-commits: true
+          title: '[patch] Archive release.yml'
+          body: 'Automated changes to archive release.yml'
+          commit-message: '[patch] Archive release.yml'
+          add-paths: release/
+          branch: 'archive-release/patch'
