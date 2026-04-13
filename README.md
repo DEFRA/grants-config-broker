@@ -66,8 +66,9 @@ The compose directory will be mounted inside the config broker container, and wi
 an example release.yml that will get picked up by the config broker and published to the localstack
 S3 bucket. You can add/amend the config available in the local bucket by simply adding any files you
 want under `compose/example-grant-with-auth`. You can amend the release.yml file in here if you wish
-to play around with versions too. After updating either, make a simple change to any code file and
-nodemon will restart the app and pick up your new config.
+to play around with versions too. After updating files, make a simple change to any code file and
+nodemon will restart the app and pick up your new config (if the release.yml file is changed, this is
+enough to trigger nodemon to pick up the new config).
 
 ### Testing
 
@@ -220,11 +221,9 @@ docker run -e PORT=3001 -p 3001:3001 grants-config-broker
 
 A local environment with:
 
-- Localstack for AWS services (S3, SQS)
-- Redis
+- Localstack for AWS services (S3, SNS, SQS)
 - MongoDB
 - This service.
-- A commented out frontend example.
 
 ```bash
 docker compose up --build -d
@@ -237,7 +236,7 @@ the [.github/example.dependabot.yml](.github/example.dependabot.yml) to `.github
 
 ### SonarCloud
 
-Instructions for setting up SonarCloud can be found in [sonar-project.properties](./sonar-project.properties)
+SonarCloud is enabled for this repository.
 
 ## Licence
 
