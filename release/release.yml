@@ -1,0 +1,15 @@
+---
+name: woodland
+version: 0.0.2
+notes: Release to check new workflow
+environments:
+  - name: dev
+    status: active
+  - name: test
+    status: active
+  - name: ext-test
+    status: active
+  - name: perf-test
+    status: draft
+  - name: prod
+    status: none
