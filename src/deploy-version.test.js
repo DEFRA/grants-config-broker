@@ -274,6 +274,152 @@ describe('deploy-version', () => {
       ])
     })
 
+    it('multiple version release should call through to upload the files to S3 for the releases and return result', async () => {
+      existsSync.mockReturnValueOnce(true)
+      readFileSync.mockReturnValueOnce('release file content')
+
+      getBucketName.mockReturnValue('s3://test-bucket')
+      uploadVersionFilesToS3.mockResolvedValue([
+        'some/existing/file.txt',
+        'some/other/file.txt'
+      ])
+
+      load.mockReturnValueOnce({
+        releases: [
+          {
+            name: 'example-grant-with-auth',
+            version: '0.0.1',
+            notes: 'Early version',
+            environments: [
+              {
+                name: 'test',
+                status: 'active'
+              }
+            ]
+          },
+          {
+            name: 'example-grant-with-auth',
+            version: '0.0.2',
+            notes: 'Later version',
+            environments: [
+              {
+                name: 'test',
+                status: 'active'
+              }
+            ]
+          }
+        ]
+      })
+      isLatestVersion.mockResolvedValue(true)
+
+      const result = await deployNewVersion(mockDb, mockLogger)
+
+      expect(uploadVersionFilesToS3).toHaveBeenCalledWith(
+        {
+          name: 'example-grant-with-auth',
+          version: '0.0.1',
+          notes: 'Early version',
+          environments: [
+            {
+              name: 'test',
+              status: 'active'
+            }
+          ]
+        },
+        'active',
+        mockLogger
+      )
+      expect(uploadVersionFilesToS3).toHaveBeenCalledWith(
+        {
+          name: 'example-grant-with-auth',
+          version: '0.0.2',
+          notes: 'Later version',
+          environments: [
+            {
+              name: 'test',
+              status: 'active'
+            }
+          ]
+        },
+        'active',
+        mockLogger
+      )
+      expect(storeVersion).toHaveBeenCalledWith(
+        {
+          grant: 'example-grant-with-auth',
+          version: '0.0.1',
+          versionMajor: 0,
+          versionMinor: 0,
+          versionPatch: 1,
+          status: 'active',
+          updatedInBrokerVersion: '1.0.0',
+          createdInBrokerVersion: '1.0.0',
+          lastUpdated: expect.any(Date),
+          manifest: ['some/existing/file.txt', 'some/other/file.txt']
+        },
+        mockDb
+      )
+      expect(storeVersion).toHaveBeenCalledWith(
+        {
+          grant: 'example-grant-with-auth',
+          version: '0.0.2',
+          versionMajor: 0,
+          versionMinor: 0,
+          versionPatch: 2,
+          status: 'active',
+          updatedInBrokerVersion: '1.0.0',
+          createdInBrokerVersion: '1.0.0',
+          lastUpdated: expect.any(Date),
+          manifest: ['some/existing/file.txt', 'some/other/file.txt']
+        },
+        mockDb
+      )
+      expect(trackEvent).toHaveBeenCalledWith(
+        mockLogger,
+        'version-update',
+        'new-version',
+        {
+          kind: 'active',
+          reference:
+            'grant: example-grant-with-auth, version: 0.0.1, brokerVersion: 1.0.0'
+        }
+      )
+      expect(trackEvent).toHaveBeenCalledWith(
+        mockLogger,
+        'version-update',
+        'new-version',
+        {
+          kind: 'active',
+          reference:
+            'grant: example-grant-with-auth, version: 0.0.2, brokerVersion: 1.0.0'
+        }
+      )
+      expect(result).to.eql([
+        {
+          grant: 'example-grant-with-auth',
+          manifest: ['some/existing/file.txt', 'some/other/file.txt'],
+          path: 's3://test-bucket',
+          version: '0.0.1',
+          status: 'active',
+          versionMajor: 0,
+          versionMinor: 0,
+          versionPatch: 1,
+          isLatest: true
+        },
+        {
+          grant: 'example-grant-with-auth',
+          manifest: ['some/existing/file.txt', 'some/other/file.txt'],
+          path: 's3://test-bucket',
+          version: '0.0.2',
+          status: 'active',
+          versionMajor: 0,
+          versionMinor: 0,
+          versionPatch: 2,
+          isLatest: true
+        }
+      ])
+    })
+
     it('non-existing version should call through to upload the files to S3, but return nothing if upload did not occur', async () => {
       existsSync.mockReturnValueOnce(true)
       readFileSync.mockReturnValueOnce('release file content')
