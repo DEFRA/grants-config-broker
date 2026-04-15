@@ -93,12 +93,12 @@ function main() {
         grant.envs.push(matrixEnvEntry);
       }
 
-      matrixEnvEntry.versions.sort((a, b) => semver.rcompare(a.number, b.number));
-
       upsertVersion(matrixEnvEntry.versions, {
         number: version,
         status: eachEnv.status
       });
+
+      matrixEnvEntry.versions.sort((a, b) => semver.rcompare(a.number, b.number));
     }
   }
 

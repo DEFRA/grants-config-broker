@@ -1,0 +1,15 @@
+---
+name: example-grant-with-auth
+version: 0.0.5
+notes: Back releasing older change
+environments:
+  - name: dev
+    status: active
+  - name: test
+    status: active
+  - name: ext-test
+    status: active
+  - name: perf-test
+    status: draft
+  - name: prod
+    status: none
