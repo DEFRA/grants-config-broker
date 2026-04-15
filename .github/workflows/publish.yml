@@ -59,8 +59,7 @@ jobs:
       - name: Parse release info
         id: parse_release
         run: |
-          grants=$(node scripts/parse_release_info.js | jq -c .)
-          echo "grants=$grants" >> $GITHUB_OUTPUT
+          node scripts/parse_release_info.js
 
       - name: Checkout and collect all grant configs
         if: steps.parse_release.outputs.grants != '[]'
