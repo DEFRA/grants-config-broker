@@ -1,5 +1,6 @@
 import fs from 'fs';
 import yaml from 'js-yaml';
+import semver from 'semver';
 
 function upsertVersion(array, newItem) {
   const index = array.findIndex(item => item.number === newItem.number);
@@ -91,6 +92,8 @@ function main() {
         matrixEnvEntry = { name: eachEnv.name, versions: [] };
         grant.envs.push(matrixEnvEntry);
       }
+
+      matrixEnvEntry.versions.sort((a, b) => semver.rcompare(a.number, b.number));
 
       upsertVersion(matrixEnvEntry.versions, {
         number: version,
