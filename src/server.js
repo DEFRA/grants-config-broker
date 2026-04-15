@@ -87,11 +87,13 @@ async function createServer() {
     const logger = getLogger()
 
     const releaseVersionDetails = await deployNewVersion(db, logger)
-    if (releaseVersionDetails) {
-      logger.info(
-        `Deployed version ${releaseVersionDetails.version} successfully, notifying clients`
-      )
-      await notifyVersion(releaseVersionDetails, logger)
+    if (releaseVersionDetails?.length) {
+      for (const releasedVersion of releaseVersionDetails) {
+        logger.info(
+          `Deployed version ${releasedVersion.grant} @ ${releasedVersion.version} successfully, notifying clients`
+        )
+        await notifyVersion(releasedVersion, logger)
+      }
     }
   })
 

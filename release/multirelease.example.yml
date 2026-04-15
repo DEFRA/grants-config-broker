@@ -1,0 +1,30 @@
+---
+releases:
+  - name: example-grant-with-auth
+    version: 0.0.1
+    notes: Some info about your release
+    environments:
+      - name: dev
+        status: active
+      - name: test
+        status: active
+      - name: ext-test
+        status: draft
+      - name: perf-test
+        status: draft
+      - name: prod
+        status: none
+  - name: flying-pigs
+    version: 0.0.1
+    notes: Some info about your release
+    environments:
+      - name: dev
+        status: active
+      - name: test
+        status: active
+      - name: ext-test
+        status: draft
+      - name: perf-test
+        status: draft
+      - name: prod
+        status: none

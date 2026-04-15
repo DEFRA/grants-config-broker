@@ -95,17 +95,6 @@ describe('uploadVersionFilesToS3', () => {
       'example-grant-with-auth/0.0.1/grants-ui/file2.txt',
       'example-grant-with-auth/0.0.1/metadata.json'
     ])
-    // expect(result).to.eql({
-    //   grant: 'example-grant-with-auth',
-    //   manifest: [
-    //     'example-grant-with-auth/0.0.1/grants-ui/file1.txt',
-    //     'example-grant-with-auth/0.0.1/grants-ui/file2.txt',
-    //     'example-grant-with-auth/0.0.1/metadata.json'
-    //   ],
-    //   path: 's3://test-bucket',
-    //   version: '0.0.1',
-    //   status: 'active'
-    // })
   })
 })
 

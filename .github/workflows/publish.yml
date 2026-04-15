@@ -59,21 +59,36 @@ jobs:
       - name: Parse release info
         id: parse_release
         run: |
-          node scripts/parse_release_info.js
+          grants=$(node scripts/parse_release_info.js | jq -c .)
+          echo "grants=$grants" >> $GITHUB_OUTPUT
 
-      - name: Checkout target repository
-        if: steps.parse_release.outputs.exists == 'true'
-        uses: actions/checkout@v6
-        with:
-          repository: ${{ steps.parse_release.outputs.repository }}
-          ref: ${{ steps.parse_release.outputs.grant_version }}
-          path: grant-config-checkout
+      - name: Checkout and collect all grant configs
+        if: steps.parse_release.outputs.grants != '[]'
+        run: |
+          echo '${{ steps.parse_release.outputs.grants }}' > grants.json
 
-      - name: Move grant config files
-        if: steps.parse_release.outputs.exists == 'true'
+          mkdir -p aggregated-config
+
+          jq -c '.[]' grants.json | while read grant; do
+            name=$(echo $grant | jq -r '.name')
+            repo=$(echo $grant | jq -r '.repository')
+            version=$(echo $grant | jq -r '.version')
+            directory=$(echo $grant | jq -r '.directory')
+
+            echo "Processing $name@$version from $repo"
+
+            git clone --depth 1 --branch "$version" "https://github.com/$repo.git" temp-repo
+
+            mkdir -p aggregated-config/$name@$version
+            cp -r temp-repo/$directory/* aggregated-config/$name@$version/
+
+            rm -rf temp-repo
+          done
+
+      - name: Merge release config
         run: |
           cp release/release.yml config/
-          cp -r grant-config-checkout/${{ steps.parse_release.outputs.directory }} config/
+          cp -r aggregated-config/* config/
 
       - name: Build and Publish
         uses: DEFRA/cdp-build-action/build@main
@@ -89,13 +104,13 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
       - name: Update deployment matrix
-        if: steps.parse_release.outputs.exists == 'true'
+        if: steps.parse_release.outputs.grants != '[]'
         run: |
           node scripts/update_deployment_matrix.js
 
       - name: Move release.yml if it exists
         id: move_release
-        if: steps.parse_release.outputs.exists == 'true'
+        if: steps.parse_release.outputs.grants != '[]'
         run: |
           timestamp=$(date +%Y_%m_%d__%H%M)
           new_file="release/previous/${timestamp}_release.yml"

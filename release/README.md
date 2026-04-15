@@ -1,6 +1,6 @@
 # Release config to the grants platform
 
-## Specifying a new release
+## Specifying a new release for a single version of a single grant
 
 1. Create a copy of the `release.example.yml` file, calling it `release.yml`.
 2. Edit the `release.yml` file to specify the grant you want to release and where to.
@@ -15,21 +15,24 @@
 11. Once a release is deployed, github actions will automatically create a PR to archive the release info
 12. Merge this second PR to complete the process and capture the information as audit
 
+## Specifying a new release for multiple versions or grants
+
+1. Create a copy of the `multirelease.example.yml` file, calling it `release.yml`.
+2. Edit the `release.yml` file to specify the grants and versions you want to release and where to.
+3. Follow all the rest of the steps above for a single release
+
 ## Statuses
 
 - active: Indicates that the config version is live for that environment
 - draft: Indicates that the config version is 'sandboxed' for that environment
 - none: Indicates that the config version should not be deployed to that environment
 
-Currently, you can freely move versions between active and draft status on a given environment. There is no support to
-remove a config version from a given environment. Once deployed out, you can't change a version, but you can change it's
-status back to draft with a subsequent release to make it 'not live'.
-
-For now, create a new file called release, based on release.example.yml.
+Currently, you can freely move versions between active and draft status on a given environment. There is no support for
+removing a config version from a given environment. Once deployed out, you can't change a version, but you can change its
+status back to draft with a later release to make it 'non-live'.
 
 ## Limitations
 
-- Only one grant, and one version per release
 - There is no way to remove a grant config version from an environment
 
 ## Release a completely new grant

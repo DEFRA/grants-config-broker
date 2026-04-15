@@ -5,7 +5,7 @@ import { uploadBlob } from './storage/s3-interactions.js'
 export const uploadVersionFilesToS3 = async (releaseInfo, status, logger) => {
   //using the name of grant, upload all the config items under config/grant-name to s3
   const { name: grantName, version } = releaseInfo
-  const configDirectory = `config/${grantName}`
+  const configDirectory = `config/${grantName}@${version}`
   logger.info(`Uploading config for ${grantName} to S3`)
   const manifest = []
   if (existsSync(configDirectory) && lstatSync(configDirectory).isDirectory()) {
