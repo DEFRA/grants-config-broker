@@ -9,7 +9,7 @@ function fail(message) {
 function main() {
   const releaseFile = 'release/release.yml';
   if (!fs.existsSync(releaseFile)) {
-    console.log(`[]`);
+    console.log(`No ${releaseFile} found, returning []`);
     if (process.env.GITHUB_OUTPUT) {
       fs.appendFileSync(process.env.GITHUB_OUTPUT, `[]\n`);
     }
