@@ -33,8 +33,9 @@ jobs:
 
           files_changed=$(git diff --name-only $BASE $HEAD)
           files_changed_length=$(echo "$files_changed" | wc -l)
+          release_change=$(git diff --name-status $BASE $HEAD | grep -E "^[AM].*release/release.yml" || true)
 
-          if [[ "$files_changed" = *"release/release.yml"* ]]; then
+          if [ -n "$release_change" ]; then
             echo "release/release.yml present in changes"
             yamllint release/release.yml
 
