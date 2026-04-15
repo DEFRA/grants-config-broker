@@ -1,10 +1,4 @@
 import hapi from '@hapi/hapi'
-// import { deployNewVersion } from '../../deploy-version.js'
-// import { getLogger } from './logging/logger.js'
-
-// vi.mock('../../deploy-version.js')
-// vi.mock('./logging/logger.js')
-// vi.mock('../../notify-version.js')
 
 const mockLogger = {
   info: vi.fn(),
