@@ -125,12 +125,12 @@ describe('deploy-version', () => {
 
       expect(mockLogger.info).toHaveBeenCalledWith('Release file found')
       expect(mockLogger.warn).toHaveBeenCalledWith(
-        'Version already deployed to S3, no status change'
+        'example-grant-with-auth Version 0.0.1 already deployed to S3, no status change'
       )
       expect(uploadMetaDataToS3).not.toHaveBeenCalled()
       expect(storeVersion).not.toHaveBeenCalled()
       expect(uploadVersionFilesToS3).not.toHaveBeenCalled()
-      expect(result).toBeNull()
+      expect(result).to.eql([])
     })
 
     it('existing version with status change should upload metadata, update store version and return info', async () => {
@@ -189,17 +189,19 @@ describe('deploy-version', () => {
             'grant: example-grant-with-auth, version: 0.0.1, brokerVersion: 1.0.0'
         }
       )
-      expect(result).to.eql({
-        grant: 'example-grant-with-auth',
-        manifest: ['some/existing/file.txt'],
-        path: 's3://test-bucket',
-        status: 'active',
-        version: '0.0.1',
-        versionMajor: 0,
-        versionMinor: 0,
-        versionPatch: 1,
-        isLatest: false
-      })
+      expect(result).to.eql([
+        {
+          grant: 'example-grant-with-auth',
+          manifest: ['some/existing/file.txt'],
+          path: 's3://test-bucket',
+          status: 'active',
+          version: '0.0.1',
+          versionMajor: 0,
+          versionMinor: 0,
+          versionPatch: 1,
+          isLatest: false
+        }
+      ])
     })
 
     it('non-existing version should call through to upload the files to S3 for the release and return result', async () => {
@@ -257,17 +259,19 @@ describe('deploy-version', () => {
             'grant: example-grant-with-auth, version: 0.0.1, brokerVersion: 1.0.0'
         }
       )
-      expect(result).to.eql({
-        grant: 'example-grant-with-auth',
-        manifest: ['some/existing/file.txt', 'some/other/file.txt'],
-        path: 's3://test-bucket',
-        version: '0.0.1',
-        status: 'active',
-        versionMajor: 0,
-        versionMinor: 0,
-        versionPatch: 1,
-        isLatest: true
-      })
+      expect(result).to.eql([
+        {
+          grant: 'example-grant-with-auth',
+          manifest: ['some/existing/file.txt', 'some/other/file.txt'],
+          path: 's3://test-bucket',
+          version: '0.0.1',
+          status: 'active',
+          versionMajor: 0,
+          versionMinor: 0,
+          versionPatch: 1,
+          isLatest: true
+        }
+      ])
     })
 
     it('non-existing version should call through to upload the files to S3, but return nothing if upload did not occur', async () => {
@@ -297,7 +301,7 @@ describe('deploy-version', () => {
         mockLogger
       )
       expect(storeVersion).not.toHaveBeenCalled()
-      expect(result).toBeNull()
+      expect(result).to.eql([])
     })
   })
 })

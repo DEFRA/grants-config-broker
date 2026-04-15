@@ -40,6 +40,33 @@ export const deployNewVersion = async (db, logger) => {
 
   //if release file found, parse it to see if there is something to consider for current env
   const releaseInfo = load(readFileSync(RELEASE_FILE), 'utf8')
+
+  const allReleasesToConsider = Array.isArray(releaseInfo.releases)
+    ? releaseInfo.releases
+    : [releaseInfo]
+  const returnInfo = []
+  for (const versionToConsider of allReleasesToConsider) {
+    const releaseVersionInfo = await considerRelease(
+      logger,
+      db,
+      versionToConsider,
+      currentEnv,
+      serviceVersion
+    )
+    if (releaseVersionInfo) {
+      returnInfo.push(releaseVersionInfo)
+    }
+  }
+  return returnInfo
+}
+
+const considerRelease = async (
+  logger,
+  db,
+  releaseInfo,
+  currentEnv,
+  serviceVersion
+) => {
   const envDeployDetail = releaseInfo.environments.find(
     (env) => env.name === currentEnv
   ) ?? { status: 'none' }
@@ -86,7 +113,9 @@ export const deployNewVersion = async (db, logger) => {
         )
       }
     }
-    logger.warn('Version already deployed to S3, no status change')
+    logger.warn(
+      `${releaseInfo.name} Version ${releaseInfo.version} already deployed to S3, no status change`
+    )
     return null
   } else {
     return deployUnreleasedVersion(

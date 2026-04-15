@@ -26,6 +26,29 @@ function createNewGrantEntry(name, grants) {
   return newGrant;
 }
 
+function fail(message) {
+  console.error(message);
+  process.exit(1);
+}
+
+function normaliseReleases(releaseData, releaseFile) {
+  if (Array.isArray(releaseData.releases)) {
+    return releaseData.releases;
+  }
+
+  if (releaseData.name && releaseData.version) {
+    return [
+      {
+        name: releaseData.name,
+        version: releaseData.version,
+        environments: releaseData.environments || []
+      }
+    ];
+  }
+
+  fail(`Invalid format in ${releaseFile}`);
+}
+
 function main() {
   const releaseFile = 'release/release.yml';
   const matrixFile = 'release/deployment-matrix.yml';
@@ -40,31 +63,49 @@ function main() {
     releaseData = yaml.load(fs.readFileSync(releaseFile, 'utf8'));
     matrixData = yaml.load(fs.readFileSync(matrixFile, 'utf8'));
   } catch (e) {
-    console.error(`Error parsing input files: ${e.message}`);
-    process.exit(1);
+    fail(`Error parsing input files: ${e.message}`);
   }
 
-  const name = releaseData.name;
-  const version = releaseData.version;
+  const releases = normaliseReleases(releaseData, releaseFile);
 
-   const grants = matrixData.grants || [];
-   //find the grant that matches the name in release
-   const grant = grants.find(grant => grant.name === name) ?? createNewGrantEntry(name, grants);
-   //go through the envs array in release and update entries in matrix accordingly
-  for (const eachEnv of releaseData.environments) {
-    //skip if status is none
-    if(eachEnv.status === 'none') continue;
+  const grants = matrixData.grants || [];
 
-    const matrixEnvEntry = grant.envs.find(env => env.name === eachEnv.name) ?? { name: eachEnv.name };
-    upsertVersion(matrixEnvEntry.versions, { number: version, status: eachEnv.status });
+  for (const release of releases) {
+    const { name, version, environments = [] } = release;
+
+    if (!name || !version) {
+      fail(`Each release must contain 'name' and 'version'`);
+    }
+
+    // find or create grant
+    const grant =
+      grants.find(g => g.name === name) ??
+      createNewGrantEntry(name, grants);
+
+    for (const eachEnv of environments) {
+      if (eachEnv.status === 'none') continue;
+
+      let matrixEnvEntry = grant.envs.find(env => env.name === eachEnv.name);
+
+      if (!matrixEnvEntry) {
+        matrixEnvEntry = { name: eachEnv.name, versions: [] };
+        grant.envs.push(matrixEnvEntry);
+      }
+
+      upsertVersion(matrixEnvEntry.versions, {
+        number: version,
+        status: eachEnv.status
+      });
+    }
   }
+
+  matrixData.grants = grants;
 
   matrixData.lastUpdated = ((d) => `${d.getFullYear()}_${String(d.getMonth() + 1).padStart(2, '0')}_${String(d.getDate()).padStart(2, '0')}__${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}`)(new Date());
   try {
     fs.writeFileSync(matrixFile, yaml.dump(matrixData));
   } catch (e) {
-    console.error(`Error writing output file: ${e.message}`);
-    process.exit(1);
+    fail(`Error writing output file: ${e.message}`);
   }
 }
 
