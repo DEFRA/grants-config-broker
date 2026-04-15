@@ -11,7 +11,7 @@ function main() {
   if (!fs.existsSync(releaseFile)) {
     console.log(`[]`);
     if (process.env.GITHUB_OUTPUT) {
-      fs.appendFileSync(process.env.GITHUB_OUTPUT, `grants=[]\n`);
+      fs.appendFileSync(process.env.GITHUB_OUTPUT, `[]\n`);
     }
     process.exit(0);
   }
@@ -75,9 +75,9 @@ function main() {
 
   if (process.env.GITHUB_OUTPUT) {
     fs.appendFileSync(process.env.GITHUB_OUTPUT, `grants=${jsonOutput}\n`);
-  } else {
-    console.log(jsonOutput);
   }
+
+  console.log(jsonOutput);
 }
 
 main();
