@@ -66,7 +66,7 @@ jobs:
         id: parse_release
         run: |
           grants=$(node scripts/parse_release_info.js | jq -c .)
-          echo $grants
+          echo grants=$grants
 
       - name: Checkout and collect all grant configs
         if: steps.parse_release.outputs.grants != '[]'
@@ -97,6 +97,7 @@ jobs:
           cp release/release.yml config/
           cp -r aggregated-config/* config/
           ls config
+          ls config/example-grant-with-auth@0.0.6
 
 #      - name: Build and Publish
 #        uses: DEFRA/cdp-build-action/build@main
