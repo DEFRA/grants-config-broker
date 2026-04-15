@@ -1,9 +1,15 @@
 name: Publish
 
 on:
-  push:
+  pull_request:
     branches:
       - main
+      - minimal
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
 
 permissions:
   id-token: write
@@ -60,7 +66,7 @@ jobs:
         id: parse_release
         run: |
           grants=$(node scripts/parse_release_info.js | jq -c .)
-          echo "grants=$grants" >> $GITHUB_OUTPUT
+          echo $grants
 
       - name: Checkout and collect all grant configs
         if: steps.parse_release.outputs.grants != '[]'
@@ -91,43 +97,43 @@ jobs:
           cp release/release.yml config/
           cp -r aggregated-config/* config/
 
-      - name: Build and Publish
-        uses: DEFRA/cdp-build-action/build@main
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: SonarCloud Scan
-        if: steps.release_yml.outputs.release_only != 'true'
-        uses: SonarSource/sonarqube-scan-action@v7.0.0
-        continue-on-error: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
-      - name: Update deployment matrix
-        if: steps.parse_release.outputs.grants != '[]'
-        run: |
-          node scripts/update_deployment_matrix.js
-
-      - name: Move release.yml if it exists
-        id: move_release
-        if: steps.parse_release.outputs.grants != '[]'
-        run: |
-          timestamp=$(date +%Y_%m_%d__%H%M)
-          new_file="release/previous/${timestamp}_release.yml"
-          mv release/release.yml "$new_file"
-          tag=$(git tag --points-at HEAD | head -n 1)
-          yq -i ".brokerVersion = \"$tag\"" "$new_file"
-          echo "moved_file=true" >> $GITHUB_OUTPUT
-          echo "previous_file=$new_file" >> $GITHUB_OUTPUT
-
-      - name: Create post-release PR
-        if: steps.move_release.outputs.moved_file == 'true'
-        uses: peter-evans/create-pull-request@v8
-        with:
-          sign-commits: true
-          title: '[patch] Archive release.yml'
-          body: 'Automated changes to archive release.yml'
-          commit-message: '[patch] Archive release.yml'
-          add-paths: release/
-          branch: 'archive-release/patch'
+#      - name: Build and Publish
+#        uses: DEFRA/cdp-build-action/build@main
+#        with:
+#          github-token: ${{ secrets.GITHUB_TOKEN }}
+#
+#      - name: SonarCloud Scan
+#        if: steps.release_yml.outputs.release_only != 'true'
+#        uses: SonarSource/sonarqube-scan-action@v7.0.0
+#        continue-on-error: true
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+#
+#      - name: Update deployment matrix
+#        if: steps.parse_release.outputs.grants != '[]'
+#        run: |
+#          node scripts/update_deployment_matrix.js
+#
+#      - name: Move release.yml if it exists
+#        id: move_release
+#        if: steps.parse_release.outputs.grants != '[]'
+#        run: |
+#          timestamp=$(date +%Y_%m_%d__%H%M)
+#          new_file="release/previous/${timestamp}_release.yml"
+#          mv release/release.yml "$new_file"
+#          tag=$(git tag --points-at HEAD | head -n 1)
+#          yq -i ".brokerVersion = \"$tag\"" "$new_file"
+#          echo "moved_file=true" >> $GITHUB_OUTPUT
+#          echo "previous_file=$new_file" >> $GITHUB_OUTPUT
+#
+#      - name: Create post-release PR
+#        if: steps.move_release.outputs.moved_file == 'true'
+#        uses: peter-evans/create-pull-request@v8
+#        with:
+#          sign-commits: true
+#          title: '[patch] Archive release.yml'
+#          body: 'Automated changes to archive release.yml'
+#          commit-message: '[patch] Archive release.yml'
+#          add-paths: release/
+#          branch: 'archive-release/patch'
