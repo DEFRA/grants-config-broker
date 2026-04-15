@@ -11,7 +11,7 @@ function main() {
   if (!fs.existsSync(releaseFile)) {
     console.log(`No ${releaseFile} found, returning []`);
     if (process.env.GITHUB_OUTPUT) {
-      fs.appendFileSync(process.env.GITHUB_OUTPUT, `[]\n`);
+      fs.appendFileSync(process.env.GITHUB_OUTPUT, `grants=[]\n`);
     }
     process.exit(0);
   }
