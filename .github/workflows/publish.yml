@@ -96,6 +96,7 @@ jobs:
         run: |
           cp release/release.yml config/
           cp -r aggregated-config/* config/
+          ls config
 
 #      - name: Build and Publish
 #        uses: DEFRA/cdp-build-action/build@main
