@@ -1,31 +1,47 @@
-lastUpdated: '2026_04_13__1205'
+lastUpdated: '2026_04_15__1304'
 grants:
   - name: example-grant-with-auth
     envs:
       - name: dev
         versions:
+          - number: 0.0.8
+            status: active
           - number: 0.0.7
             status: active
-          - number: 0.0.8
+          - number: 0.0.6
+            status: active
+          - number: 0.0.9
             status: active
       - name: test
         versions:
+          - number: 0.0.8
+            status: active
           - number: 0.0.7
             status: active
-          - number: 0.0.8
+          - number: 0.0.6
+            status: active
+          - number: 0.0.9
             status: active
       - name: ext-test
         versions:
+          - number: 0.0.8
+            status: active
           - number: 0.0.7
             status: active
-          - number: 0.0.8
+          - number: 0.0.6
+            status: active
+          - number: 0.0.9
             status: active
       - name: perf-test
         versions:
-          - number: 0.0.7
-            status: active
           - number: 0.0.8
             status: active
+          - number: 0.0.7
+            status: active
+          - number: 0.0.6
+            status: draft
+          - number: 0.0.9
+            status: draft
       - name: prod
         versions: []
   - name: flying-pigs
