@@ -86,6 +86,7 @@ jobs:
           done
 
       - name: Merge release config
+        if: steps.parse_release.outputs.grants != '[]'
         run: |
           cp release/release.yml config/
           cp -r aggregated-config/* config/
