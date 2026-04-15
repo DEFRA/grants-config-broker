@@ -13,3 +13,4 @@ environments:
     status: draft
   - name: prod
     status: none
+brokerVersion: 0.7.3
