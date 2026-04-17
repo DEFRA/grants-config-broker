@@ -1,4 +1,4 @@
-lastUpdated: '2026_04_15__1318'
+lastUpdated: '2026_04_17__1426'
 grants:
   - name: example-grant-with-auth
     envs:
@@ -90,5 +90,25 @@ grants:
         versions:
           - number: 0.0.2
             status: active
+      - name: prod
+        versions: []
+  - name: pigs-might-fly
+    envs:
+      - name: dev
+        versions:
+          - number: 0.1.0
+            status: active
+      - name: test
+        versions:
+          - number: 0.1.0
+            status: active
+      - name: ext-test
+        versions:
+          - number: 0.1.0
+            status: draft
+      - name: perf-test
+        versions:
+          - number: 0.1.0
+            status: draft
       - name: prod
         versions: []
