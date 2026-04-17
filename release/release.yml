@@ -1,0 +1,15 @@
+---
+name: pigs-might-fly
+version: 0.1.0
+notes: Renamed grant and add further files
+environments:
+  - name: dev
+    status: active
+  - name: test
+    status: active
+  - name: ext-test
+    status: draft
+  - name: perf-test
+    status: draft
+  - name: prod
+    status: none
