@@ -2,9 +2,9 @@ repositories:
   - name: example-grant-with-auth
     repository: DEFRA/grant-config-example-grants
     path: example-grant-with-auth
-  - name: flying-pigs
+  - name: pigs-might-fly
     repository: DEFRA/grant-config-example-grants
-    path: flying-pigs
+    path: pigs-might-fly
   - name: woodland
     repository: DEFRA/grant-config-woodland
     path: woodland
