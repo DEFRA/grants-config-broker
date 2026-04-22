@@ -28,3 +28,4 @@ releases:
         status: active
       - name: prod
         status: draft
+brokerVersion: 0.7.5
