@@ -1,9 +1,11 @@
-lastUpdated: '2026_04_17__1426'
+lastUpdated: '2026_04_22__1058'
 grants:
   - name: example-grant-with-auth
     envs:
       - name: dev
         versions:
+          - number: 0.2.1
+            status: active
           - number: 0.0.9
             status: active
           - number: 0.0.8
@@ -16,6 +18,8 @@ grants:
             status: active
       - name: test
         versions:
+          - number: 0.2.1
+            status: active
           - number: 0.0.9
             status: active
           - number: 0.0.8
@@ -28,6 +32,8 @@ grants:
             status: active
       - name: ext-test
         versions:
+          - number: 0.2.1
+            status: active
           - number: 0.0.9
             status: active
           - number: 0.0.8
@@ -40,6 +46,8 @@ grants:
             status: active
       - name: perf-test
         versions:
+          - number: 0.2.1
+            status: draft
           - number: 0.0.9
             status: draft
           - number: 0.0.8
@@ -76,22 +84,32 @@ grants:
     envs:
       - name: dev
         versions:
+          - number: 0.1.0
+            status: active
           - number: 0.0.2
             status: active
       - name: test
         versions:
+          - number: 0.1.0
+            status: active
           - number: 0.0.2
             status: active
       - name: ext-test
         versions:
+          - number: 0.1.0
+            status: active
           - number: 0.0.2
             status: active
       - name: perf-test
         versions:
+          - number: 0.1.0
+            status: active
           - number: 0.0.2
             status: active
       - name: prod
-        versions: []
+        versions:
+          - number: 0.1.0
+            status: draft
   - name: pigs-might-fly
     envs:
       - name: dev
