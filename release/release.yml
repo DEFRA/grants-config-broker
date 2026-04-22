@@ -1,0 +1,30 @@
+---
+releases:
+  - name: example-grant-with-auth
+    version: 0.2.1
+    notes: Config includes CW/GAS
+    environments:
+      - name: dev
+        status: active
+      - name: test
+        status: active
+      - name: ext-test
+        status: active
+      - name: perf-test
+        status: draft
+      - name: prod
+        status: none
+  - name: woodland
+    version: 0.1.0
+    notes: Config includes CW/GAS
+    environments:
+      - name: dev
+        status: active
+      - name: test
+        status: active
+      - name: ext-test
+        status: active
+      - name: perf-test
+        status: active
+      - name: prod
+        status: draft
