@@ -1,0 +1,15 @@
+---
+name: woodland
+version: 0.2.0
+notes: GSPS-351 Add PA3 action JSON config
+environments:
+  - name: dev
+    status: active
+  - name: test
+    status: active
+  - name: ext-test
+    status: active
+  - name: perf-test
+    status: active
+  - name: prod
+    status: none
