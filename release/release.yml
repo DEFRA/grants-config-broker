@@ -1,0 +1,15 @@
+---
+name: playground-grant
+version: 4.1.0
+notes: Move playground-grant config to draft
+environments:
+  - name: dev
+    status: draft
+  - name: test
+    status: none
+  - name: ext-test
+    status: none
+  - name: perf-test
+    status: none
+  - name: prod
+    status: none
