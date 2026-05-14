@@ -1,4 +1,4 @@
-lastUpdated: '2026_05_14__1109'
+lastUpdated: '2026_05_14__1515'
 grants:
   - name: example-grant-with-auth
     envs:
@@ -158,6 +158,8 @@ grants:
     envs:
       - name: dev
         versions:
+          - number: 4.1.1
+            status: active
           - number: 4.1.0
             status: draft
       - name: test
