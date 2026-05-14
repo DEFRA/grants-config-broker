@@ -1,0 +1,15 @@
+---
+name: playground-grant
+version: 4.1.1
+notes: updated playground-grant to include slide config
+environments:
+  - name: dev
+    status: active
+  - name: test
+    status: none
+  - name: ext-test
+    status: none
+  - name: perf-test
+    status: none
+  - name: prod
+    status: none
