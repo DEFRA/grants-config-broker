@@ -11,3 +11,6 @@ repositories:
   - name: playground-grant
     repository: DEFRA/grant-config-playground
     path: playground-grant
+  - name: land-grants
+    repository: DEFRA/land-grants-config
+    path: land-grants
