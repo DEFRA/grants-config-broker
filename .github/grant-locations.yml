@@ -8,3 +8,6 @@ repositories:
   - name: woodland
     repository: DEFRA/grant-config-woodland
     path: woodland
+  - name: playground-grant
+    repository: DEFRA/grant-config-playground
+    path: playground-grant
