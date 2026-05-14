@@ -1,4 +1,4 @@
-lastUpdated: '2026_05_12__0954'
+lastUpdated: '2026_05_14__1051'
 grants:
   - name: example-grant-with-auth
     envs:
@@ -152,5 +152,19 @@ grants:
         versions:
           - number: 0.1.0
             status: draft
+      - name: prod
+        versions: []
+  - name: playground-grant
+    envs:
+      - name: dev
+        versions:
+          - number: 4.1.0
+            status: active
+      - name: test
+        versions: []
+      - name: ext-test
+        versions: []
+      - name: perf-test
+        versions: []
       - name: prod
         versions: []
