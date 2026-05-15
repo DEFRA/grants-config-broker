@@ -1,0 +1,15 @@
+---
+name: land-grants
+version: 0.0.2
+notes: GSPS-353 Add PA3 action JSON config without redundant/legacy fields
+environments:
+  - name: dev
+    status: active
+  - name: test
+    status: active
+  - name: ext-test
+    status: active
+  - name: perf-test
+    status: active
+  - name: prod
+    status: none
