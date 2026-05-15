@@ -185,6 +185,13 @@ const config = convict({
       env: 'GRANTS_CONFIG_BROKER_ENCRYPTION_KEY',
       sensitive: true
     }
+  },
+  verifyUploader: {
+    doc: 'UUID uploader will call back with to confirm upload is complete',
+    format: String,
+    default: '',
+    env: 'VERIFY_UPLOADER_UUID',
+    sensitive: true
   }
 })
 
