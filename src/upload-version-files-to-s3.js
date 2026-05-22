@@ -1,6 +1,6 @@
 import { readFileSync, existsSync, lstatSync, readdirSync } from 'node:fs'
-import { config } from './config.js'
 import { uploadBlob } from './storage/s3-interactions.js'
+import { generateMetadataPayload } from './utils/release-utils.js'
 
 export const uploadVersionFilesToS3 = async (releaseInfo, status, logger) => {
   //using the name of grant, upload all the config items under config/grant-name to s3
@@ -38,10 +38,6 @@ export const uploadMetaDataToS3 = async (releaseInfo, status, logger) => {
   await uploadBlob(
     logger,
     `${releaseInfo.name}/${releaseInfo.version}/metadata.json`,
-    JSON.stringify({
-      status,
-      releaseNotes: releaseInfo.notes,
-      updatedInBrokerVersion: config.get('serviceVersion')
-    })
+    generateMetadataPayload(releaseInfo, status)
   )
 }

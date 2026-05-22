@@ -12,7 +12,6 @@ import { requestTracing } from './common/helpers/request-tracing.js'
 import { setupProxy } from './common/helpers/proxy/setup-proxy.js'
 import { metrics } from '@defra/cdp-metrics'
 import { getLogger } from './common/helpers/logging/logger.js'
-import { deployNewVersion } from './deploy-version.js'
 import { notifyVersion } from './notify-version.js'
 import { auth } from './plugins/auth.js'
 import Inert from '@hapi/inert'
@@ -20,6 +19,7 @@ import Scalar from 'hapi-scalar'
 import yaml from 'js-yaml'
 import fs from 'node:fs'
 import path from 'node:path'
+import { checkReleaseFileForVersionDeployment } from './check-file-based-releases.js'
 
 async function createServer() {
   setupProxy()
@@ -86,7 +86,10 @@ async function createServer() {
     const { db } = server
     const logger = getLogger()
 
-    const releaseVersionDetails = await deployNewVersion(db, logger)
+    const releaseVersionDetails = await checkReleaseFileForVersionDeployment(
+      db,
+      logger
+    )
     if (releaseVersionDetails?.length) {
       for (const releasedVersion of releaseVersionDetails) {
         logger.info(

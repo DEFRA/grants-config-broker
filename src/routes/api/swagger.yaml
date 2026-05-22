@@ -286,8 +286,60 @@ paths:
         '404':
           description: Not Found - Grant or version not found.
 
+  /api/release-config:
+    post:
+      summary: Post release config for a given grant
+      description: Submits a release configuration for a specific grant and version, including a list of files.
+      security:
+        - bearerAuth: []
+          apiKey: []
+      parameters:
+        - $ref: '#/components/parameters/cdpRequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostReleaseConfigRequest'
+      responses:
+        '202':
+          description: Accepted - Release configuration received and processed.
+        '204':
+          description: No Content - Release configuration received but no action taken (e.g., version already exists).
+        '400':
+          description: Bad Request - Validation error.
+        '401':
+          description: Unauthorized - Invalid or missing authentication credentials.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   schemas:
+    PostReleaseConfigRequest:
+      type: object
+      required:
+        - grant
+        - version
+        - files
+      properties:
+        grant:
+          type: string
+          description: The name of the grant.
+        version:
+          type: string
+          description: The version string.
+        files:
+          type: array
+          minItems: 1
+          items:
+            type: string
+          description: A list of files included in the release.
+        status:
+          type: string
+          enum: [draft, active]
+          description: The status of the release.
     VersionResponse:
       type: object
       properties:
