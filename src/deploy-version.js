@@ -74,19 +74,19 @@ const deployUnreleasedVersion = async (
   db,
   logger
 ) => {
-  if (!manifest) {
-    logger.info(
-      `${releaseInfo.name} ${releaseInfo.version} will be deployed to S3 with status ${status}`
-    )
-
-    manifest = await uploadVersionFilesToS3(releaseInfo, status, logger)
-  } else {
+  if (manifest) {
     logger.info(
       `${releaseInfo.name} ${releaseInfo.version} (${status}) already in S3, will update metadata only`
     )
     await uploadMetaDataToS3(releaseInfo, status, logger)
     const { name, version } = releaseInfo
     manifest.push(`${name}/${version}/metadata.json`)
+  } else {
+    logger.info(
+      `${releaseInfo.name} ${releaseInfo.version} will be deployed to S3 with status ${status}`
+    )
+
+    manifest = await uploadVersionFilesToS3(releaseInfo, status, logger)
   }
 
   const versionStoreInfo = createVersionStoreInfo(releaseInfo, status, manifest)
