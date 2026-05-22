@@ -13,6 +13,7 @@ Core delivery platform Node.js Backend Template.
   - [Formatting](#formatting)
     - [Windows prettier issue](#windows-prettier-issue)
 - [API endpoints](#api-endpoints)
+- [SNS Notifications](#sns-notifications)
 - [Development helpers](#development-helpers)
   - [MongoDB Locks](#mongodb-locks)
   - [Proxy](#proxy)
@@ -110,15 +111,33 @@ git config --global core.autocrlf false
 
 ## API endpoints
 
-| Endpoint                   | Description                                |
-| :------------------------- | :----------------------------------------- |
-| `GET: /health`             | Health check                               |
-| `GET: /documentation`      | API Documentation (Scalar)                 |
-| `GET: /api/latestVersion`  | Get latest version of config for a grant   |
-| `GET: /api/version`        | Get specific version of config for a grant |
-| `GET: /api/allVersions`    | Get all versions of config for a grant     |
-| `GET: /api/allGrants`      | Get all versions of all grants             |
-| `GET: /api/versionHistory` | Get version history for a grant            |
+| Endpoint                    | Description                                |
+| :-------------------------- | :----------------------------------------- |
+| `GET: /health`              | Health check                               |
+| `GET: /documentation`       | API Documentation (Scalar)                 |
+| `GET: /api/latestVersion`   | Get latest version of config for a grant   |
+| `GET: /api/version`         | Get specific version of config for a grant |
+| `GET: /api/allVersions`     | Get all versions of config for a grant     |
+| `GET: /api/allGrants`       | Get all versions of all grants             |
+| `GET: /api/versionHistory`  | Get version history for a grant            |
+| `POST: /api/release-config` | Post release config for a given grant      |
+| `GET: /async-documentation` | AsyncAPI Documentation (SNS)               |
+
+## SNS Notifications
+
+When a new version is released or an existing version's status is updated, an SNS message is emitted to the topic configured by `aws.sns.configUpdateTopicArn`.
+
+Detailed documentation for this notification can be found in the [AsyncAPI specification](src/docs/asyncapi.yaml).
+
+### Message Structure
+
+- **Message Body**: A JSON string containing the manifest (an array of file paths in S3).
+- **Message Attributes**:
+  - `grant`: The name of the grant.
+  - `version`: The version string (e.g., `1.0.0`).
+  - `status`: The status of the version (`draft` or `active`).
+  - `path`: The S3 bucket name.
+  - `isLatest`: A boolean (as a string) indicating if this is the latest version for the given grant and status.
 
 ## Development helpers
 

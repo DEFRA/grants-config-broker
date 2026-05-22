@@ -1,0 +1,88 @@
+asyncapi: 3.0.0
+info:
+  title: Grants Config Broker SNS Notifications
+  version: 1.0.0
+  description: |
+    This AsyncAPI document describes the SNS notifications emitted by the Grants Config Broker
+    when a new version of a grant configuration is released or its status is updated.
+
+    The notification contains the manifest (list of file paths in S3) and metadata about the release.
+
+servers:
+  sns:
+    host: sns.{region}.amazonaws.com
+    protocol: sns
+    description: AWS SNS Server
+    variables:
+      region:
+        default: eu-west-2
+        description: The AWS region where the SNS topic is located.
+
+channels:
+  configUpdateTopic:
+    address: 'arn:aws:sns:{region}:{account-id}:{topic-name}'
+    description: The SNS topic where configuration update messages are published.
+    messages:
+      configUpdateMessage:
+        $ref: '#/components/messages/ConfigUpdateMessage'
+
+operations:
+  receiveConfigUpdate:
+    action: receive
+    channel:
+      $ref: '#/channels/configUpdateTopic'
+    summary: Receive notification about a grant configuration update.
+    messages:
+      - $ref: '#/channels/configUpdateTopic/messages/configUpdateMessage'
+
+components:
+  messages:
+    ConfigUpdateMessage:
+      name: ConfigUpdateMessage
+      title: Configuration Update Notification
+      summary: Message sent when a grant configuration version is created or updated.
+      payload:
+        $ref: '#/components/schemas/Manifest'
+      headers:
+        $ref: '#/components/schemas/MessageAttributes'
+
+  schemas:
+    Manifest:
+      type: array
+      description: A list of S3 file paths that make up the configuration version.
+      items:
+        type: string
+        example: "example-grant/1.0.0/config.json"
+
+    MessageAttributes:
+      type: object
+      description: SNS Message Attributes (metadata).
+      properties:
+        grant:
+          type: string
+          description: The name of the grant.
+          example: "example-grant"
+        version:
+          type: string
+          description: The version string of the configuration.
+          example: "1.0.0"
+        status:
+          type: string
+          enum: [draft, active]
+          description: The status of the configuration version.
+          example: "active"
+        path:
+          type: string
+          description: The S3 bucket name where the files are stored.
+          example: "cdp-grants-config-broker-dev"
+        isLatest:
+          type: string
+          enum: ["true", "false"]
+          description: Whether this version is the latest for the given grant and status.
+          example: "true"
+      required:
+        - grant
+        - version
+        - status
+        - path
+        - isLatest

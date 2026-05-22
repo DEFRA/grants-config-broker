@@ -51,7 +51,7 @@ async function createServer() {
 
   // hapi-scalar   - serves API documentation using Scalar
   // inert         - serves static files (required by scalar)
-  const swaggerPath = path.resolve(process.cwd(), 'src/routes/api/swagger.yaml')
+  const swaggerPath = path.resolve(process.cwd(), 'src/docs/swagger.yaml')
   const swaggerFile = fs.readFileSync(swaggerPath, 'utf8')
   const swaggerDocument = yaml.load(swaggerFile)
 
@@ -81,6 +81,17 @@ async function createServer() {
     },
     router
   ])
+
+  server.route({
+    method: 'GET',
+    path: '/async-documentation/{param*}',
+    handler: {
+      directory: {
+        path: 'src/routes/asyncapidocs',
+        index: ['index.html']
+      }
+    }
+  })
 
   server.events.on('start', async () => {
     const { db } = server
