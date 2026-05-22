@@ -223,6 +223,8 @@ A local environment with:
 
 - Localstack for AWS services (S3, SNS, SQS)
 - MongoDB
+- Config browser - view in browser at http://localhost:3000/
+- Redis cache
 - This service.
 
 ```bash

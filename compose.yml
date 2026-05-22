@@ -32,15 +32,20 @@ services:
       - mongodb-data:/data
     restart: always
 
+  redis:
+    image: redis:7.2.3-alpine3.18
+    ports:
+      - '6379:6379'
+    restart: always
+    networks:
+      - grants-framework
+
   grants-config-broker:
     build:
       context: .
       target: development
     ports:
       - '3001:3001'
-    links:
-      - 'localstack:localstack'
-      - 'mongodb:mongodb'
     depends_on:
       localstack:
         condition: service_healthy
@@ -61,6 +66,27 @@ services:
       - ./src:/home/node/src
       - ./compose:/home/node/config
       - ./package.json:/home/node/package.json
+
+  config-browser:
+    image: defradigital/grants-config-browser
+    ports:
+      - '3000:3000'
+    depends_on:
+      localstack:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file:
+      - 'compose/aws.env'
+    environment:
+      PORT: 3000
+      NODE_ENV: development
+      REDIS_HOST: redis
+      AWS_ENDPOINT_URL: http://localstack:4566
+      USE_SINGLE_INSTANCE_CACHE: true
+      GRANTS_CONFIG_BROKER_API_ENDPOINT: http://grants-config-broker:3001
+    networks:
+      - grants-framework
 
 ################################################################################
 

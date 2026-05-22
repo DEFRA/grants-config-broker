@@ -1,10 +1,6 @@
-import { existsSync, readFileSync } from 'node:fs'
-import { config } from './config.js'
-import { load } from 'js-yaml'
 import { getBucketName } from './storage/s3-interactions.js'
 import {
   findVersion,
-  hasVersionJobAlreadyRun,
   storeVersion
 } from './repositories/version-management-repository.js'
 import {
@@ -12,71 +8,16 @@ import {
   uploadVersionFilesToS3
 } from './upload-version-files-to-s3.js'
 import { isLatestVersion } from './service/latest-version.js'
-import { getServiceVersion } from './utils/get-service-version.js'
 import { trackEvent } from './common/helpers/logging/logger.js'
 
-const RELEASE_FILE = 'config/release.yml'
-
-export const deployNewVersion = async (db, logger) => {
-  const serviceVersion = getServiceVersion()
-  const versionAlreadyRun = await hasVersionJobAlreadyRun(serviceVersion, db)
-
-  // Prevents the version work from executing in multiple instances, or if app is restarted etc
-  // Will want to add safety to this, to undo this transaction if there is a failure etc
-  if (versionAlreadyRun) {
-    logger.info('Release version job already run, no need to run again')
-    return null
-  }
-
-  logger.info('Checking if new version is available to deploy')
-  const releasePresent = existsSync(RELEASE_FILE)
-
-  if (!releasePresent) {
-    logger.info('No release file found, no new version available to deploy')
-    return null
-  }
-  logger.info('Release file found')
-  const currentEnv = config.get('cdpEnvironment')
-
-  //if release file found, parse it to see if there is something to consider for current env
-  const releaseInfo = load(readFileSync(RELEASE_FILE), 'utf8')
-
-  const allReleasesToConsider = Array.isArray(releaseInfo.releases)
-    ? releaseInfo.releases
-    : [releaseInfo]
-  const returnInfo = []
-  for (const versionToConsider of allReleasesToConsider) {
-    const releaseVersionInfo = await considerRelease(
-      logger,
-      db,
-      versionToConsider,
-      currentEnv,
-      serviceVersion
-    )
-    if (releaseVersionInfo) {
-      returnInfo.push(releaseVersionInfo)
-    }
-  }
-  return returnInfo
-}
-
-const considerRelease = async (
+export const considerRelease = async (
   logger,
   db,
   releaseInfo,
-  currentEnv,
-  serviceVersion
+  serviceVersion,
+  status,
+  manifest
 ) => {
-  const envDeployDetail = releaseInfo.environments.find(
-    (env) => env.name === currentEnv
-  ) ?? { status: 'none' }
-  if (envDeployDetail.status === 'none') {
-    logger.info(
-      `${releaseInfo.name} ${releaseInfo.version} is not applicable to this environment`
-    )
-    return null
-  }
-
   //at this point we have a version to release, but we need to check if already released on this env
   const existingRecord = await findVersion(
     releaseInfo.version,
@@ -86,42 +27,39 @@ const considerRelease = async (
 
   if (existingRecord) {
     //if already released, we may need to update the status
-    if (existingRecord.status !== envDeployDetail.status) {
-      existingRecord.status = envDeployDetail.status
+    if (existingRecord.status !== status) {
+      existingRecord.status = status
       existingRecord.updatedInBrokerVersion = serviceVersion
       existingRecord.lastUpdated = new Date()
 
-      await uploadMetaDataToS3(releaseInfo, envDeployDetail.status, logger)
+      await uploadMetaDataToS3(releaseInfo, status, logger)
       await storeVersion(existingRecord, db)
 
       trackEvent(logger, 'version-update', 'status-change', {
         reference: `grant: ${releaseInfo.name}, version: ${releaseInfo.version}, brokerVersion: ${serviceVersion}`,
-        kind: envDeployDetail.status
+        kind: status
       })
 
       return {
-        ...createVersionStoreInfo(
-          releaseInfo,
-          envDeployDetail,
-          existingRecord.manifest
-        ),
+        ...createVersionStoreInfo(releaseInfo, status, existingRecord.manifest),
         isLatest: await isLatestVersion(
           releaseInfo.name,
           releaseInfo.version,
-          envDeployDetail.status,
+          status,
           db
         )
       }
     }
     logger.warn(
-      `${releaseInfo.name} Version ${releaseInfo.version} already deployed to S3, no status change`
+      `${releaseInfo.name} Version ${releaseInfo.version} already deployed to S3, and no status change. Nothing happened!`
     )
     return null
   } else {
     return deployUnreleasedVersion(
       releaseInfo,
-      envDeployDetail,
+      status,
       serviceVersion,
+      manifest,
       db,
       logger
     )
@@ -130,25 +68,28 @@ const considerRelease = async (
 
 const deployUnreleasedVersion = async (
   releaseInfo,
-  envDeployDetail,
+  status,
   serviceVersion,
+  manifest,
   db,
   logger
 ) => {
-  logger.info(
-    `${releaseInfo.name} ${releaseInfo.version} will be deployed to S3 with status ${envDeployDetail.status}`
-  )
-  const manifest = await uploadVersionFilesToS3(
-    releaseInfo,
-    envDeployDetail.status,
-    logger
-  )
+  if (manifest) {
+    logger.info(
+      `${releaseInfo.name} ${releaseInfo.version} (${status}) already in S3, will update metadata only`
+    )
+    await uploadMetaDataToS3(releaseInfo, status, logger)
+    const { name, version } = releaseInfo
+    manifest.push(`${name}/${version}/metadata.json`)
+  } else {
+    logger.info(
+      `${releaseInfo.name} ${releaseInfo.version} will be deployed to S3 with status ${status}`
+    )
 
-  const versionStoreInfo = createVersionStoreInfo(
-    releaseInfo,
-    envDeployDetail,
-    manifest
-  )
+    manifest = await uploadVersionFilesToS3(releaseInfo, status, logger)
+  }
+
+  const versionStoreInfo = createVersionStoreInfo(releaseInfo, status, manifest)
   if (versionStoreInfo) {
     const { path, ...rest } = versionStoreInfo
     await storeVersion(
@@ -163,7 +104,7 @@ const deployUnreleasedVersion = async (
 
     trackEvent(logger, 'version-update', 'new-version', {
       reference: `grant: ${releaseInfo.name}, version: ${releaseInfo.version}, brokerVersion: ${serviceVersion}`,
-      kind: envDeployDetail.status
+      kind: status
     })
 
     return {
@@ -171,7 +112,7 @@ const deployUnreleasedVersion = async (
       isLatest: await isLatestVersion(
         releaseInfo.name,
         releaseInfo.version,
-        envDeployDetail.status,
+        status,
         db
       )
     }
@@ -179,7 +120,7 @@ const deployUnreleasedVersion = async (
   return null
 }
 
-const createVersionStoreInfo = (releaseInfo, envDeployDetail, manifest) => {
+const createVersionStoreInfo = (releaseInfo, status, manifest) => {
   const versionSplit = releaseInfo.version.split('.')
 
   return manifest.length
@@ -190,7 +131,7 @@ const createVersionStoreInfo = (releaseInfo, envDeployDetail, manifest) => {
         versionMinor: Number.parseInt(versionSplit[1]),
         versionPatch: Number.parseInt(versionSplit[2]),
         path: getBucketName(),
-        status: envDeployDetail.status,
+        status,
         manifest
       }
     : null
