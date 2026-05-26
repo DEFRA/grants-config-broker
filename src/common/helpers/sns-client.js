@@ -7,6 +7,8 @@ let clientSetup = false
 
 let snsClient
 
+export const isClientSetup = () => clientSetup
+
 export const setupClient = (region, awsEndpointUrl, logger, publishToTopic) => {
   snsClient = new SNSClient({
     region,

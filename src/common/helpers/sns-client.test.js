@@ -1,5 +1,5 @@
 import { PublishCommand, SNSClient } from '@aws-sdk/client-sns'
-import { publishMessage, setupClient } from './sns-client.js'
+import { isClientSetup, publishMessage, setupClient } from './sns-client.js'
 import { metricsCounter } from './metrics.js'
 
 vi.mock('./metrics.js')
@@ -27,6 +27,8 @@ describe('publish', () => {
       send
     })
 
+    expect(isClientSetup()).toBe(false)
+
     await expect(publishMessage(message)).rejects.toThrow(
       'SNS client not setup. Call setupClient() before publishing messages.'
     )
@@ -51,6 +53,8 @@ describe('publish', () => {
       return params
     })
     setupClient('us-east-1', 'http://localhost:4566', mockLogger, topicArn)
+
+    expect(isClientSetup()).toBe(true)
 
     await publishMessage(message)
 
