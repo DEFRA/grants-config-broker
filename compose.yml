@@ -69,10 +69,10 @@ services:
       - ./package.json:/home/node/package.json
 
   config-browser:
-#    image: defradigital/grants-config-browser
-    build:
-      context: ../grants-config-browser
-      target: development
+    image: defradigital/grants-config-browser
+#    build:
+#      context: ../grants-config-browser
+#      target: development
     ports:
       - '3000:3000'
     depends_on:
