@@ -102,11 +102,15 @@ export class SqsSubscriber {
   extractMessageAttributes(message) {
     const attributes = {}
     for (const key in message.MessageAttributes) {
-      const attr = message.MessageAttributes[key]
-      if (attr.DataType === 'String' || attr.DataType === 'Number') {
-        attributes[key] = attr.StringValue
-      } else {
-        attributes[key] = attr.BinaryValue
+      if (
+        Object.prototype.hasOwnProperty.call(message.MessageAttributes, key)
+      ) {
+        const attr = message.MessageAttributes[key]
+        if (attr.DataType === 'String' || attr.DataType === 'Number') {
+          attributes[key] = attr.StringValue
+        } else {
+          attributes[key] = attr.BinaryValue
+        }
       }
     }
     return attributes

@@ -19,7 +19,7 @@ export async function configureAndStartMessaging(db, server) {
   })
   server.method({
     name: 'sendMessage',
-    method: async (message) => await inputMessageSubscriber.sendMessage(message)
+    method: async (message) => inputMessageSubscriber.sendMessage(message)
   })
   await inputMessageSubscriber.start()
   return onMessage
