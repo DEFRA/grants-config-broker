@@ -1,6 +1,10 @@
 import { config } from '../config.js'
 import { createS3Client } from '../common/helpers/s3/s3-client.js'
-import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
+import {
+  DeleteObjectCommand,
+  ListObjectsV2Command,
+  PutObjectCommand
+} from '@aws-sdk/client-s3'
 import { StatusCodes } from 'http-status-codes'
 
 let s3client
@@ -32,6 +36,21 @@ export const uploadBlob = async (logger, filename, contents) => {
   logger.info(`Uploaded document: ${filename}, ETag: ${result.ETag}`)
 
   return result
+}
+
+export const listFiles = async (logger, prefix) => {
+  const client = initialiseClient()
+  const params = {
+    Bucket: bucketName,
+    Prefix: prefix
+  }
+
+  const result = await client.send(new ListObjectsV2Command(params))
+  logger.info(
+    `Found ${result.Contents?.length ?? 0} files using prefix ${prefix}`
+  )
+
+  return result.Contents ?? []
 }
 
 export const deleteBlob = async (filename, logger) => {
