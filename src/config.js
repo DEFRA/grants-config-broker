@@ -141,6 +141,14 @@ const config = convict({
         env: 'GFR__SNS__CONFIG_UPDATE_TOPIC_ARN'
       }
     },
+    sqs: {
+      configInputQueueUrl: {
+        doc: 'URL of the SQS queue to receive config input requests from',
+        format: String,
+        default: '#',
+        env: 'CONFIG_INPUT_QUEUE_URL'
+      }
+    },
     s3: {
       bucketName: {
         doc: 'Configs S3 bucket name',

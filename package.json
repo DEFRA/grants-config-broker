@@ -32,6 +32,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "3.1045.0",
     "@aws-sdk/client-sns": "3.1045.0",
+    "@aws-sdk/client-sqs": "3.1045.0",
     "@aws-sdk/credential-providers": "3.1045.0",
     "@defra/cdp-auditing": "0.6.0",
     "@defra/cdp-metrics": "0.6.0",

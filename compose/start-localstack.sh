@@ -69,6 +69,7 @@ function create_topic_and_queue() {
 }
 
 create_topic_and_queue "gfr__sns___config_update" "example_config_sink"
+create_queue "gfr__sqs___config_input"
 
 wait
 

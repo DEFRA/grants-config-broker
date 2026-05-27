@@ -24,7 +24,7 @@ describe('#startServer', () => {
     startServerImport = await import('./start-server.js')
     deployNewVersionImport = await import('../../check-file-based-releases.js')
     loggerImport = await import('./logging/logger.js')
-    notifyImport = await import('../../notify-version.js')
+    notifyImport = await import('../../messaging/outbound/notify-version.js')
 
     createServerSpy = vi.spyOn(createServerImport, 'createServer')
     hapiServerSpy = vi.spyOn(hapi, 'server')
