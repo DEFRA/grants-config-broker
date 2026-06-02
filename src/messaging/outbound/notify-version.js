@@ -1,21 +1,22 @@
+import { config } from '../../config.js'
+import { metricsCounter } from '../../common/helpers/metrics.js'
 import {
   isClientSetup,
   publishMessage,
   setupClient
-} from '../../common/helpers/sns-client.js'
-import { config } from '../../config.js'
+} from '@defra/grants-config-utils/sns-client'
 
 export const notifyVersion = async (notifyDetails, logger) => {
   if (!isClientSetup()) {
-    setupClient(
-      config.get('aws.region'),
-      config.get('aws.endpointUrl'),
-      logger.child({}),
-      config.get('aws.sns.configUpdateTopicArn')
-    )
+    setupClient(logger.child({}), {
+      region: config.get('aws.region'),
+      endpoint: config.get('aws.endpointUrl'),
+      publishToTopic: config.get('aws.sns.configUpdateTopicArn')
+    })
   }
 
   const { manifest, versionMajor, versionMinor, versionPatch, ...rest } =
     notifyDetails
   await publishMessage(manifest, rest)
+  await metricsCounter('notification_published-version')
 }

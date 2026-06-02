@@ -1,6 +1,5 @@
 import { considerRelease } from './deploy-version.js'
 import { config } from './config.js'
-import { getBucketName } from './storage/s3-interactions.js'
 import {
   findVersion,
   hasVersionJobAlreadyRun,
@@ -12,10 +11,11 @@ import {
 } from './upload-version-files-to-s3.js'
 import { isLatestVersion } from './service/latest-version.js'
 import { trackEvent } from './common/helpers/logging/logger.js'
+import { getBucketName } from '@defra/grants-config-utils/s3-interactions'
 
 vi.mock('./repositories/version-management-repository.js')
 vi.mock('./service/latest-version.js')
-vi.mock('./storage/s3-interactions.js')
+vi.mock('@defra/grants-config-utils/s3-interactions')
 vi.mock('./upload-version-files-to-s3.js')
 vi.mock('./common/helpers/logging/logger.js')
 

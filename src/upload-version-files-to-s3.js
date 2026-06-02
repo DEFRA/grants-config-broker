@@ -1,6 +1,6 @@
 import { readFileSync, existsSync, lstatSync, readdirSync } from 'node:fs'
-import { uploadBlob } from './storage/s3-interactions.js'
 import { generateMetadataPayload } from './utils/release-utils.js'
+import { uploadBlob } from '@defra/grants-config-utils/s3-interactions'
 
 export const uploadVersionFilesToS3 = async (releaseInfo, status, logger) => {
   //using the name of grant, upload all the config items under config/grant-name to s3

@@ -1,13 +1,13 @@
 import { processInputMessage } from './process-message.js'
-import { listFiles } from '../../storage/s3-interactions.js'
 import { considerRelease } from '../../deploy-version.js'
 import { notifyVersion } from '../outbound/notify-version.js'
 import { getServiceVersion } from '../../utils/get-service-version.js'
+import { listFiles } from '@defra/grants-config-utils/s3-interactions'
 
 vi.mock('../../deploy-version.js')
 vi.mock('../../utils/get-service-version.js')
 vi.mock('../outbound/notify-version.js')
-vi.mock('../../storage/s3-interactions.js')
+vi.mock('@defra/grants-config-utils/s3-interactions')
 
 describe('Process Message test', () => {
   const mockDb = {}
