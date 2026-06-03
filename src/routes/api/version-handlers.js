@@ -7,7 +7,7 @@ import {
   getLatestVersionWithConstraints
 } from '../../repositories/version-management-repository.js'
 import { ACTIVE_STATUS, DRAFT_STATUS } from '../../utils/constants.js'
-import { getBucketName } from '../../storage/s3-interactions.js'
+import { getBucketName } from '@defra/grants-config-utils/s3-interactions'
 
 const generateNotFoundResponse = (params) => {
   const { grant, constrainMajor } = params

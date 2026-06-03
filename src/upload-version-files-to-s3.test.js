@@ -2,11 +2,11 @@ import {
   uploadMetaDataToS3,
   uploadVersionFilesToS3
 } from './upload-version-files-to-s3.js'
-import { uploadBlob } from './storage/s3-interactions.js'
 import { config } from './config.js'
 import { readFileSync, existsSync, lstatSync, readdirSync } from 'node:fs'
+import { uploadBlob } from '@defra/grants-config-utils/s3-interactions'
 
-vi.mock('./storage/s3-interactions.js')
+vi.mock('@defra/grants-config-utils/s3-interactions')
 vi.mock('node:fs')
 
 const mockLogger = {

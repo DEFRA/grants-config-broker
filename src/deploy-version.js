@@ -1,4 +1,3 @@
-import { getBucketName } from './storage/s3-interactions.js'
 import {
   findVersion,
   storeVersion
@@ -9,6 +8,7 @@ import {
 } from './upload-version-files-to-s3.js'
 import { isLatestVersion } from './service/latest-version.js'
 import { trackEvent } from './common/helpers/logging/logger.js'
+import { getBucketName } from '@defra/grants-config-utils/s3-interactions'
 
 export const considerRelease = async (
   logger,

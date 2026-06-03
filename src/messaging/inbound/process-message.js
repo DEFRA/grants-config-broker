@@ -1,7 +1,7 @@
+import { listFiles } from '@defra/grants-config-utils/s3-interactions'
 import { considerRelease } from '../../deploy-version.js'
 import { getServiceVersion } from '../../utils/get-service-version.js'
 import { notifyVersion } from '../outbound/notify-version.js'
-import { listFiles } from '../../storage/s3-interactions.js'
 
 export const processInputMessage = async (message, db, logger, _attributes) => {
   try {
