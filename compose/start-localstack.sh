@@ -68,7 +68,7 @@ function create_topic_and_queue() {
   subscribe_queue_to_topic $topic_arn $queue_arn
 }
 
-create_topic_and_queue "gfr__sns___config_update" "example_config_sink"
+create_topic_and_queue "gfr__sns___config_update" "gfr__sqs__config_browser_updates"
 create_queue "gfr__sqs___config_input"
 
 wait

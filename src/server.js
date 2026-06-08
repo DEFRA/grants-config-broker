@@ -27,7 +27,7 @@ import {
 
 async function createServer() {
   setupProxy()
-  const server = Hapi.server({
+  const opts = {
     host: config.get('host'),
     port: config.get('port'),
     routes: {
@@ -51,28 +51,17 @@ async function createServer() {
     router: {
       stripTrailingSlash: true
     }
-  })
-
-  // hapi-scalar   - serves API documentation using Scalar
-  // inert         - serves static files (required by scalar)
-  const swaggerPath = path.resolve(process.cwd(), 'src/docs/swagger.yaml')
-  const swaggerFile = fs.readFileSync(swaggerPath, 'utf8')
-  const swaggerDocument = yaml.load(swaggerFile)
+  }
+  if (config.get('cdpEnvironment') === 'local') {
+    opts.routes.cors = {
+      origin: ['http://localhost:3000'],
+      additionalHeaders: ['authorization', 'x-api-key', 'content-type']
+    }
+  }
+  const server = Hapi.server(opts)
 
   await server.register([
     Inert,
-    {
-      plugin: Scalar,
-      options: {
-        scalarConfig: {
-          content: swaggerDocument
-        },
-        routePrefix: '/documentation',
-        routeConfig: {
-          auth: false
-        }
-      }
-    },
     auth,
     requestLogger,
     requestTracing,
@@ -86,16 +75,9 @@ async function createServer() {
     router
   ])
 
-  server.route({
-    method: 'GET',
-    path: '/async-documentation/{param*}',
-    handler: {
-      directory: {
-        path: 'src/routes/asyncapidocs',
-        index: ['index.html']
-      }
-    }
-  })
+  await registerApiDocsPlugin(server)
+
+  registerAsyncApiDocsRoute(server)
 
   server.events.on('start', async () => {
     const { db } = server
@@ -121,6 +103,42 @@ async function createServer() {
   })
 
   return server
+}
+
+const registerApiDocsPlugin = async (server) => {
+  // hapi-scalar   - serves API documentation using Scalar
+  // inert         - serves static files (required by scalar)
+  const swaggerPath = path.resolve(process.cwd(), 'src/docs/swagger.yaml')
+  const swaggerFile = fs.readFileSync(swaggerPath, 'utf8')
+  const swaggerDocument = yaml.load(swaggerFile, {})
+
+  await server.register([
+    {
+      plugin: Scalar,
+      options: {
+        scalarConfig: {
+          content: swaggerDocument
+        },
+        routePrefix: '/documentation',
+        routeConfig: {
+          auth: false
+        }
+      }
+    }
+  ])
+}
+
+const registerAsyncApiDocsRoute = (server) => {
+  server.route({
+    method: 'GET',
+    path: '/async-documentation/{param*}',
+    handler: {
+      directory: {
+        path: 'src/routes/asyncapidocs',
+        index: ['index.html']
+      }
+    }
+  })
 }
 
 export { createServer }
