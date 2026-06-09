@@ -14,3 +14,4 @@ releases:
         status: active
       - name: prod
         status: none
+brokerVersion: 0.13.0
