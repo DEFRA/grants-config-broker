@@ -7,13 +7,13 @@ servers:
   - url: 'http://localhost:3001'
     description: Local server URL
   - url: https://ephemeral-protected.api.dev.cdp-int.defra.cloud/grants-config-broker
-    description: Dev environment - must supply developer API key in x-api-key header
+    description: Dev environment
   - url: https://ephemeral-protected.api.test.cdp-int.defra.cloud/grants-config-broker
-    description: Test environment - must supply developer API key in x-api-key header
+    description: Test environment
   - url: https://ephemeral-protected.api.ext-test.cdp-int.defra.cloud/grants-config-broker
-    description: Ext-test environment - must supply developer API key in x-api-key header
+    description: Ext-test environment
   - url: https://ephemeral-protected.api.perf-test.cdp-int.defra.cloud/grants-config-broker
-    description: Perf-test environment - must supply developer API key in x-api-key header
+    description: Perf-test environment
 paths:
   /api/latestVersion:
     get:
