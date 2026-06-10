@@ -5,4 +5,4 @@ releases:
     notes: GSPS-353 GSPS-352 add land-grants-api action codes
     environments:
       - name: dev
-        status: draft
+        status: active
