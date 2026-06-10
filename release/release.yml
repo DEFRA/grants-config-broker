@@ -2,7 +2,7 @@
 releases:
   - name: land-grants
     version: 0.1.1
-    notes: GSPS-353 debug SNS raw delivery
+    notes: GSPS-353 debug raw SNS delivery. Reverting release back to active
     environments:
       - name: dev
-        status: draft
+        status: active
