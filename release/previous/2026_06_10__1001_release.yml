@@ -6,3 +6,4 @@ releases:
     environments:
       - name: dev
         status: active
+brokerVersion: 0.15.0
