@@ -1,0 +1,8 @@
+---
+releases:
+  - name: land-grants
+    version: 0.1.1
+    notes: GSPS-353 GSPS-352 add land-grants-api action codes
+    environments:
+      - name: dev
+        status: draft
