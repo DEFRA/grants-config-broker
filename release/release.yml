@@ -1,0 +1,8 @@
+---
+releases:
+  - name: land-grants
+    version: 0.1.1
+    notes: GSPS-353 debug SNS raw delivery
+    environments:
+      - name: dev
+        status: draft
