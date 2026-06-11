@@ -12,8 +12,7 @@
 8. After review, merge to main
 9. The release will be deployed to the grants platform across all environments excluding production
 10. To deploy to production, set the status to active and merge to main, raise an RFC, and then deploy the config broker version to production manually
-11. Once a release is deployed, github actions will automatically create a PR to archive the release info
-12. Merge this second PR to complete the process and capture the information as audit
+11. Once a release is deployed, github actions will automatically create a PR to archive the release info and then merge it
 
 ## Specifying a new release for multiple versions or grants
 
