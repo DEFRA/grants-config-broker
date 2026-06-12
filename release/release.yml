@@ -1,0 +1,30 @@
+---
+releases:
+  - name: example-grant-with-auth
+    version: 0.4.0
+    notes: Catching up on some missed releases
+    environments:
+      - name: dev
+        status: active
+      - name: test
+        status: active
+      - name: ext-test
+        status: draft
+      - name: perf-test
+        status: draft
+      - name: prod
+        status: none
+  - name: example-grant-with-auth
+    version: 0.5.0
+    notes: Catching up on some missed releases
+    environments:
+      - name: dev
+        status: active
+      - name: test
+        status: active
+      - name: ext-test
+        status: draft
+      - name: perf-test
+        status: draft
+      - name: prod
+        status: none
