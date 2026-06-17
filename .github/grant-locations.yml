@@ -1,16 +1,16 @@
 repositories:
   - name: example-grant-with-auth
-    repository: DEFRA/grant-config-example-grants
-    path: example-grant-with-auth
+    repository: DEFRA/grants-config-example-grants
+    path: configurations/example-grant-with-auth
   - name: pigs-might-fly
-    repository: DEFRA/grant-config-example-grants
-    path: pigs-might-fly
+    repository: DEFRA/grants-config-example-grants
+    path: configurations/pigs-might-fly
   - name: woodland
-    repository: DEFRA/grant-config-woodland
-    path: woodland
+    repository: DEFRA/grants-config-woodland
+    path: configurations/woodland
   - name: playground-grant
-    repository: DEFRA/grant-config-playground
-    path: playground-grant
+    repository: DEFRA/grants-config-playground
+    path: configurations/playground-grant
   - name: land-grants
-    repository: DEFRA/land-grants-config
-    path: land-grants
+    repository: DEFRA/grants-config-land-grants
+    path: configurations/land-grants
