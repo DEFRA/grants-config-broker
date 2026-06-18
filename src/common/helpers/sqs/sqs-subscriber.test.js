@@ -82,8 +82,9 @@ describe('error on polling', () => {
 
     await consumer.start()
 
+    //allow tolerance of 2ms because the times are captured before the control flow mechanism is executed and the measurement is then not 100% accurate
     expect(timeCaptures[1] - timeCaptures[0]).toBeGreaterThanOrEqual(
-      timeoutSleepMs
+      timeoutSleepMs - 2
     )
     expect(mockLogger.error).toHaveBeenCalledWith(
       'Error polling SQS queue https://sqs.eu-west-2.amazonaws.com/123456789012/test-queue: Test polling error'
