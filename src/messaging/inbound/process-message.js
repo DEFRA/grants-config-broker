@@ -2,31 +2,33 @@ import { listFiles } from '@defra/grants-config-utils/s3-interactions'
 import { considerRelease } from '../../deploy-version.js'
 import { getServiceVersion } from '../../utils/get-service-version.js'
 import { notifyVersion } from '../outbound/notify-version.js'
+import { inputMessageSchema } from './message-schemas.js'
 
 export const processInputMessage = async (message, db, logger, _attributes) => {
-  try {
-    const { grant, version, status, files } = message
+  const { value, error } = inputMessageSchema.validate(message)
+  if (error) {
+    throw error
+  }
 
-    logger.info(
-      `Received Config Input request for grant: ${grant}, version: ${version}`
-    )
-    await validateFilesInS3(grant, version, files, logger)
+  const { grant, version, status, files } = value
 
-    const releaseInfo = await considerRelease(
-      logger,
-      db,
-      { name: grant, version },
-      getServiceVersion(),
-      status ?? 'draft',
-      files
-    )
+  logger.info(
+    `Received Config Input request for grant: ${grant}, version: ${version}`
+  )
+  await validateFilesInS3(grant, version, files, logger)
 
-    if (releaseInfo) {
-      logger.info('New version released successfully, sending notification')
-      await notifyVersion(releaseInfo, logger)
-    }
-  } catch (err) {
-    logger.error(err, 'Unable to process Input request:')
+  const releaseInfo = await considerRelease(
+    logger,
+    db,
+    { name: grant, version },
+    getServiceVersion(),
+    status ?? 'draft',
+    files
+  )
+
+  if (releaseInfo) {
+    logger.info('New version released successfully, sending notification')
+    await notifyVersion(releaseInfo, logger)
   }
 }
 

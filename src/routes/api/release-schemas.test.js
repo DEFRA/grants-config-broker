@@ -17,7 +17,8 @@ describe('release-schemas', () => {
         grant: 'grant',
         version: '1.0.0',
         files: ['file1.json', 'file2.json'],
-        status: 'active'
+        status: 'active',
+        user: 'user-id'
       })
 
       expect(result.error).toBeUndefined()

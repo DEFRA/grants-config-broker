@@ -108,69 +108,58 @@ describe('Process Message test', () => {
     )
   })
 
-  it('should catch and log an error if thrown', async () => {
-    listFiles.mockResolvedValueOnce([{ Key: 'some-grant/1.0.0/some/file.txt' }])
-    considerRelease.mockRejectedValueOnce(new Error('Some error'))
+  it('if incoming message does not validate via schema an error is thrown', async () => {
+    await expect(
+      processInputMessage(
+        {
+          grant: 'some-grant',
+          version: '1.0.0'
+        },
+        mockDb,
+        mockLogger
+      )
+    ).rejects.toThrow('"files" is required')
 
-    await processInputMessage(
-      {
-        grant: 'some-grant',
-        version: '1.0.0',
-        files: ['some-grant/1.0.0/some/file.txt']
-      },
-      mockDb,
-      mockLogger
-    )
-
-    expect(considerRelease).toHaveBeenCalled()
+    expect(considerRelease).not.toHaveBeenCalled()
     expect(notifyVersion).not.toHaveBeenCalled()
-    expect(mockLogger.error).toHaveBeenCalledWith(
-      new Error('Some error'),
-      'Unable to process Input request:'
-    )
   })
 
-  it('should throw error and log it if files are missing in S3', async () => {
+  it('should throw error if files are missing in S3', async () => {
     listFiles.mockResolvedValueOnce([{ Key: 'some-grant/1.0.0/file1.txt' }])
 
-    await processInputMessage(
-      {
-        grant: 'some-grant',
-        version: '1.0.0',
-        files: ['some-grant/1.0.0/file1.txt', 'some-grant/1.0.0/file2.txt']
-      },
-      mockDb,
-      mockLogger
+    await expect(
+      processInputMessage(
+        {
+          grant: 'some-grant',
+          version: '1.0.0',
+          files: ['some-grant/1.0.0/file1.txt', 'some-grant/1.0.0/file2.txt']
+        },
+        mockDb,
+        mockLogger
+      )
+    ).rejects.toThrow(
+      'Missing files in S3, cannot publish this config version: some-grant/1.0.0/file2.txt'
     )
 
     expect(listFiles).toHaveBeenCalledWith(mockLogger, 'some-grant/1.0.0')
     expect(considerRelease).not.toHaveBeenCalled()
-    expect(mockLogger.error).toHaveBeenCalledWith(
-      new Error(
-        'Missing files in S3, cannot publish this config version: some-grant/1.0.0/file2.txt'
-      ),
-      'Unable to process Input request:'
-    )
   })
 
-  it('should throw error and log it if no files are found in S3', async () => {
+  it('should throw error if no files are found in S3', async () => {
     listFiles.mockResolvedValueOnce([])
 
-    await processInputMessage(
-      {
-        grant: 'some-grant',
-        version: '1.0.0',
-        files: ['file1.txt']
-      },
-      mockDb,
-      mockLogger
-    )
-
-    expect(mockLogger.error).toHaveBeenCalledWith(
-      new Error(
-        'Missing files in S3, cannot publish this config version: file1.txt'
-      ),
-      'Unable to process Input request:'
+    await expect(
+      processInputMessage(
+        {
+          grant: 'some-grant',
+          version: '1.0.0',
+          files: ['file1.txt']
+        },
+        mockDb,
+        mockLogger
+      )
+    ).rejects.toThrow(
+      'Missing files in S3, cannot publish this config version: file1.txt'
     )
   })
 })
