@@ -14,3 +14,6 @@ repositories:
   - name: land-grants
     repository: DEFRA/grants-config-land-grants
     path: configurations/land-grants
+  - name: farm-payments
+    repository: DEFRA/grants-config-farm-payments
+    path: configurations/farm-payments
