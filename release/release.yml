@@ -1,6 +1,6 @@
 ---
 name: pigs-might-fly
-version: 0.1.1
+version: 1.3.4
 notes: Activate pigs-might-fly config for perf-test
 environments:
   - name: dev
