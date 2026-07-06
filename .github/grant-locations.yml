@@ -17,3 +17,6 @@ repositories:
   - name: farm-payments
     repository: DEFRA/grants-config-farm-payments
     path: configurations/farm-payments
+  - name: grasslands
+    repository: DEFRA/grants-config-grasslands
+    path: configurations/grasslands
