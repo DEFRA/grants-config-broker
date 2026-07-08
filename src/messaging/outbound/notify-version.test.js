@@ -38,9 +38,10 @@ describe('notify-version', () => {
       versionPatch: 1,
       status: 'draft'
     }
+    const user = 'test-user'
 
     it('should setup client and send on notification', async () => {
-      await notifyVersion(notifyDetails, mockLogger)
+      await notifyVersion(notifyDetails, user, mockLogger)
 
       expect(setupClient).toHaveBeenCalledWith(childLogger, {
         region: 'eu-west-2',
@@ -72,6 +73,7 @@ describe('notify-version', () => {
             status: 'draft'
           }
         },
+        user,
         mockLogger
       )
     })
@@ -79,7 +81,7 @@ describe('notify-version', () => {
     it('should skip setup client and send on notification if client already setup', async () => {
       isClientSetup.mockReturnValueOnce(true)
 
-      await notifyVersion(notifyDetails, mockLogger)
+      await notifyVersion(notifyDetails, user, mockLogger)
 
       expect(setupClient).not.toHaveBeenCalled()
       expect(publishMessage).toHaveBeenCalled()

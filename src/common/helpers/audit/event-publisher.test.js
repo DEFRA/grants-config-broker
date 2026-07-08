@@ -41,15 +41,16 @@ describe('event-publisher', () => {
   })
 
   it('should publish an audit event with correct parameters', async () => {
+    const mockUser = 'system'
     const mockAudit = {
       entities: [{ entity: 'entity', action: 'action', entityid: '123' }]
     }
+    const mockLogger = { info: vi.fn() }
     const mockResult = { messageId: 'msg-123' }
     publishAuditEvent.mockResolvedValue(mockResult)
 
-    const result = await publishEvent(mockAudit)
+    await publishEvent(mockAudit, mockUser, mockLogger)
 
-    expect(result).toBe(mockResult)
     expect(SNSClient).toHaveBeenCalledTimes(1)
     expect(SNSClient).toHaveBeenCalledWith({ region: 'eu-west-2' })
     expect(publishAuditEvent).toHaveBeenCalledWith(
@@ -66,14 +67,19 @@ describe('event-publisher', () => {
         generateCorrelationId: true
       })
     )
+    expect(mockLogger.info).toHaveBeenCalledWith(
+      'Audit event published successfully (messageId: msg-123)'
+    )
   })
 
   it('should reuse the SNSClient instance', async () => {
+    const mockUser = 'system'
     const mockAudit = { entities: [] }
+    const mockLogger = { info: vi.fn() }
     publishAuditEvent.mockResolvedValue({})
 
-    await publishEvent(mockAudit)
-    await publishEvent(mockAudit)
+    await publishEvent(mockAudit, mockUser, mockLogger)
+    await publishEvent(mockAudit, mockUser, mockLogger)
 
     expect(SNSClient).toHaveBeenCalledTimes(1)
   })
@@ -92,10 +98,11 @@ describe('event-publisher', () => {
       return mocks[key]
     })
 
+    const mockUser = 'system'
     const mockAudit = { entities: [] }
     const mockLogger = { info: vi.fn() }
 
-    await publishEvent(mockAudit, mockLogger)
+    await publishEvent(mockAudit, mockUser, mockLogger)
 
     expect(publishAuditEvent).not.toHaveBeenCalled()
     expect(mockLogger.info).toHaveBeenCalledWith('Auditing not enabled')

@@ -62,6 +62,7 @@ describe('Process Message test', () => {
       versionMinor: 0,
       versionPatch: 0
     }
+    const user = 'test-user'
     considerRelease.mockResolvedValueOnce(releaseInfo)
 
     await processInputMessage(
@@ -69,7 +70,8 @@ describe('Process Message test', () => {
         grant: 'some-grant',
         status: 'draft',
         version: '1.0.0',
-        files: ['some-grant/1.0.0/some/file.txt']
+        files: ['some-grant/1.0.0/some/file.txt'],
+        user
       },
       mockDb,
       mockLogger
@@ -83,7 +85,7 @@ describe('Process Message test', () => {
       'draft',
       ['some-grant/1.0.0/some/file.txt']
     )
-    expect(notifyVersion).toHaveBeenCalledWith(releaseInfo, mockLogger)
+    expect(notifyVersion).toHaveBeenCalledWith(releaseInfo, user, mockLogger)
   })
 
   it('should default status to draft if not specified', async () => {

@@ -8,7 +8,6 @@ const topicArn = config.get('aws.sns.fcpAuditTopicArn')
 const component = config.get('serviceName')
 const environment = config.get('cdpEnvironment')
 const ip = config.get('host')
-const user = ''
 
 let snsClient
 
@@ -22,18 +21,19 @@ const getSnsClient = () => {
 /**
  * Publishes an audit event to FCP audit service.
  * @param {Object} audit - The audit event details.
- * @param logger - The logger instance.
+ * @param {String} user - The user who triggered the event.
+ * @param {Logger} logger - The logger instance.
  * @returns {Promise<Object>} The result of the publication.
  */
-export const publishEvent = async (audit, logger) => {
+export const publishEvent = async (audit, user, logger) => {
   if (!config.get('audit.enabled')) {
-    logger?.info('Auditing not enabled')
+    logger.info('Auditing not enabled')
     return
   }
 
   const client = getSnsClient()
 
-  return publishAuditEvent(
+  const { messageId } = await publishAuditEvent(
     {
       audit,
       security: null
@@ -49,4 +49,5 @@ export const publishEvent = async (audit, logger) => {
       generateCorrelationId: true
     }
   )
+  logger.info(`Audit event published successfully (messageId: ${messageId})`)
 }

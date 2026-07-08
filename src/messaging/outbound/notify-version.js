@@ -7,7 +7,7 @@ import {
   setupClient
 } from '@defra/grants-config-utils/sns-client'
 
-export const notifyVersion = async (notifyDetails, logger) => {
+export const notifyVersion = async (notifyDetails, user, logger) => {
   if (!isClientSetup()) {
     setupClient(logger.child({}), {
       region: config.get('aws.region'),
@@ -37,5 +37,5 @@ export const notifyVersion = async (notifyDetails, logger) => {
       status: notifyDetails.status
     }
   }
-  await publishEvent(audit, logger)
+  await publishEvent(audit, user, logger)
 }

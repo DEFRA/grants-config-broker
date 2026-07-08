@@ -92,7 +92,7 @@ async function createServer() {
         logger.info(
           `Deployed version ${releasedVersion.grant} @ ${releasedVersion.version} successfully, notifying clients`
         )
-        await notifyVersion(releasedVersion, logger)
+        await notifyVersion(releasedVersion, 'system', logger)
       }
     }
     await configureAndStartMessaging(db, server)
