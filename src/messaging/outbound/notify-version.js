@@ -1,5 +1,6 @@
 import { config } from '../../config.js'
 import { metricsCounter } from '../../common/helpers/metrics.js'
+import { publishEvent } from '../../common/helpers/audit/event-publisher.js'
 import {
   isClientSetup,
   publishMessage,
@@ -18,5 +19,23 @@ export const notifyVersion = async (notifyDetails, logger) => {
   const { manifest, versionMajor, versionMinor, versionPatch, ...rest } =
     notifyDetails
   await publishMessage(manifest, rest)
+
   await metricsCounter('notification_published-version')
+
+  const audit = {
+    entities: [
+      {
+        entity: 'configuration',
+        action: 'released',
+        entityid: `${notifyDetails.grant}:${notifyDetails.version}`
+      }
+    ],
+    status: 'success',
+    details: {
+      grant: notifyDetails.grant,
+      version: notifyDetails.version,
+      status: notifyDetails.status
+    }
+  }
+  await publishEvent(audit, logger)
 }

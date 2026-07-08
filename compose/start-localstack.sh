@@ -70,6 +70,7 @@ function create_topic_and_queue() {
 
 create_topic_and_queue "gfr__sns___config_update" "gfr__sqs__config_browser_updates"
 create_queue "gfr__sqs___config_input"
+create_topic_and_queue "fcp_audit_grants_config_broker" "fake_dal_sqs_fcp_audit"
 
 wait
 

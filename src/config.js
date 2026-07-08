@@ -139,6 +139,13 @@ const config = convict({
         format: String,
         default: 'arn:aws:sns:eu-west-2:000000000000:gfr__sns___config_update',
         env: 'GFR__SNS__CONFIG_UPDATE_TOPIC_ARN'
+      },
+      fcpAuditTopicArn: {
+        doc: 'ARN of the SNS topic to publish events to the FCP Audit service',
+        format: String,
+        default:
+          'arn:aws:sns:eu-west-2:000000000000:fcp_audit_grants_config_broker',
+        env: 'FCP_AUDIT_TOPIC_ARN'
       }
     },
     sqs: {
@@ -192,6 +199,20 @@ const config = convict({
       default: '',
       env: 'GRANTS_CONFIG_BROKER_ENCRYPTION_KEY',
       sensitive: true
+    }
+  },
+  audit: {
+    enabled: {
+      doc: 'Publish audit events to the FCP Audit service SNS topic',
+      format: Boolean,
+      default: false,
+      env: 'AUDIT_ENABLED'
+    },
+    application: {
+      doc: 'GIO application name identifying the source system in audit events (shared across the Grants services)',
+      format: String,
+      default: 'Grants Platform',
+      env: 'AUDIT_APPLICATION'
     }
   }
 })
