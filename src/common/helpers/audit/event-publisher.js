@@ -23,7 +23,6 @@ const getSnsClient = () => {
  * @param {Object} audit - The audit event details.
  * @param {String} user - The user who triggered the event.
  * @param {Logger} logger - The logger instance.
- * @returns {Promise<Object>} The result of the publication.
  */
 export const publishEvent = async (audit, user, logger) => {
   if (!config.get('audit.enabled')) {
