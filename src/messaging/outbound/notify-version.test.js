@@ -69,8 +69,8 @@ describe('notify-version', () => {
           status: 'success',
           details: {
             grant: 'example-grant-with-auth',
-            version: '0.0.1',
-            status: 'draft'
+            configVersion: '0.0.1',
+            configStatus: 'draft'
           }
         },
         user,

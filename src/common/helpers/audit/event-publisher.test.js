@@ -61,6 +61,7 @@ describe('event-publisher', () => {
       },
       expect.objectContaining({
         sns: { topicArn: 'arn:aws:sns:eu-west-2:000000000000:my-sns' },
+        version: '1.0.1',
         application: 'my-app',
         component: 'my-service',
         environment: 'local',
