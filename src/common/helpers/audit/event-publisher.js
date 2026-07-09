@@ -8,6 +8,7 @@ const topicArn = config.get('aws.sns.fcpAuditTopicArn')
 const component = config.get('serviceName')
 const environment = config.get('cdpEnvironment')
 const ip = config.get('host')
+const auditSchemaVersion = '1.0.1'
 
 let snsClient
 
@@ -41,6 +42,7 @@ export const publishEvent = async (audit, user, logger) => {
     {
       snsClient: client,
       sns: { topicArn },
+      version: auditSchemaVersion,
       application,
       component,
       environment,

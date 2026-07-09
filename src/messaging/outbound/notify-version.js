@@ -33,8 +33,8 @@ export const notifyVersion = async (notifyDetails, user, logger) => {
     status: 'success',
     details: {
       grant: notifyDetails.grant,
-      version: notifyDetails.version,
-      status: notifyDetails.status
+      configVersion: notifyDetails.version,
+      configStatus: notifyDetails.status
     }
   }
   await publishEvent(audit, user, logger)
