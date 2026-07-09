@@ -28,7 +28,7 @@ export const processInputMessage = async (message, db, logger, _attributes) => {
 
   if (releaseInfo) {
     logger.info('New version released successfully, sending notification')
-    await notifyVersion(releaseInfo, logger)
+    await notifyVersion(releaseInfo, message.user, logger)
   }
 }
 

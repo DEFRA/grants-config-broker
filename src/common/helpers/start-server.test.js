@@ -70,6 +70,7 @@ describe('#startServer', () => {
           grant: 'example-grant',
           version: '0.0.1'
         },
+        'system',
         mockLogger
       )
     })
