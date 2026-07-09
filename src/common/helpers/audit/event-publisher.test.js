@@ -55,6 +55,7 @@ describe('event-publisher', () => {
     expect(SNSClient).toHaveBeenCalledWith({ region: 'eu-west-2' })
     expect(publishAuditEvent).toHaveBeenCalledWith(
       {
+        user: mockUser,
         audit: mockAudit,
         security: null
       },

@@ -34,6 +34,7 @@ export const publishEvent = async (audit, user, logger) => {
 
   const { messageId } = await publishAuditEvent(
     {
+      user,
       audit,
       security: null
     },
@@ -44,7 +45,6 @@ export const publishEvent = async (audit, user, logger) => {
       component,
       environment,
       ip,
-      user,
       generateCorrelationId: true
     }
   )
