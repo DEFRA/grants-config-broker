@@ -52,7 +52,7 @@ export const publishEvent = async (audit, user, logger) => {
       }
     )
     logger.info(`Audit event published successfully (messageId: ${messageId})`)
-  } catch (error) {
+  } catch {
     logger.error(
       `Failed to publish audit event, first entity: ${JSON.stringify(audit.entities[0])}`
     )

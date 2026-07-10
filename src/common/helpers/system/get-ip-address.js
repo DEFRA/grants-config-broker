@@ -25,13 +25,16 @@ export const getServiceIp = () => {
 
   try {
     const interfaces = networkInterfaces()
-    for (const addrs of Object.values(interfaces)) {
-      for (const addr of addrs ?? []) {
-        if (addr.family === 'IPv4' && !addr.internal) {
-          cachedServiceIp = addr.address
-          return cachedServiceIp
-        }
-      }
+    const allAddresses = Object.values(interfaces).flatMap(
+      (addrs) => addrs ?? []
+    )
+    const found = allAddresses.find(
+      (addr) => addr.family === 'IPv4' && !addr.internal
+    )
+
+    if (found) {
+      cachedServiceIp = found.address
+      return cachedServiceIp
     }
   } catch {
     // ignore — fall through to loopback default
