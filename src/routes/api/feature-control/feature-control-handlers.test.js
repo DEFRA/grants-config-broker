@@ -108,6 +108,7 @@ describe('feature-control-handlers', () => {
     it('should update existing feature control definition if changed and return accepted', async () => {
       const existing = {
         name: payload.name,
+        type: payload.type,
         value: 'some-value',
         scopes: ['old.scope'],
         description: 'old desc',
@@ -137,6 +138,7 @@ describe('feature-control-handlers', () => {
     it('should update existing feature control definition if only description changed and return accepted without emitting', async () => {
       const existing = {
         name: payload.name,
+        type: payload.type,
         scopes: payload.scopes,
         description: 'old desc',
         owner: payload.owner,
@@ -154,9 +156,28 @@ describe('feature-control-handlers', () => {
       expect(result).toBe(mockH)
     })
 
-    it('should return conflict if existing feature control definition is unchanged', async () => {
+    it('should return no content if existing feature control definition is unchanged', async () => {
       const existing = {
         name: payload.name,
+        type: payload.type,
+        scopes: payload.scopes,
+        description: payload.description,
+        owner: payload.owner,
+        expiryDate: payload.expiryDate
+      }
+      getFeatureControlByName.mockResolvedValue(existing)
+
+      const result = await postAddFeatureControlHandler(mockRequest, mockH)
+
+      expect(updateFeatureControlDefinition).not.toHaveBeenCalled()
+      expect(mockH.code).toHaveBeenCalledWith(StatusCodes.NO_CONTENT)
+      expect(result).toBe(mockH)
+    })
+
+    it('should return conflict if immutable field (type) is changed', async () => {
+      const existing = {
+        name: payload.name,
+        type: 'different-type',
         scopes: payload.scopes,
         description: payload.description,
         owner: payload.owner,
@@ -186,7 +207,10 @@ describe('feature-control-handlers', () => {
     }
 
     it('should update feature control value and return accepted', async () => {
-      getFeatureControlByName.mockResolvedValue({ name: payload.name })
+      getFeatureControlByName.mockResolvedValue({
+        name: payload.name,
+        type: 'list-number'
+      })
 
       const result = await putUpdateFeatureControlValueHandler(
         mockRequest,
@@ -217,6 +241,82 @@ describe('feature-control-handlers', () => {
 
       expect(updateFeatureControlValue).not.toHaveBeenCalled()
       expect(mockH.code).toHaveBeenCalledWith(StatusCodes.NOT_FOUND)
+      expect(result).toBe(mockH)
+    })
+
+    it('should return bad request if value does not match type (boolean case)', async () => {
+      const booleanPayload = {
+        name: 'MY_SPECIAL_FEATURE',
+        value: 'ho ho ho',
+        user: 'Aaron',
+        note: 'Blummin felt like it'
+      }
+      const mockRequestBoolean = {
+        payload: booleanPayload,
+        logger: mockLogger,
+        db: mockDb
+      }
+      getFeatureControlByName.mockResolvedValue({
+        name: booleanPayload.name,
+        type: 'boolean'
+      })
+
+      const result = await putUpdateFeatureControlValueHandler(
+        mockRequestBoolean,
+        mockH
+      )
+
+      expect(updateFeatureControlValue).not.toHaveBeenCalled()
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.stringContaining('Invalid value for feature control')
+      )
+      expect(mockH.code).toHaveBeenCalledWith(StatusCodes.BAD_REQUEST)
+      expect(result).toBe(mockH)
+    })
+
+    it('should return bad request if value does not match type (number case)', async () => {
+      const numberPayload = {
+        ...payload,
+        value: 'not-a-number'
+      }
+      const mockRequestNumber = {
+        ...mockRequest,
+        payload: numberPayload
+      }
+      getFeatureControlByName.mockResolvedValue({
+        name: payload.name,
+        type: 'number'
+      })
+
+      const result = await putUpdateFeatureControlValueHandler(
+        mockRequestNumber,
+        mockH
+      )
+
+      expect(mockH.code).toHaveBeenCalledWith(StatusCodes.BAD_REQUEST)
+      expect(result).toBe(mockH)
+    })
+
+    it('should update feature control value for string type', async () => {
+      const stringPayload = {
+        ...payload,
+        value: 'a string'
+      }
+      const mockRequestString = {
+        ...mockRequest,
+        payload: stringPayload
+      }
+      getFeatureControlByName.mockResolvedValue({
+        name: payload.name,
+        type: 'string'
+      })
+
+      const result = await putUpdateFeatureControlValueHandler(
+        mockRequestString,
+        mockH
+      )
+
+      expect(mockH.code).toHaveBeenCalledWith(StatusCodes.ACCEPTED)
       expect(result).toBe(mockH)
     })
   })

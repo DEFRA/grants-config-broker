@@ -1,6 +1,6 @@
 import Joi from 'joi'
 
-const typeMap = {
+export const typeMap = {
   'list-string': Joi.array().items(Joi.string()),
   'list-number': Joi.array().items(Joi.number().strict()),
   boolean: Joi.boolean().strict(),

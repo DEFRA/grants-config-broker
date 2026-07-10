@@ -6,6 +6,7 @@ import {
   updateFeatureControlValue
 } from '../../../repositories/feature-control-repository.js'
 import { config } from '../../../config.js'
+import { typeMap } from './feature-control-schemas.js'
 
 export const postAddFeatureControlHandler = async (req, h) => {
   const {
@@ -30,11 +31,21 @@ export const postAddFeatureControlHandler = async (req, h) => {
   )
   if (alreadyExistingFeatureControl) {
     // We will accept updates to the definition of a feature control
-    // but not to the initialValue, name, or type, value must be updated separately
-    const { changed, shouldEmit } = definitionUpdated(
-      alreadyExistingFeatureControl,
-      { scopes, description, owner, expiryDate }
-    )
+    // but not to the initialValue, name, or type; value must be updated separately
+    const { changed, shouldEmit, immutableFieldChanged } =
+      definitionUpdatedLegally(alreadyExistingFeatureControl, {
+        type,
+        scopes,
+        description,
+        owner,
+        expiryDate
+      })
+    if (immutableFieldChanged) {
+      req.logger.error(
+        `Not updating feature control ${name} as request includes update to immutable field`
+      )
+      return h.response().code(StatusCodes.CONFLICT)
+    }
     if (changed) {
       await updateFeatureControlDefinition(
         {
@@ -53,7 +64,7 @@ export const postAddFeatureControlHandler = async (req, h) => {
       req.logger.info(
         `Not updating feature control ${name} as it already exists, and none of the changeable fields have changed`
       )
-      return h.response().code(StatusCodes.CONFLICT)
+      return h.response().code(StatusCodes.NO_CONTENT)
     }
   } else {
     const createdDate = new Date()
@@ -93,13 +104,15 @@ export const postAddFeatureControlHandler = async (req, h) => {
   return h.response().code(StatusCodes.ACCEPTED)
 }
 
-const definitionUpdated = (existing, newDefinition) => {
+const definitionUpdatedLegally = (existing, newDefinition) => {
   const scopesA = new Set(existing.scopes)
   const scopesB = new Set(newDefinition.scopes)
 
   const scopesUnchanged =
     scopesA.size === scopesB.size &&
     [...scopesA].every((value) => scopesB.has(value))
+
+  const immutableFieldChanged = existing.type !== newDefinition.type
 
   const hasChanged =
     !scopesUnchanged ||
@@ -108,6 +121,7 @@ const definitionUpdated = (existing, newDefinition) => {
     existing.expiryDate !== newDefinition.expiryDate
 
   return {
+    immutableFieldChanged,
     changed: hasChanged,
     shouldEmit: !scopesUnchanged
   }
@@ -115,12 +129,21 @@ const definitionUpdated = (existing, newDefinition) => {
 
 export const putUpdateFeatureControlValueHandler = async (req, h) => {
   const {
-    payload: { name, value, user, note }
+    payload: { name, value, user, note },
+    logger
   } = req
 
   const featureControl = await getFeatureControlByName(name, req.db)
   if (!featureControl) {
     return h.response().code(StatusCodes.NOT_FOUND)
+  }
+
+  //validate incoming value against the type using joi schema
+  const schema = typeMap[featureControl.type]
+  const { error } = schema.validate(value)
+  if (error) {
+    logger.error(`Invalid value for feature control ${name}: ${error.message}`)
+    return h.response().code(StatusCodes.BAD_REQUEST)
   }
 
   await updateFeatureControlValue({ name, user, value, note }, req.db)
