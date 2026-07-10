@@ -11,6 +11,10 @@ vi.mock('@defra/fcp-audit-publisher', () => ({
   publishAuditEvent: vi.fn()
 }))
 
+vi.mock('../system/get-ip-address.js', () => ({
+  getServiceIp: vi.fn(() => '192.168.0.50')
+}))
+
 vi.mock('../../../config.js', () => ({
   config: {
     get: vi.fn((key) => {
@@ -65,7 +69,7 @@ describe('event-publisher', () => {
         application: 'my-app',
         component: 'my-service',
         environment: 'local',
-        ip: '0.0.0.0',
+        ip: '192.168.0.50',
         generateCorrelationId: true
       })
     )
@@ -108,5 +112,21 @@ describe('event-publisher', () => {
 
     expect(publishAuditEvent).not.toHaveBeenCalled()
     expect(mockLogger.info).toHaveBeenCalledWith('Auditing not enabled')
+  })
+
+  it('should log an error message when publishing fails', async () => {
+    config.get.mockReturnValue(true)
+    const mockUser = 'system'
+    const mockAudit = {
+      entities: [{ entity: 'entity', action: 'action', entityid: '123' }]
+    }
+    const mockLogger = { info: vi.fn(), error: vi.fn() }
+    publishAuditEvent.mockRejectedValue(new Error('SNS Error'))
+
+    await publishEvent(mockAudit, mockUser, mockLogger)
+
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      'Failed to publish audit event, first entity: {"entity":"entity","action":"action","entityid":"123"}'
+    )
   })
 })
