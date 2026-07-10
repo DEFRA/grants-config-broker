@@ -1,13 +1,13 @@
 import { SNSClient } from '@aws-sdk/client-sns'
 import { publishAuditEvent } from '@defra/fcp-audit-publisher'
 import { config } from '../../../config.js'
+import { getServiceIp } from '../system/get-ip-address.js'
 
 const application = config.get('audit.application')
 const region = config.get('aws.region')
 const topicArn = config.get('aws.sns.fcpAuditTopicArn')
 const component = config.get('serviceName')
 const environment = config.get('cdpEnvironment')
-const ip = config.get('host')
 const auditSchemaVersion = '1.0.1'
 
 let snsClient
@@ -31,24 +31,30 @@ export const publishEvent = async (audit, user, logger) => {
     return
   }
 
-  const client = getSnsClient()
+  try {
+    const client = getSnsClient()
 
-  const { messageId } = await publishAuditEvent(
-    {
-      user,
-      audit,
-      security: null
-    },
-    {
-      snsClient: client,
-      sns: { topicArn },
-      version: auditSchemaVersion,
-      application,
-      component,
-      environment,
-      ip,
-      generateCorrelationId: true
-    }
-  )
-  logger.info(`Audit event published successfully (messageId: ${messageId})`)
+    const { messageId } = await publishAuditEvent(
+      {
+        user,
+        audit,
+        security: null
+      },
+      {
+        snsClient: client,
+        sns: { topicArn },
+        version: auditSchemaVersion,
+        application,
+        component,
+        environment,
+        ip: getServiceIp(),
+        generateCorrelationId: true
+      }
+    )
+    logger.info(`Audit event published successfully (messageId: ${messageId})`)
+  } catch (error) {
+    logger.error(
+      `Failed to publish audit event, first entity: ${JSON.stringify(audit.entities[0])}`
+    )
+  }
 }
