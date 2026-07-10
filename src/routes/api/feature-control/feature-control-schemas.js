@@ -48,7 +48,8 @@ export const postAddFeatureControlSchema = Joi.object({
   description: Joi.string().required(),
   owner: Joi.string().required(),
   expiryDate: Joi.date().required(),
-  createdBy: Joi.string().required()
+  createdBy: Joi.string().required(),
+  roleRequired: Joi.array().items(Joi.string()).min(0).optional()
 }).when('.type', {
   switch: Object.entries(typeMap).map(([type, schema]) => ({
     is: type,

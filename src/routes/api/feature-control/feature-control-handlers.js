@@ -18,7 +18,8 @@ export const postAddFeatureControlHandler = async (req, h) => {
       description,
       owner,
       expiryDate,
-      createdBy
+      createdBy,
+      roleRequired
     }
   } = req
 
@@ -38,7 +39,8 @@ export const postAddFeatureControlHandler = async (req, h) => {
         scopes,
         description,
         owner,
-        expiryDate
+        expiryDate,
+        roleRequired
       })
     if (immutableFieldChanged) {
       req.logger.error(
@@ -55,6 +57,7 @@ export const postAddFeatureControlHandler = async (req, h) => {
           owner,
           expiryDate,
           createdBy,
+          roleRequired,
           existingValue: alreadyExistingFeatureControl.value
         },
         req.db
@@ -78,6 +81,7 @@ export const postAddFeatureControlHandler = async (req, h) => {
       owner,
       createdBy,
       expiryDate,
+      roleRequired,
       created: createdDate,
       lastUpdated: createdDate,
       lastUpdatedBy: createdBy,
@@ -112,13 +116,21 @@ const definitionUpdatedLegally = (existing, newDefinition) => {
     scopesA.size === scopesB.size &&
     [...scopesA].every((value) => scopesB.has(value))
 
+  const rolesA = new Set(existing.roleRequired)
+  const rolesB = new Set(newDefinition.roleRequired)
+
+  const rolesUnchanged =
+    rolesA.size === rolesB.size &&
+    [...rolesA].every((value) => rolesB.has(value))
+
   const immutableFieldChanged = existing.type !== newDefinition.type
 
   const hasChanged =
     !scopesUnchanged ||
+    !rolesUnchanged ||
     existing.description !== newDefinition.description ||
     existing.owner !== newDefinition.owner ||
-    existing.expiryDate !== newDefinition.expiryDate
+    existing.expiryDate.getTime() !== newDefinition.expiryDate.getTime()
 
   return {
     immutableFieldChanged,

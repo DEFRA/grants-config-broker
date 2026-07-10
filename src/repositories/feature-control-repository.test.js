@@ -93,7 +93,8 @@ describe('feature-control-repository', () => {
         owner: 'owner',
         expiryDate: '2025-01-01',
         createdBy: 'user1',
-        existingValue: true
+        existingValue: true,
+        roleRequired: ['admin']
       }
       mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 })
 
@@ -108,6 +109,7 @@ describe('feature-control-repository', () => {
             description: data.description,
             owner: data.owner,
             expiryDate: data.expiryDate,
+            roleRequired: data.roleRequired,
             lastUpdatedBy: data.createdBy
           }),
           $push: {
