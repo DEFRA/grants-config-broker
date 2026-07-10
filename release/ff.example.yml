@@ -1,0 +1,20 @@
+---
+name: TEST_FEATURE_CONTROL
+type: boolean
+description: test feature control for a toggle type
+scopes:
+  - grant.woodland
+  - grant.fptt
+owner: Grants Framework
+expiryDate: 2027-01-01
+initial_value:
+  - name: dev
+    value: enabled
+  - name: test
+    value: disabled
+  - name: ext-test
+    value: disabled
+  - name: perf-test
+    value: disabled
+  - name: prod
+    value: disabled
