@@ -4,9 +4,11 @@ info:
   version: 1.0.0
   description: |
     This AsyncAPI document describes the SNS notifications emitted by the Grants Config Broker
-    when a new version of a grant configuration is released or its status is updated.
+    when a new version of a grant configuration is released, its status is updated, or when
+    feature controls are added or updated.
 
-    The notification contains the manifest (list of file paths in S3) and metadata about the release.
+    The config update notification contains the manifest (list of file paths in S3) and metadata about the release.
+    The feature control update notification contains the current value and metadata for a feature control.
 
 servers:
   sns:
@@ -25,6 +27,12 @@ channels:
     messages:
       configUpdateMessage:
         $ref: '#/components/messages/ConfigUpdateMessage'
+  featureControlUpdateTopic:
+    address: 'arn:aws:sns:{region}:{account-id}:{topic-name}.fifo'
+    description: The FIFO SNS topic where feature control update messages are published.
+    messages:
+      featureControlUpdateMessage:
+        $ref: '#/components/messages/FeatureControlUpdateMessage'
 
 operations:
   receiveConfigUpdate:
@@ -34,6 +42,13 @@ operations:
     summary: Receive notification about a grant configuration update.
     messages:
       - $ref: '#/channels/configUpdateTopic/messages/configUpdateMessage'
+  receiveFeatureControlUpdate:
+    action: receive
+    channel:
+      $ref: '#/channels/featureControlUpdateTopic'
+    summary: Receive notification about a feature control update.
+    messages:
+      - $ref: '#/channels/featureControlUpdateTopic/messages/featureControlUpdateMessage'
 
 components:
   messages:
@@ -45,6 +60,14 @@ components:
         $ref: '#/components/schemas/Manifest'
       headers:
         $ref: '#/components/schemas/MessageAttributes'
+    FeatureControlUpdateMessage:
+      name: FeatureControlUpdateMessage
+      title: Feature Control Update Notification
+      summary: Message sent when a feature control is added or its value is updated.
+      payload:
+        $ref: '#/components/schemas/FeatureControlValue'
+      headers:
+        $ref: '#/components/schemas/FeatureControlMessageAttributes'
 
   schemas:
     Manifest:
@@ -86,3 +109,46 @@ components:
         - status
         - path
         - isLatest
+
+    FeatureControlValue:
+      oneOf:
+        - type: string
+        - type: number
+        - type: boolean
+        - type: array
+          items:
+            type: string
+        - type: array
+          items:
+            type: number
+      description: The current value of the feature control.
+      example: true
+
+    FeatureControlMessageAttributes:
+      type: object
+      description: SNS Message Attributes for Feature Control (metadata).
+      properties:
+        name:
+          type: string
+          description: The name of the feature control.
+          example: "ENABLE_NEW_FEATURE"
+        scopes:
+          type: array
+          description: The scopes affected by this feature control.
+          items:
+            type: string
+          example: ["grant.woodland", "service.grants-ui", "feature.enablers"]
+        valueType:
+          type: string
+          enum: [string, number, boolean, list-string, list-number]
+          description: The type of the value.
+          example: "boolean"
+        updatedBy:
+          type: string
+          description: The user who updated the feature control.
+          example: "aaron.carroll"
+      required:
+        - name
+        - scopes
+        - valueType
+        - updatedBy

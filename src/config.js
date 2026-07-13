@@ -140,6 +140,13 @@ const config = convict({
         default: 'arn:aws:sns:eu-west-2:000000000000:gfr__sns___config_update',
         env: 'GFR__SNS__CONFIG_UPDATE_TOPIC_ARN'
       },
+      featureControlUpdateTopicArn: {
+        doc: 'ARN of the FIFO SNS topic to publish feature control events',
+        format: String,
+        default:
+          'arn:aws:sns:eu-west-2:000000000000:gfr__sns__feature_control.fifo',
+        env: 'GFR__SNS__FEATURE_FLAG_UPDATE_TOPIC_ARN'
+      },
       fcpAuditTopicArn: {
         doc: 'ARN of the SNS topic to publish events to the FCP Audit service',
         format: String,
