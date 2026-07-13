@@ -5,8 +5,8 @@ import {
   getAllGrantsAllVersions,
   getAllVersionsWithConstraints,
   getLatestVersionWithConstraints
-} from '../../repositories/version-management-repository.js'
-import { ACTIVE_STATUS, DRAFT_STATUS } from '../../utils/constants.js'
+} from '../../../repositories/version-management-repository.js'
+import { ACTIVE_STATUS, DRAFT_STATUS } from '../../../utils/constants.js'
 import { getBucketName } from '@defra/grants-config-utils/s3-interactions'
 
 const generateNotFoundResponse = (params) => {

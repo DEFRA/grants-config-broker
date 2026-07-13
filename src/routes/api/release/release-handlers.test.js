@@ -1,7 +1,7 @@
 import { postReleaseConfigHandler } from './release-handlers.js'
-import { getServiceVersion } from '../../utils/get-service-version.js'
+import { getServiceVersion } from '../../../utils/get-service-version.js'
 
-vi.mock('../../utils/get-service-version.js')
+vi.mock('../../../utils/get-service-version.js')
 
 describe('release-handlers', () => {
   const mockLogger = {
