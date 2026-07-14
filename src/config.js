@@ -8,6 +8,7 @@ convict.addFormats(convictFormatWithValidator)
 
 const isProduction = process.env.NODE_ENV === 'production'
 const isTest = process.env.NODE_ENV === 'test'
+const serviceName = 'grants-config-broker'
 
 const config = convict({
   serviceVersion: {
@@ -32,7 +33,7 @@ const config = convict({
   serviceName: {
     doc: 'Api Service Name',
     format: String,
-    default: 'grants-config-broker'
+    default: serviceName
   },
   cdpEnvironment: {
     doc: 'The CDP environment the app is running in. With the addition of "local" for local development',
@@ -86,7 +87,7 @@ const config = convict({
     databaseName: {
       doc: 'database for mongodb',
       format: String,
-      default: 'grants-config-broker',
+      default: serviceName,
       env: 'MONGO_DATABASE'
     },
     mongoOptions: {
@@ -216,7 +217,7 @@ const config = convict({
     audience: {
       doc: 'Expected JWT audience - should match the service name',
       format: String,
-      default: 'grants-config-broker',
+      default: serviceName,
       env: 'SERVICE_AUTH_AUDIENCE'
     },
     allowedServices: {
