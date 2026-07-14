@@ -11,7 +11,7 @@ export const serviceAuth = {
     name: 'service-auth',
     register: async (server) => {
       // Register legacy bearer auth scheme
-      server.auth.scheme('bearer', (_server, __options) => {
+      server.auth.scheme('bearer', (_server, _options) => {
         return {
           authenticate: (request, h) => {
             const authHeader = request.headers.authorization
@@ -169,7 +169,7 @@ function validateAuthToken(authHeader) {
     if (!tokensMatch) {
       return { isValid: false, error: 'Invalid bearer token' }
     }
-  } catch (error) {
+  } catch {
     return { isValid: false, error: 'Invalid encrypted token' }
   }
 
