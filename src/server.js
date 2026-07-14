@@ -13,7 +13,7 @@ import { setupProxy } from './common/helpers/proxy/setup-proxy.js'
 import { metrics } from '@defra/cdp-metrics'
 import { getLogger } from './common/helpers/logging/logger.js'
 import { notifyVersion } from './messaging/outbound/notify-version.js'
-import { auth } from './plugins/auth.js'
+import { serviceAuth } from './plugins/service-auth.js'
 import Inert from '@hapi/inert'
 import Scalar from 'hapi-scalar'
 import yaml from 'js-yaml'
@@ -62,7 +62,7 @@ async function createServer() {
 
   await server.register([
     Inert,
-    auth,
+    serviceAuth,
     requestLogger,
     requestTracing,
     metrics,
