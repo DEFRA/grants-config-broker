@@ -77,8 +77,7 @@ export const serviceAuth = {
             !allowedServices.includes(serviceName)
           ) {
             logger.warn(
-              { sub, serviceName },
-              'Service-to-service auth rejected: service not in allowed list'
+              `Service-to-service auth rejected: service '${serviceName}' is not in allowed list`
             )
             return { isValid: false, credentials: { sub } }
           }

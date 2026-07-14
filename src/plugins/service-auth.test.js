@@ -1,15 +1,5 @@
 import crypto from 'node:crypto'
 import {
-  vi,
-  describe,
-  test,
-  expect,
-  beforeAll,
-  afterAll,
-  beforeEach
-} from 'vitest'
-
-import {
   TEST_AUTH_TOKEN,
   TEST_ENCRYPTION_KEY
 } from '../../test/test-helpers/auth-constants.js'
@@ -42,38 +32,6 @@ vi.mock('@hapi/jwt', async () => {
   }
 })
 
-vi.mock('../common/helpers/mongodb.js', () => ({
-  mongoDb: {
-    plugin: {
-      name: 'mongodb',
-      version: '1.0.0',
-      register: vi.fn().mockImplementation(async (server) => {
-        const mockCursor = {
-          project: vi.fn().mockReturnThis(),
-          sort: vi.fn().mockReturnThis(),
-          limit: vi.fn().mockReturnThis(),
-          toArray: vi.fn().mockResolvedValue([])
-        }
-        const mockDb = {
-          collection: vi.fn().mockReturnValue({
-            createIndex: vi.fn().mockResolvedValue({}),
-            findOne: vi.fn().mockResolvedValue(null),
-            find: vi.fn().mockReturnValue(mockCursor),
-            insertOne: vi.fn().mockResolvedValue({}),
-            updateOne: vi.fn().mockResolvedValue({}),
-            deleteMany: vi.fn().mockResolvedValue({})
-          })
-        }
-        server.decorate('server', 'mongoClient', { close: vi.fn() })
-        server.decorate('server', 'db', mockDb)
-        server.decorate('server', 'locker', {})
-        server.decorate('request', 'db', mockDb)
-        server.decorate('request', 'locker', {})
-      })
-    }
-  }
-}))
-
 vi.mock('../common/helpers/logging/logger.js', () => ({
   getLogger: vi.fn().mockReturnValue({
     info: vi.fn(),
@@ -82,6 +40,8 @@ vi.mock('../common/helpers/logging/logger.js', () => ({
     debug: vi.fn()
   })
 }))
+
+vi.mock('../common/helpers/mongodb.js')
 
 describe('service-auth plugin', () => {
   let mockServer
@@ -346,7 +306,6 @@ describe('service-auth plugin', () => {
         if (mockValues.has(key)) return mockValues.get(key)
         if (key === 'auth.token') return TEST_AUTH_TOKEN
         if (key === 'auth.encryptionKey') return TEST_ENCRYPTION_KEY
-        if (key === 'mongo.mongoUrl') return 'mongodb://localhost:27017/test'
         if (key === 'cdpEnvironment') return 'test'
         if (key === 'serviceAuth.enabled') return false
         return null
@@ -384,6 +343,7 @@ describe('service-auth plugin', () => {
       it('should authenticate automatically for local environment', async () => {
         removeAndPreserveConfigValue('cdpEnvironment')
         config.set('cdpEnvironment', 'local')
+
         const response = await server.inject(
           getBasicRequestWithHeaders({
             [CONTENT_TYPE_HEADER]: CONTENT_TYPE_JSON
@@ -396,6 +356,7 @@ describe('service-auth plugin', () => {
 
       it('should authenticate automatically for documentation endpoint', async () => {
         removeAndPreserveConfigValue('cdpEnvironment')
+
         const response = await server.inject({
           ...getBasicRequestWithHeaders({
             [CONTENT_TYPE_HEADER]: CONTENT_TYPE_JSON
@@ -518,9 +479,6 @@ describe('service-auth plugin', () => {
       it('should handle auth token not configured scenario by testing with empty environment', async () => {
         removeAndPreserveConfigValue('auth.token')
         try {
-          process.env.GRANTS_CONFIG_BROKER_MONGO_URL =
-            'mongodb://localhost:27017/test'
-          config.set('mongo.mongoUrl', 'mongodb://localhost:27017/test')
           const testServer = await createServer()
           await testServer.initialize()
 
@@ -586,9 +544,6 @@ describe('service-auth plugin', () => {
       it('should reject invalid encrypted token', async () => {
         let testServer
         try {
-          process.env.GRANTS_CONFIG_BROKER_MONGO_URL =
-            'mongodb://localhost:27017/test'
-          config.set('mongo.mongoUrl', 'mongodb://localhost:27017/test')
           testServer = await createServer()
           await testServer.initialize()
 
@@ -611,9 +566,6 @@ describe('service-auth plugin', () => {
       it('should handle malformed encrypted token gracefully', async () => {
         let testServer
         try {
-          process.env.GRANTS_CONFIG_BROKER_MONGO_URL =
-            'mongodb://localhost:27017/test'
-          config.set('mongo.mongoUrl', 'mongodb://localhost:27017/test')
           testServer = await createServer()
           await testServer.initialize()
 
@@ -641,9 +593,6 @@ describe('service-auth plugin', () => {
 
         let testServer
         try {
-          process.env.GRANTS_CONFIG_BROKER_MONGO_URL =
-            'mongodb://localhost:27017/test'
-          config.set('mongo.mongoUrl', 'mongodb://localhost:27017/test')
           testServer = await createServer()
           await testServer.initialize()
 
@@ -670,9 +619,6 @@ describe('service-auth plugin', () => {
       it('should reject encrypted token with invalid format (missing parts)', async () => {
         let testServer
         try {
-          process.env.GRANTS_CONFIG_BROKER_MONGO_URL =
-            'mongodb://localhost:27017/test'
-          config.set('mongo.mongoUrl', 'mongodb://localhost:27017/test')
           testServer = await createServer()
           await testServer.initialize()
 
@@ -698,9 +644,6 @@ describe('service-auth plugin', () => {
       it('should handle encryption key becoming null during decryption', async () => {
         let testServer
         try {
-          process.env.GRANTS_CONFIG_BROKER_MONGO_URL =
-            'mongodb://localhost:27017/test'
-          config.set('mongo.mongoUrl', 'mongodb://localhost:27017/test')
           const originalConfigGet = config.get
           let callCount = 0
 
