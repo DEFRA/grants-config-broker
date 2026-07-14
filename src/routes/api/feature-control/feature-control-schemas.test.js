@@ -1,4 +1,6 @@
 import {
+  getFeatureControlByNameSchema,
+  getFeatureControlsSchema,
   postAddFeatureControlSchema,
   putUpdateFeatureControlValueSchema
 } from './feature-control-schemas.js'
@@ -252,6 +254,72 @@ describe('feature-control-schemas', () => {
       })
       expect(result.error).toBeUndefined()
       expect(result.value.name).toBe('LOWERCASE_NAME')
+    })
+  })
+
+  describe('getFeatureControlByNameSchema', () => {
+    it('should validate successfully for a valid name', () => {
+      const result = getFeatureControlByNameSchema.validate({
+        name: 'TEST_FEATURE'
+      })
+      expect(result.error).toBeUndefined()
+    })
+
+    it('should uppercase name', () => {
+      const result = getFeatureControlByNameSchema.validate({
+        name: 'test_feature'
+      })
+      expect(result.error).toBeUndefined()
+      expect(result.value.name).toBe('TEST_FEATURE')
+    })
+
+    it('should result in error if name is missing', () => {
+      const result = getFeatureControlByNameSchema.validate({})
+      expect(result.error).toBeDefined()
+    })
+  })
+
+  describe('getFeatureControlsSchema', () => {
+    it('should validate successfully with defaults', () => {
+      const result = getFeatureControlsSchema.validate({})
+      expect(result.error).toBeUndefined()
+      expect(result.value).toEqual({
+        page: 1,
+        pageSize: 10
+      })
+    })
+
+    it('should validate successfully with all filters', () => {
+      const result = getFeatureControlsSchema.validate({
+        page: 2,
+        pageSize: 50,
+        name: 'test',
+        owner: 'test-owner',
+        scope: 'grant.test',
+        type: 'boolean'
+      })
+      expect(result.error).toBeUndefined()
+      expect(result.value.page).toBe(2)
+      expect(result.value.pageSize).toBe(50)
+      expect(result.value.name).toBe('test')
+      expect(result.value.owner).toBe('test-owner')
+      expect(result.value.scope).toBe('grant.test')
+      expect(result.value.type).toBe('boolean')
+    })
+
+    it('should fail for invalid type', () => {
+      const result = getFeatureControlsSchema.validate({ type: 'invalid' })
+      expect(result.error).toBeDefined()
+    })
+
+    it('should fail for invalid page or pageSize', () => {
+      expect(getFeatureControlsSchema.validate({ page: 0 }).error).toBeDefined()
+      expect(
+        getFeatureControlsSchema.validate({ pageSize: 0 }).error
+      ).toBeDefined()
+      expect(
+        getFeatureControlsSchema.validate({ pageSize: 101 }).error
+      ).toBeDefined()
     })
   })
 })

@@ -1,4 +1,6 @@
 import {
+  getFeatureControlByNameHandler,
+  getFeatureControlsHandler,
   postAddFeatureControlHandler,
   putUpdateFeatureControlValueHandler
 } from './feature-control-handlers.js'
@@ -6,6 +8,7 @@ import { StatusCodes } from 'http-status-codes'
 
 vi.mock('../../../repositories/feature-control-repository.js', () => ({
   getFeatureControlByName: vi.fn(),
+  getFeatureControls: vi.fn(),
   storeFeatureControl: vi.fn(),
   updateFeatureControlDefinition: vi.fn(),
   updateFeatureControlValue: vi.fn()
@@ -23,6 +26,7 @@ vi.mock('../../../config.js', () => ({
 
 import {
   getFeatureControlByName,
+  getFeatureControls,
   storeFeatureControl,
   updateFeatureControlDefinition,
   updateFeatureControlValue
@@ -407,6 +411,56 @@ describe('feature-control-handlers', () => {
       )
 
       expect(mockH.code).toHaveBeenCalledWith(StatusCodes.ACCEPTED)
+      expect(result).toBe(mockH)
+    })
+  })
+
+  describe('getFeatureControlByNameHandler', () => {
+    it('should return feature control if found', async () => {
+      const mockRequest = {
+        params: { name: 'TEST_FEATURE' },
+        db: mockDb
+      }
+      const existing = { name: 'TEST_FEATURE', value: true }
+      getFeatureControlByName.mockResolvedValue(existing)
+
+      const result = await getFeatureControlByNameHandler(mockRequest, mockH)
+
+      expect(getFeatureControlByName).toHaveBeenCalledWith(
+        'TEST_FEATURE',
+        mockDb
+      )
+      expect(mockH.response).toHaveBeenCalledWith(existing)
+      expect(mockH.code).toHaveBeenCalledWith(StatusCodes.OK)
+      expect(result).toBe(mockH)
+    })
+
+    it('should return not found if not found', async () => {
+      const mockRequest = {
+        params: { name: 'NOT_FOUND' },
+        db: mockDb
+      }
+      getFeatureControlByName.mockResolvedValue(null)
+
+      const result = await getFeatureControlByNameHandler(mockRequest, mockH)
+
+      expect(mockH.code).toHaveBeenCalledWith(StatusCodes.NOT_FOUND)
+      expect(result).toBe(mockH)
+    })
+  })
+
+  describe('getFeatureControlsHandler', () => {
+    it('should return paginated results', async () => {
+      const query = { page: 1, pageSize: 10, name: 'test', owner: 'test-owner' }
+      const mockRequest = { query, db: mockDb }
+      const expectedResults = { items: [], total: 0 }
+      getFeatureControls.mockResolvedValue(expectedResults)
+
+      const result = await getFeatureControlsHandler(mockRequest, mockH)
+
+      expect(getFeatureControls).toHaveBeenCalledWith(query, mockDb)
+      expect(mockH.response).toHaveBeenCalledWith(expectedResults)
+      expect(mockH.code).toHaveBeenCalledWith(StatusCodes.OK)
       expect(result).toBe(mockH)
     })
   })

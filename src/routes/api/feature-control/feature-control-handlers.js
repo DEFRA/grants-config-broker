@@ -1,6 +1,8 @@
 import { StatusCodes } from 'http-status-codes'
 import {
   getFeatureControlByName,
+  getFeatureControlDetailedByName,
+  getFeatureControls,
   storeFeatureControl,
   updateFeatureControlDefinition,
   updateFeatureControlValue
@@ -188,4 +190,28 @@ export const putUpdateFeatureControlValueHandler = async (req, h) => {
   )
 
   return h.response().code(StatusCodes.ACCEPTED)
+}
+
+export const getFeatureControlByNameHandler = async (
+  req,
+  h,
+  detailed = false
+) => {
+  const { name } = req.params
+  const featureControl = detailed
+    ? await getFeatureControlDetailedByName(name, req.db)
+    : await getFeatureControlByName(name, req.db)
+  if (!featureControl) {
+    return h.response().code(StatusCodes.NOT_FOUND)
+  }
+  return h.response(featureControl).code(StatusCodes.OK)
+}
+
+export const getFeatureControlsHandler = async (req, h) => {
+  const { page, pageSize, name, scope, type, owner } = req.query
+  const results = await getFeatureControls(
+    { page, pageSize, name, scope, type, owner },
+    req.db
+  )
+  return h.response(results).code(StatusCodes.OK)
 }
