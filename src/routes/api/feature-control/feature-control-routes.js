@@ -1,14 +1,64 @@
 import {
+  getFeatureControlByNameSchema,
+  getFeatureControlsSchema,
   postAddFeatureControlSchema,
   putUpdateFeatureControlValueSchema
 } from './feature-control-schemas.js'
 import {
+  getFeatureControlByNameHandler,
+  getFeatureControlsHandler,
   postAddFeatureControlHandler,
   putUpdateFeatureControlValueHandler
 } from './feature-control-handlers.js'
 import Boom from '@hapi/boom'
 
 export const featureControlRoutes = [
+  {
+    method: 'GET',
+    path: '/api/feature-control/{name}',
+    options: {
+      description: 'Get a single feature control by name',
+      handler: getFeatureControlByNameHandler,
+      validate: {
+        params: getFeatureControlByNameSchema,
+        failAction(request, _h, err) {
+          request.logger.error(err, 'Get feature control by name error')
+          throw Boom.badRequest(err.message)
+        }
+      }
+    }
+  },
+  {
+    method: 'GET',
+    path: '/api/feature-control/{name}/detailed',
+    options: {
+      description: 'Get a detailed view of a single feature control by name',
+      handler: (req, h) => getFeatureControlByNameHandler(req, h, true),
+      validate: {
+        params: getFeatureControlByNameSchema,
+        failAction(request, _h, err) {
+          request.logger.error(err, 'Get feature control by name error')
+          throw Boom.badRequest(err.message)
+        }
+      }
+    }
+  },
+  {
+    method: 'GET',
+    path: '/api/feature-controls',
+    options: {
+      description:
+        'Get a list of feature controls with pagination and filtering',
+      handler: getFeatureControlsHandler,
+      validate: {
+        query: getFeatureControlsSchema,
+        failAction(request, _h, err) {
+          request.logger.error(err, 'Get feature controls list error')
+          throw Boom.badRequest(err.message)
+        }
+      }
+    }
+  },
   {
     method: 'POST',
     path: '/api/feature-control',
@@ -39,5 +89,4 @@ export const featureControlRoutes = [
       }
     }
   }
-  // We will add GET handlers to retrieve individual feature controls and history plus list of all feature controls in GRAN-64
 ]

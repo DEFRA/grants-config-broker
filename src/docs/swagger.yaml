@@ -315,8 +315,317 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/feature-control/{name}:
+    get:
+      summary: Get a single feature control by name
+      description: Returns the basic details of a feature control, excluding its history.
+      security:
+        - bearerAuth: []
+          apiKey: []
+      parameters:
+        - $ref: '#/components/parameters/cdpRequestId'
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The unique name of the feature control.
+      responses:
+        '200':
+          description: Successfully retrieved the feature control.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureControl'
+        '400':
+          description: Bad Request - Validation error.
+        '401':
+          description: Unauthorized.
+        '404':
+          description: Not Found - Feature control does not exist.
+  /api/feature-control/{name}/detailed:
+    get:
+      summary: Get a single feature control by name with full details
+      description: Returns the full details of a feature control, including its update history.
+      security:
+        - bearerAuth: []
+          apiKey: []
+      parameters:
+        - $ref: '#/components/parameters/cdpRequestId'
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The unique name of the feature control.
+      responses:
+        '200':
+          description: Successfully retrieved the detailed feature control.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailedFeatureControl'
+        '400':
+          description: Bad Request - Validation error.
+        '401':
+          description: Unauthorized.
+        '404':
+          description: Not Found - Feature control does not exist.
+    post:
+      summary: Add or update a feature control definition
+      description: Creates a new feature control or updates the definition of an existing one. Immutable fields (name, type, initialValue) cannot be updated.
+      security:
+        - bearerAuth: []
+          apiKey: []
+      parameters:
+        - $ref: '#/components/parameters/cdpRequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostFeatureControlRequest'
+      responses:
+        '202':
+          description: Accepted - Feature control created or updated.
+        '204':
+          description: No Content - No changes made to the existing feature control.
+        '400':
+          description: Bad Request - Validation error.
+        '401':
+          description: Unauthorized.
+        '409':
+          description: Conflict - Attempted to update an immutable field.
+    put:
+      summary: Update a feature control value
+      description: Updates the current value of a feature control for the current environment.
+      security:
+        - bearerAuth: []
+          apiKey: []
+      parameters:
+        - $ref: '#/components/parameters/cdpRequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutFeatureControlValueRequest'
+      responses:
+        '202':
+          description: Accepted - Feature control value updated.
+        '400':
+          description: Bad Request - Validation error (e.g., value doesn't match type).
+        '401':
+          description: Unauthorized.
+        '404':
+          description: Not Found - Feature control does not exist.
+
+  /api/feature-controls:
+    get:
+      summary: Get a list of feature controls
+      description: Returns a paginated list of feature controls with optional filtering by name, scope, or type.
+      security:
+        - bearerAuth: []
+          apiKey: []
+      parameters:
+        - $ref: '#/components/parameters/cdpRequestId'
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 100
+        - name: name
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Partial name match (case-insensitive).
+        - name: owner
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Partial owner match (case-insensitive).
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Exact scope match.
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [list-string, list-number, boolean, date, string, number]
+          description: Exact type match.
+      responses:
+        '200':
+          description: Successfully retrieved the list of feature controls.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureControlsResponse'
+        '400':
+          description: Bad Request - Validation error.
+        '401':
+          description: Unauthorized.
+
 components:
   schemas:
+    FeatureControl:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [list-string, list-number, boolean, date, string, number]
+        value:
+          $ref: '#/components/schemas/FeatureControlValue'
+        scopes:
+          type: array
+          items:
+            type: string
+    DetailedFeatureControl:
+      allOf:
+        - $ref: '#/components/schemas/FeatureControl'
+        - type: object
+          properties:
+            description:
+              type: string
+            owner:
+              type: string
+            createdBy:
+              type: string
+            expiryDate:
+              type: string
+              format: date-time
+            roleRequired:
+              type: array
+              items:
+                type: string
+            created:
+              type: string
+              format: date-time
+            lastUpdated:
+              type: string
+              format: date-time
+            lastUpdatedBy:
+              type: string
+            history:
+              type: array
+              items:
+                $ref: '#/components/schemas/FeatureControlHistory'
+
+    FeatureControlValue:
+      oneOf:
+        - type: string
+        - type: number
+        - type: boolean
+        - type: array
+          items:
+            type: string
+        - type: array
+          items:
+            type: number
+
+    FeatureControlHistory:
+      type: object
+      properties:
+        value:
+          $ref: '#/components/schemas/FeatureControlValue'
+        setBy:
+          type: string
+        dateTime:
+          type: string
+          format: date-time
+        note:
+          type: string
+
+    FeatureControlsResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeatureControl'
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        totalPages:
+          type: integer
+
+    PostFeatureControlRequest:
+      type: object
+      required:
+        - name
+        - type
+        - initialValue
+        - scopes
+        - description
+        - owner
+        - expiryDate
+        - createdBy
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [list-string, list-number, boolean, date, string, number]
+        initialValue:
+          type: object
+          description: Mapping of environment to initial value. Must contain 'default' or all of 'dev', 'test', 'ext-test', 'perf-test', 'prod'.
+          additionalProperties:
+            $ref: '#/components/schemas/FeatureControlValue'
+        scopes:
+          type: array
+          items:
+            type: string
+          minItems: 1
+        description:
+          type: string
+        owner:
+          type: string
+        expiryDate:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+        roleRequired:
+          type: array
+          items:
+            type: string
+
+    PutFeatureControlValueRequest:
+      type: object
+      required:
+        - name
+        - value
+        - user
+      properties:
+        name:
+          type: string
+        value:
+          $ref: '#/components/schemas/FeatureControlValue'
+        user:
+          type: string
+        note:
+          type: string
+
     PostReleaseConfigRequest:
       type: object
       required:
@@ -340,6 +649,9 @@ components:
           type: string
           enum: [draft, active]
           description: The status of the release.
+        user:
+          type: string
+          description: The user performing the release.
     VersionResponse:
       type: object
       properties:
