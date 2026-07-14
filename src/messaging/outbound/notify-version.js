@@ -7,18 +7,20 @@ import {
   setupClient
 } from '@defra/grants-config-utils/sns-client'
 
+const configUpdateTopicArn = config.get('aws.sns.configUpdateTopicArn')
+
 export const notifyVersion = async (notifyDetails, user, logger) => {
   if (!isClientSetup()) {
     setupClient(logger.child({}), {
       region: config.get('aws.region'),
       endpoint: config.get('aws.endpointUrl'),
-      publishToTopic: config.get('aws.sns.configUpdateTopicArn')
+      publishToTopic: configUpdateTopicArn
     })
   }
 
   const { manifest, versionMajor, versionMinor, versionPatch, ...rest } =
     notifyDetails
-  await publishMessage(manifest, rest)
+  await publishMessage(manifest, rest, configUpdateTopicArn)
 
   await metricsCounter('notification_published-version')
 

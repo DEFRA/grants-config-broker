@@ -11,6 +11,10 @@ vi.mock('../../../repositories/feature-control-repository.js', () => ({
   updateFeatureControlValue: vi.fn()
 }))
 
+vi.mock('../../../messaging/outbound/notify-feature-control.js', () => ({
+  notifyFeatureControlUpdate: vi.fn()
+}))
+
 vi.mock('../../../config.js', () => ({
   config: {
     get: vi.fn().mockReturnValue('dev')
@@ -23,6 +27,7 @@ import {
   updateFeatureControlDefinition,
   updateFeatureControlValue
 } from '../../../repositories/feature-control-repository.js'
+import { notifyFeatureControlUpdate } from '../../../messaging/outbound/notify-feature-control.js'
 
 describe('feature-control-handlers', () => {
   const mockLogger = {
@@ -79,6 +84,16 @@ describe('feature-control-handlers', () => {
         }),
         mockDb
       )
+      expect(notifyFeatureControlUpdate).toHaveBeenCalledWith(
+        {
+          name: payload.name,
+          scopes: payload.scopes,
+          value: [456],
+          updatedBy: payload.createdBy,
+          valueType: 'list-number'
+        },
+        mockLogger
+      )
       expect(mockH.code).toHaveBeenCalledWith(StatusCodes.ACCEPTED)
       expect(result).toBe(mockH)
     })
@@ -133,6 +148,16 @@ describe('feature-control-handlers', () => {
           existingValue: existing.value
         }),
         mockDb
+      )
+      expect(notifyFeatureControlUpdate).toHaveBeenCalledWith(
+        {
+          name: payload.name,
+          scopes: payload.scopes,
+          value: existing.value,
+          updatedBy: payload.createdBy,
+          valueType: payload.type
+        },
+        mockLogger
       )
       expect(mockH.code).toHaveBeenCalledWith(StatusCodes.ACCEPTED)
       expect(result).toBe(mockH)
@@ -259,10 +284,13 @@ describe('feature-control-handlers', () => {
     }
 
     it('should update feature control value and return accepted', async () => {
-      getFeatureControlByName.mockResolvedValue({
+      const existing = {
         name: payload.name,
-        type: 'list-number'
-      })
+        type: 'list-number',
+        scopes: ['list', 'of', 'scopes']
+      }
+      getFeatureControlByName.mockResolvedValue(existing)
+      updateFeatureControlValue.mockResolvedValue(existing)
 
       const result = await putUpdateFeatureControlValueHandler(
         mockRequest,
@@ -278,6 +306,16 @@ describe('feature-control-handlers', () => {
           note: payload.note
         },
         mockDb
+      )
+      expect(notifyFeatureControlUpdate).toHaveBeenCalledWith(
+        {
+          name: payload.name,
+          scopes: ['list', 'of', 'scopes'],
+          value: payload.value,
+          updatedBy: payload.user,
+          valueType: existing.type
+        },
+        mockLogger
       )
       expect(mockH.code).toHaveBeenCalledWith(StatusCodes.ACCEPTED)
       expect(result).toBe(mockH)

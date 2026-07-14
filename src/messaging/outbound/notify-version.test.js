@@ -48,12 +48,16 @@ describe('notify-version', () => {
         endpoint: null,
         publishToTopic: expect.any(String)
       })
-      expect(publishMessage).toHaveBeenCalledWith(manifest, {
-        grant: 'example-grant-with-auth',
-        path: 's3://test-bucket',
-        version: '0.0.1',
-        status: 'draft'
-      })
+      expect(publishMessage).toHaveBeenCalledWith(
+        manifest,
+        {
+          grant: 'example-grant-with-auth',
+          path: 's3://test-bucket',
+          version: '0.0.1',
+          status: 'draft'
+        },
+        expect.any(String)
+      )
       expect(metricsCounter).toHaveBeenCalledWith(
         'notification_published-version'
       )

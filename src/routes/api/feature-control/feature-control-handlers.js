@@ -7,6 +7,7 @@ import {
 } from '../../../repositories/feature-control-repository.js'
 import { config } from '../../../config.js'
 import { typeMap } from './feature-control-schemas.js'
+import { notifyFeatureControlUpdate } from '../../../messaging/outbound/notify-feature-control.js'
 
 export const postAddFeatureControlHandler = async (req, h) => {
   const {
@@ -25,6 +26,7 @@ export const postAddFeatureControlHandler = async (req, h) => {
 
   const currentEnv = config.get('cdpEnvironment')
   let emitEvent = false
+  let value = null
 
   const alreadyExistingFeatureControl = await getFeatureControlByName(
     name,
@@ -63,6 +65,7 @@ export const postAddFeatureControlHandler = async (req, h) => {
         req.db
       )
       emitEvent = shouldEmit
+      value = alreadyExistingFeatureControl.value
     } else {
       req.logger.info(
         `Not updating feature control ${name} as it already exists, and none of the changeable fields have changed`
@@ -71,7 +74,7 @@ export const postAddFeatureControlHandler = async (req, h) => {
     }
   } else {
     const createdDate = new Date()
-    const value = initialValue[currentEnv] ?? initialValue.default
+    value = initialValue[currentEnv] ?? initialValue.default
     const featureControl = {
       name,
       type,
@@ -101,9 +104,20 @@ export const postAddFeatureControlHandler = async (req, h) => {
 
   //if brand new, always emit the value next
   //if an update, only emit if the scopes have changed
-  req.logger.info(
-    `${emitEvent ? 'Emitting' : 'Not emitting'} feature control ${name} `
-  )
+  if (emitEvent) {
+    await notifyFeatureControlUpdate(
+      {
+        name,
+        scopes,
+        value,
+        valueType: type,
+        updatedBy: createdBy
+      },
+      req.logger
+    )
+  } else {
+    req.logger.info(`Not emitting feature control ${name} `)
+  }
 
   return h.response().code(StatusCodes.ACCEPTED)
 }
@@ -145,7 +159,7 @@ export const putUpdateFeatureControlValueHandler = async (req, h) => {
     logger
   } = req
 
-  const featureControl = await getFeatureControlByName(name, req.db)
+  let featureControl = await getFeatureControlByName(name, req.db)
   if (!featureControl) {
     return h.response().code(StatusCodes.NOT_FOUND)
   }
@@ -158,7 +172,20 @@ export const putUpdateFeatureControlValueHandler = async (req, h) => {
     return h.response().code(StatusCodes.BAD_REQUEST)
   }
 
-  await updateFeatureControlValue({ name, user, value, note }, req.db)
+  featureControl = await updateFeatureControlValue(
+    { name, user, value, note },
+    req.db
+  )
+  await notifyFeatureControlUpdate(
+    {
+      name,
+      scopes: featureControl.scopes,
+      value,
+      valueType: featureControl.type,
+      updatedBy: user
+    },
+    req.logger
+  )
 
   return h.response().code(StatusCodes.ACCEPTED)
 }
