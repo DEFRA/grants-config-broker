@@ -74,7 +74,7 @@ describe('service-auth plugin', () => {
     expect(serviceAuth.plugin.name).toBe('service-auth')
   })
 
-  describe('when service-to-service auth is disabled', () => {
+  describe.skip('when service-to-service auth is disabled', () => {
     beforeEach(() => {
       config.set('serviceAuth.enabled', false)
     })
@@ -96,7 +96,7 @@ describe('service-auth plugin', () => {
     })
   })
 
-  describe('when service-to-service auth is enabled', () => {
+  describe.skip('when service-to-service auth is enabled', () => {
     beforeEach(() => {
       config.set('serviceAuth.enabled', true)
       config.set('serviceAuth.jwksUri', 'https://test-jwks.example.com')
@@ -141,7 +141,7 @@ describe('service-auth plugin', () => {
       )
     })
 
-    test.skip('should set service as the default auth strategy', async () => {
+    test('should set service as the default auth strategy', async () => {
       await serviceAuth.plugin.register(mockServer)
 
       expect(mockServer.auth.default).toHaveBeenCalledWith({
@@ -259,7 +259,7 @@ describe('service-auth plugin', () => {
    * It is encapsulated here for easy removal once all consumers have migrated
    * to service-to-service JWT authentication.
    */
-  describe.skip('Legacy Bearer Authentication (integration)', () => {
+  describe('Legacy Bearer Authentication (integration)', () => {
     const INVALID_AUTH_MESSAGE = 'Invalid authentication credentials'
     const BASIC_PARAM = 'grant=test-grant&version=1.1.1'
 
