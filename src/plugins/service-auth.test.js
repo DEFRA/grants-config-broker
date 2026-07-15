@@ -74,7 +74,7 @@ describe('service-auth plugin', () => {
     expect(serviceAuth.plugin.name).toBe('service-auth')
   })
 
-  describe.skip('when service-to-service auth is disabled', () => {
+  describe('when service-to-service auth is disabled', () => {
     beforeEach(() => {
       config.set('serviceAuth.enabled', false)
     })
@@ -96,7 +96,7 @@ describe('service-auth plugin', () => {
     })
   })
 
-  describe.skip('when service-to-service auth is enabled', () => {
+  describe('when service-to-service auth is enabled', () => {
     beforeEach(() => {
       config.set('serviceAuth.enabled', true)
       config.set('serviceAuth.jwksUri', 'https://test-jwks.example.com')

@@ -85,10 +85,9 @@ export const serviceAuth = {
         }
       })
 
-      // server.auth.default({
-      //   strategies: ['bearer', 'service']
-      // })
-      server.auth.default('bearer')
+      server.auth.default({
+        strategies: ['bearer', 'service']
+      })
     }
   }
 }
