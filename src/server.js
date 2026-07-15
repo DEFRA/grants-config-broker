@@ -62,7 +62,6 @@ async function createServer() {
 
   await server.register([
     Inert,
-    serviceAuth,
     requestLogger,
     requestTracing,
     metrics,
@@ -72,6 +71,7 @@ async function createServer() {
       plugin: mongoDb,
       options: config.get('mongo')
     },
+    serviceAuth,
     router
   ])
 
