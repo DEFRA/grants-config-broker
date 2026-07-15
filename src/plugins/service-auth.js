@@ -44,9 +44,9 @@ export const serviceAuth = {
       const audience = config.get('serviceAuth.audience')
 
       logger.info('Registering service-to-service JWT authentication')
-      logger.warn(`Last three chars of A: ${jwksUri.slice(-5)}`)
-      logger.warn(`Last three chars of B: ${issuer.slice(-5)}`)
-      logger.warn(`Last three chars of C: ${audience.slice(-5)}`)
+      logger.warn(`Last chars of A: ${jwksUri.slice(-5)}`)
+      logger.warn(`Last chars of B: ${issuer.slice(-5)}`)
+      logger.warn(`Last chars of C: ${audience.slice(-5)}`)
 
       await server.register(Jwt)
 
