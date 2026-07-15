@@ -44,14 +44,21 @@ export const serviceAuth = {
       const audience = config.get('serviceAuth.audience')
 
       logger.info('Registering service-to-service JWT authentication')
+      logger.warn(`Last three chars of A: ${jwksUri.slice(-5)}`)
+      logger.warn(`Last three chars of B: ${issuer.slice(-5)}`)
+      logger.warn(`Last three chars of C: ${audience.slice(-5)}`)
 
       await server.register(Jwt)
+
+      logger.info('Registered JWT')
 
       const allowedServices = config
         .get('serviceAuth.allowedServices')
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean)
+
+      logger.info(`Obtained allowed services ${allowedServices}`)
 
       server.auth.strategy('service', 'jwt', {
         keys: {
@@ -63,6 +70,8 @@ export const serviceAuth = {
           sub: false
         },
         validate: (artifacts) => {
+          logger.info('Entered validate')
+
           const sub = artifacts.decoded.payload.sub
 
           if (!sub) {
@@ -86,9 +95,13 @@ export const serviceAuth = {
         }
       })
 
+      logger.info('Set auth strategy')
+
       server.auth.default({
         strategies: ['bearer', 'service']
       })
+
+      logger.info('Set defaults')
     }
   }
 }
