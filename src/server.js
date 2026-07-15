@@ -24,6 +24,7 @@ import {
   configureAndStartMessaging,
   stopMessageSubscriber
 } from './messaging/inbound/input-message-queue-subscriber.js'
+import { createAliasesLookup } from './check-aliases.js'
 
 async function createServer() {
   setupProxy()
@@ -83,6 +84,12 @@ async function createServer() {
     const { db } = server
     const logger = getLogger()
 
+    const aliasLookup = await createAliasesLookup(logger)
+    server.method({
+      name: 'aliasLookup',
+      method: aliasLookup
+    })
+
     const releaseVersionDetails = await checkReleaseFileForVersionDeployment(
       db,
       logger
@@ -93,6 +100,13 @@ async function createServer() {
           `Deployed version ${releasedVersion.grant} @ ${releasedVersion.version} successfully, notifying clients`
         )
         await notifyVersion(releasedVersion, 'system', logger)
+        for (const alias of aliasLookup(releasedVersion.grant)) {
+          await notifyVersion(
+            { ...releasedVersion, grant: alias },
+            'system',
+            logger
+          )
+        }
       }
     }
     await configureAndStartMessaging(db, server)

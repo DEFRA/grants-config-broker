@@ -8,7 +8,7 @@ let inputMessageSubscriber
 export async function configureAndStartMessaging(db, server) {
   const onMessage = async (message, attributes) => {
     getLogger().info(attributes, 'Received incoming message')
-    await processInputMessage(message, db, getLogger(), attributes)
+    await processInputMessage(message, db, getLogger(), attributes, server)
   }
   inputMessageSubscriber = new SqsSubscriber({
     queueUrl: config.get('aws.sqs.configInputQueueUrl'),

@@ -4,7 +4,13 @@ import { getServiceVersion } from '../../utils/get-service-version.js'
 import { notifyVersion } from '../outbound/notify-version.js'
 import { inputMessageSchema } from './message-schemas.js'
 
-export const processInputMessage = async (message, db, logger, _attributes) => {
+export const processInputMessage = async (
+  message,
+  db,
+  logger,
+  _attributes,
+  server
+) => {
   const { value, error } = inputMessageSchema.validate(message)
   if (error) {
     throw error
@@ -29,6 +35,9 @@ export const processInputMessage = async (message, db, logger, _attributes) => {
   if (releaseInfo) {
     logger.info('New version released successfully, sending notification')
     await notifyVersion(releaseInfo, message.user, logger)
+    for (const alias of server.methods.aliasLookup(releaseInfo.grant)) {
+      await notifyVersion({ ...releaseInfo, grant: alias }, 'system', logger)
+    }
   }
 }
 

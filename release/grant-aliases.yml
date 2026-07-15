@@ -1,0 +1,4 @@
+aliases:
+  - name: farm-payments
+    aliases:
+      - frps-private-beta
