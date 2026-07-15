@@ -36,7 +36,11 @@ export const processInputMessage = async (
     logger.info('New version released successfully, sending notification')
     await notifyVersion(releaseInfo, message.user, logger)
     for (const alias of server.methods.aliasLookup(releaseInfo.grant)) {
-      await notifyVersion({ ...releaseInfo, grant: alias }, 'system', logger)
+      await notifyVersion(
+        { ...releaseInfo, grant: alias },
+        message.user,
+        logger
+      )
     }
   }
 }

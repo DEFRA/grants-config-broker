@@ -219,12 +219,12 @@ describe('Process Message test', () => {
     expect(notifyVersion).toHaveBeenCalledWith(releaseInfo, user, mockLogger)
     expect(notifyVersion).toHaveBeenCalledWith(
       { ...releaseInfo, grant: 'alias-1' },
-      'system',
+      user,
       mockLogger
     )
     expect(notifyVersion).toHaveBeenCalledWith(
       { ...releaseInfo, grant: 'alias-2' },
-      'system',
+      user,
       mockLogger
     )
   })

@@ -54,7 +54,6 @@ describe('check-aliases', () => {
     expect(mockLogger.info).toHaveBeenCalledWith(
       'Setting aliases for GRANT1 to ALIAS1,ALIAS2'
     )
-    expect(mockLogger.info).toHaveBeenCalledWith(true) // Array.isArray(aliasEntry.aliases)
   })
 
   it('should handle empty aliases list', async () => {

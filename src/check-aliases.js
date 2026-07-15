@@ -21,7 +21,6 @@ export const createAliasesLookup = async (logger) => {
     logger.info(
       `Setting aliases for ${aliasEntry.name} to ${aliasEntry.aliases}`
     )
-    logger.info(Array.isArray(aliasEntry.aliases))
     aliasLookup.set(aliasEntry.name, aliasEntry.aliases)
   }
   return (grantName) =>
