@@ -92,6 +92,9 @@ jobs:
         run: |
           cp release/release.yml config/
           cp -r aggregated-config/* config/
+
+      - name: Copy alias file
+        run: |
           cp release/grant-aliases.yml config/
 
       - name: Build and Publish
