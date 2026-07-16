@@ -1,3 +1,4 @@
+import crypto from 'node:crypto'
 import { serviceAuth } from './service-auth.js'
 import { config } from '../config.js'
 import { getLogger } from '../common/helpers/logging/logger.js'
@@ -28,6 +29,9 @@ vi.mock('../common/helpers/logging/logger.js', () => ({
 }))
 
 vi.mock('../common/helpers/mongodb.js')
+
+const FAKE_ENCRYPTION_KEY = 'fake-encryption-key'
+const FAKE_TOKEN = 'fake-auth-token'
 
 describe('service-auth plugin', () => {
   let mockServer
@@ -87,8 +91,8 @@ describe('service-auth plugin', () => {
       config.set('serviceAuth.issuer', 'https://test-issuer.example.com')
       config.set('serviceAuth.audience', 'grants-config-broker')
       config.set('serviceAuth.allowedServices', '')
-      config.set('auth.token', 'fake-auth-token')
-      config.set('auth.encryptionKey', 'fake-encryption-key')
+      config.set('auth.token', FAKE_TOKEN)
+      config.set('auth.encryptionKey', FAKE_ENCRYPTION_KEY)
     })
 
     test('should register the JWT plugin', async () => {
@@ -175,7 +179,7 @@ describe('service-auth plugin', () => {
       const strategyOptions = serviceStrategyCall[2]
       const result = strategyOptions.validate(
         {
-          TODO: 'bar'
+          ignored: true
         },
         { headers: { authorization: getFakeAuthHeaderValue() }, path: '' }
       )
@@ -262,13 +266,10 @@ describe('service-auth plugin', () => {
 })
 
 const getFakeAuthHeaderValue = () => {
-  const crypto = require('crypto')
-  const encryptionKey = 'fake-encryption-key'
-  const token = 'fake-auth-token'
   const iv = crypto.randomBytes(12)
-  const key = crypto.scryptSync(encryptionKey, 'salt', 32)
+  const key = crypto.scryptSync(FAKE_ENCRYPTION_KEY, 'salt', 32)
   const cipher = crypto.createCipheriv('aes-256-gcm', key, iv)
-  let encrypted = cipher.update(token, 'utf8', 'base64')
+  let encrypted = cipher.update(FAKE_TOKEN, 'utf8', 'base64')
   encrypted += cipher.final('base64')
   const authTag = cipher.getAuthTag()
   const encryptedToken = `${iv.toString('base64')}:${authTag.toString('base64')}:${encrypted}`
