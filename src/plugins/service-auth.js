@@ -1,5 +1,4 @@
 import Jwt from '@hapi/jwt'
-import Boom from '@hapi/boom'
 import crypto from 'node:crypto'
 import { config } from '../config.js'
 import { getLogger } from '../common/helpers/logging/logger.js'
@@ -12,7 +11,6 @@ export const serviceAuth = {
     register: async (server) => {
       if (!config.get('serviceAuth.enabled')) {
         logger.info('Service-to-service authentication is disabled')
-        registerLegacyAuth(server)
         return
       }
 
@@ -34,7 +32,12 @@ export const serviceAuth = {
           iss: config.get('serviceAuth.issuer'),
           sub: false
         },
-        validate: (artifacts) => {
+        validate: (artifacts, request) => {
+          // Check if called using legacy auth
+          if (validLegacyAuth(request)) {
+            return { isValid: true }
+          }
+
           const sub = artifacts.decoded.payload.sub
 
           if (!sub) {
@@ -64,67 +67,23 @@ export const serviceAuth = {
 }
 
 // Legacy bearer auth scheme
-const registerLegacyAuth = (server) => {
-  logger.info('Registering legacy bearer authentication')
+const validLegacyAuth = (request) => {
+  const authHeader = request.headers.authorization
+  const isLocalEnvironment = config.get('cdpEnvironment') === 'local'
+  const isDocumentationPath = request.path.startsWith('/documentation')
 
-  server.auth.scheme('bearer', (_server, _options) => {
-    return {
-      authenticate: (request, h) => {
-        const authHeader = request.headers.authorization
-        const isLocalEnvironment = config.get('cdpEnvironment') === 'local'
-        const isDocumentationPath = request.path.startsWith('/documentation')
-        const validation =
-          isLocalEnvironment || isDocumentationPath
-            ? { isValid: true }
-            : validateAuthToken(authHeader)
+  const validation =
+    isLocalEnvironment || isDocumentationPath
+      ? { isValid: true }
+      : validateAuthToken(authHeader)
 
-        if (!validation.isValid) {
-          throw Boom.unauthorized('Invalid authentication credentials')
-        }
-
-        return h.authenticated({ credentials: { authenticated: true } })
-      }
-    }
-  })
-
-  server.auth.strategy('bearer', 'bearer')
-  server.auth.default('bearer')
+  const valid = validation.isValid
+  if (valid) {
+    logger.warn('Call made with valid legacy auth')
+  }
+  return valid
 }
-
 const EXPECTED_TOKEN_PARTS = 3
-function decryptToken(encryptedToken) {
-  const encryptionKey = config.get('auth.encryptionKey')
-  if (!encryptionKey) {
-    return null
-  }
-
-  try {
-    const parts = encryptedToken.split(':')
-    if (parts.length !== EXPECTED_TOKEN_PARTS) {
-      throw new Error('Malformed encrypted token')
-    }
-
-    const [ivB64, authTagB64, encryptedData] = encryptedToken.split(':')
-    if (!ivB64 || !authTagB64 || !encryptedData) {
-      throw new Error('Invalid encrypted token format')
-    }
-
-    const iv = Buffer.from(ivB64, 'base64')
-    const authTag = Buffer.from(authTagB64, 'base64')
-    const key = crypto.scryptSync(encryptionKey, 'salt', 32)
-
-    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv)
-    decipher.setAuthTag(authTag)
-
-    let decrypted = decipher.update(encryptedData, 'base64', 'utf8')
-    decrypted += decipher.final('utf8')
-
-    return decrypted
-  } catch (error) {
-    logger.error(error, 'Token decryption failed')
-    return null
-  }
-}
 function validateAuthToken(authHeader) {
   if (!authHeader?.startsWith('Bearer ')) {
     return {
@@ -170,4 +129,37 @@ function validateAuthToken(authHeader) {
   }
 
   return { isValid: true }
+}
+function decryptToken(encryptedToken) {
+  const encryptionKey = config.get('auth.encryptionKey')
+  if (!encryptionKey) {
+    return null
+  }
+
+  try {
+    const parts = encryptedToken.split(':')
+    if (parts.length !== EXPECTED_TOKEN_PARTS) {
+      throw new Error('Malformed encrypted token')
+    }
+
+    const [ivB64, authTagB64, encryptedData] = encryptedToken.split(':')
+    if (!ivB64 || !authTagB64 || !encryptedData) {
+      throw new Error('Invalid encrypted token format')
+    }
+
+    const iv = Buffer.from(ivB64, 'base64')
+    const authTag = Buffer.from(authTagB64, 'base64')
+    const key = crypto.scryptSync(encryptionKey, 'salt', 32)
+
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv)
+    decipher.setAuthTag(authTag)
+
+    let decrypted = decipher.update(encryptedData, 'base64', 'utf8')
+    decrypted += decipher.final('utf8')
+
+    return decrypted
+  } catch (error) {
+    logger.error(error, 'Token decryption failed')
+    return null
+  }
 }
