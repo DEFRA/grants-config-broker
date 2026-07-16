@@ -144,9 +144,7 @@ describe('service-auth plugin', () => {
     test('should set service as the default auth strategy', async () => {
       await serviceAuth.plugin.register(mockServer)
 
-      expect(mockServer.auth.default).toHaveBeenCalledWith({
-        strategies: ['bearer', 'service']
-      })
+      expect(mockServer.auth.default).toHaveBeenCalledWith('service')
     })
 
     test('validate callback should return valid credentials from the JWT payload', async () => {
@@ -303,11 +301,11 @@ describe('service-auth plugin', () => {
 
     beforeAll(async () => {
       vi.spyOn(config, 'get').mockImplementation((key) => {
+        if (key === 'serviceAuth.enabled') return false
         if (mockValues.has(key)) return mockValues.get(key)
         if (key === 'auth.token') return TEST_AUTH_TOKEN
         if (key === 'auth.encryptionKey') return TEST_ENCRYPTION_KEY
         if (key === 'cdpEnvironment') return 'test'
-        if (key === 'serviceAuth.enabled') return false
         return null
       })
 

@@ -10,38 +10,11 @@ export const serviceAuth = {
   plugin: {
     name: 'service-auth',
     register: async (server) => {
-      // Register legacy bearer auth scheme
-      server.auth.scheme('bearer', (_server, _options) => {
-        return {
-          authenticate: (request, h) => {
-            const authHeader = request.headers.authorization
-            const isLocalEnvironment = config.get('cdpEnvironment') === 'local'
-            const isDocumentationPath =
-              request.path.startsWith('/documentation')
-            const validation =
-              isLocalEnvironment || isDocumentationPath
-                ? { isValid: true }
-                : validateAuthToken(authHeader)
-
-            if (!validation.isValid) {
-              throw Boom.unauthorized('Invalid authentication credentials')
-            }
-
-            return h.authenticated({ credentials: { authenticated: true } })
-          }
-        }
-      })
-      server.auth.strategy('bearer', 'bearer')
-
       if (!config.get('serviceAuth.enabled')) {
         logger.info('Service-to-service authentication is disabled')
-        server.auth.default('bearer')
+        registerLegacyAuth(server)
         return
       }
-
-      const jwksUri = config.get('serviceAuth.jwksUri')
-      const issuer = config.get('serviceAuth.issuer')
-      const audience = config.get('serviceAuth.audience')
 
       logger.info('Registering service-to-service JWT authentication')
       await server.register(Jwt)
@@ -54,11 +27,11 @@ export const serviceAuth = {
 
       server.auth.strategy('service', 'jwt', {
         keys: {
-          uri: jwksUri
+          uri: config.get('serviceAuth.jwksUri')
         },
         verify: {
-          aud: audience,
-          iss: issuer,
+          aud: config.get('serviceAuth.audience'),
+          iss: config.get('serviceAuth.issuer'),
           sub: false
         },
         validate: (artifacts) => {
@@ -85,14 +58,39 @@ export const serviceAuth = {
         }
       })
 
-      server.auth.default({
-        strategies: ['bearer', 'service']
-      })
+      server.auth.default('service')
     }
   }
 }
 
 // Legacy bearer auth scheme
+const registerLegacyAuth = (server) => {
+  logger.info('Registering legacy bearer authentication')
+
+  server.auth.scheme('bearer', (_server, _options) => {
+    return {
+      authenticate: (request, h) => {
+        const authHeader = request.headers.authorization
+        const isLocalEnvironment = config.get('cdpEnvironment') === 'local'
+        const isDocumentationPath = request.path.startsWith('/documentation')
+        const validation =
+          isLocalEnvironment || isDocumentationPath
+            ? { isValid: true }
+            : validateAuthToken(authHeader)
+
+        if (!validation.isValid) {
+          throw Boom.unauthorized('Invalid authentication credentials')
+        }
+
+        return h.authenticated({ credentials: { authenticated: true } })
+      }
+    }
+  })
+
+  server.auth.strategy('bearer', 'bearer')
+  server.auth.default('bearer')
+}
+
 const EXPECTED_TOKEN_PARTS = 3
 function decryptToken(encryptedToken) {
   const encryptionKey = config.get('auth.encryptionKey')
