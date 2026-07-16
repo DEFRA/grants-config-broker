@@ -84,6 +84,39 @@ const validLegacyAuth = (request) => {
   return valid
 }
 const EXPECTED_TOKEN_PARTS = 3
+function decryptToken(encryptedToken) {
+  const encryptionKey = config.get('auth.encryptionKey')
+  if (!encryptionKey) {
+    return null
+  }
+
+  try {
+    const parts = encryptedToken.split(':')
+    if (parts.length !== EXPECTED_TOKEN_PARTS) {
+      throw new Error('Malformed encrypted token')
+    }
+
+    const [ivB64, authTagB64, encryptedData] = encryptedToken.split(':')
+    if (!ivB64 || !authTagB64 || !encryptedData) {
+      throw new Error('Invalid encrypted token format')
+    }
+
+    const iv = Buffer.from(ivB64, 'base64')
+    const authTag = Buffer.from(authTagB64, 'base64')
+    const key = crypto.scryptSync(encryptionKey, 'salt', 32)
+
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv)
+    decipher.setAuthTag(authTag)
+
+    let decrypted = decipher.update(encryptedData, 'base64', 'utf8')
+    decrypted += decipher.final('utf8')
+
+    return decrypted
+  } catch (error) {
+    logger.error(error, 'Token decryption failed')
+    return null
+  }
+}
 function validateAuthToken(authHeader) {
   if (!authHeader?.startsWith('Bearer ')) {
     return {
@@ -129,37 +162,4 @@ function validateAuthToken(authHeader) {
   }
 
   return { isValid: true }
-}
-function decryptToken(encryptedToken) {
-  const encryptionKey = config.get('auth.encryptionKey')
-  if (!encryptionKey) {
-    return null
-  }
-
-  try {
-    const parts = encryptedToken.split(':')
-    if (parts.length !== EXPECTED_TOKEN_PARTS) {
-      throw new Error('Malformed encrypted token')
-    }
-
-    const [ivB64, authTagB64, encryptedData] = encryptedToken.split(':')
-    if (!ivB64 || !authTagB64 || !encryptedData) {
-      throw new Error('Invalid encrypted token format')
-    }
-
-    const iv = Buffer.from(ivB64, 'base64')
-    const authTag = Buffer.from(authTagB64, 'base64')
-    const key = crypto.scryptSync(encryptionKey, 'salt', 32)
-
-    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv)
-    decipher.setAuthTag(authTag)
-
-    let decrypted = decipher.update(encryptedData, 'base64', 'utf8')
-    decrypted += decipher.final('utf8')
-
-    return decrypted
-  } catch (error) {
-    logger.error(error, 'Token decryption failed')
-    return null
-  }
 }
