@@ -12,7 +12,7 @@ export const serviceAuth = {
     register: async (server) => {
       if (!config.get('serviceAuth.enabled')) {
         logger.info('Service-to-service authentication is disabled')
-        registerLegacyAuth(server, logger)
+        registerLegacyAuth(server)
         return
       }
 
@@ -64,7 +64,7 @@ export const serviceAuth = {
 }
 
 // Legacy bearer auth scheme
-const registerLegacyAuth = (server, logger) => {
+const registerLegacyAuth = (server) => {
   logger.info('Registering legacy bearer authentication')
 
   server.auth.scheme('bearer', (_server, _options) => {
