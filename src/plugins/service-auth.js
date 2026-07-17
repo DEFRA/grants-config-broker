@@ -88,10 +88,13 @@ const validateAuthLegacy = (request, h, actualToken) => {
       : validateAuthToken(authHeader, actualToken)
 
   const valid = validation.isValid
+
   if (valid) {
     logger.info('Call made with valid legacy auth')
     return h.authenticated({ credentials: { type: 'custom' } })
   }
+
+  logger.error(`Server auth token not valid, error: ${validation.error}`)
   throw Boom.unauthorized()
 }
 const EXPECTED_TOKEN_PARTS = 3
