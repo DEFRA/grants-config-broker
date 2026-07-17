@@ -100,9 +100,10 @@ export const serviceAuth = {
 
 // Legacy bearer auth scheme
 const validLegacyToken = (authorizationHeader) => {
-  const encryptedToken = authorizationHeader.slice(
-    AUTH_HEADER_BEARER_VALUE_PREFIX.length
-  )
+  const encryptedToken = Buffer.from(
+    authorizationHeader.split(' ').pop(),
+    'base64'
+  ).toString('utf-8')
   const actualToken = decryptToken(encryptedToken)
   return actualToken === config.get('auth.token')
 }
