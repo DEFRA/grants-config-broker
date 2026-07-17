@@ -82,7 +82,9 @@ export const serviceAuth = {
             })
           }
 
-          logger.info('Not valid legacy token, falling back to JWT auth if enabled')
+          logger.info(
+            'Not valid legacy token, falling back to JWT auth if enabled'
+          )
           if (!config.get('serviceAuth.enabled')) {
             throw Boom.unauthorized()
           }
@@ -113,6 +115,7 @@ function decryptToken(encryptedToken) {
 
   try {
     const parts = encryptedToken.split(':')
+    logger.info(`Num parts: ${parts.length}`)
     if (parts.length !== EXPECTED_TOKEN_PARTS) {
       throw new Error('Malformed encrypted token')
     }
