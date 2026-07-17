@@ -88,7 +88,12 @@ export const serviceAuth = {
           if (!config.get('serviceAuth.enabled')) {
             throw Boom.unauthorized()
           }
-          return h.authenticated(await server.auth.test('service-jwt', request))
+
+          logger.info(`Running jwt auth test`)
+          await server.auth.test('service-jwt', request)
+          return h.authenticated({
+            credentials: { authenticated: true, type: 'jwt' }
+          })
         }
       }))
 
@@ -116,7 +121,6 @@ function decryptToken(encryptedToken) {
 
   try {
     const parts = encryptedToken.split(':')
-    logger.info(`Num parts: ${parts.length}`)
     if (parts.length !== EXPECTED_TOKEN_PARTS) {
       throw new Error('Malformed encrypted token')
     }
