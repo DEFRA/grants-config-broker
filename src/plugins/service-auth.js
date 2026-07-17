@@ -1,20 +1,16 @@
 import Jwt from '@hapi/jwt'
+import Boom from '@hapi/boom'
 import crypto from 'node:crypto'
 import { config } from '../config.js'
 import { getLogger } from '../common/helpers/logging/logger.js'
 
+const AUTH_HEADER_BEARER_VALUE_PREFIX = 'Bearer '
 const logger = getLogger()
 
 export const serviceAuth = {
   plugin: {
     name: 'service-auth',
     register: async (server) => {
-      if (!config.get('serviceAuth.enabled')) {
-        logger.info('Service-to-service authentication is disabled')
-        return
-      }
-
-      logger.info('Registering service-to-service JWT authentication')
       await server.register(Jwt)
 
       const allowedServices = config
@@ -23,7 +19,8 @@ export const serviceAuth = {
         .map((s) => s.trim())
         .filter(Boolean)
 
-      server.auth.strategy('service', 'jwt', {
+      // JWT strategy
+      server.auth.strategy('service-jwt', 'jwt', {
         keys: {
           uri: config.get('serviceAuth.jwksUri')
         },
@@ -32,21 +29,15 @@ export const serviceAuth = {
           iss: config.get('serviceAuth.issuer'),
           sub: false
         },
-        validate: (artifacts, request) => {
-          // Check if called using legacy auth
-          if (validLegacyAuth(request)) {
-            return { isValid: true }
-          }
-
+        validate: (artifacts) => {
           const sub = artifacts.decoded.payload.sub
 
           if (!sub) {
             logger.warn('Service-to-service auth rejected: missing sub claim')
-            return { isValid: false }
+            throw Boom.unauthorized()
           }
 
           const serviceName = sub.split('/').pop()
-
           if (
             allowedServices.length > 0 &&
             !allowedServices.includes(serviceName)
@@ -54,34 +45,58 @@ export const serviceAuth = {
             logger.warn(
               `Service-to-service auth rejected: service '${serviceName}' is not in allowed list`
             )
-            return { isValid: false, credentials: { sub } }
+            throw Boom.unauthorized()
           }
 
-          return { isValid: true, credentials: { sub } }
+          return { credentials: { authenticated: true, sub } }
         }
       })
 
+      // Custom scheme
+      server.auth.scheme('service-custom', () => ({
+        authenticate: async (request, h) => {
+          const isLocalEnvironment = config.get('cdpEnvironment') === 'local'
+          const isDocumentationPath = request.path.startsWith('/documentation')
+
+          if (isLocalEnvironment || isDocumentationPath) {
+            logger.info(
+              'Auth not required for local environment or documentation path'
+            )
+            return h.authenticated({ credentials: { authenticated: true } })
+          }
+
+          const authorizationHeader = request.headers.authorization
+
+          if (
+            !authorizationHeader?.startsWith(AUTH_HEADER_BEARER_VALUE_PREFIX)
+          ) {
+            throw Boom.unauthorized()
+          }
+
+          if (validateAuthLegacy(authorizationHeader)) {
+            return h.authenticated({
+              credentials: { authenticated: true, type: 'custom' }
+            })
+          }
+
+          // Otherwise fall back to JWT validation
+          return h.authenticated(await server.auth.test('service-jwt', request))
+        }
+      }))
+
+      server.auth.strategy('service', 'service-custom')
       server.auth.default('service')
     }
   }
 }
 
 // Legacy bearer auth scheme
-const validLegacyAuth = (request) => {
-  const authHeader = request.headers.authorization
-  const isLocalEnvironment = config.get('cdpEnvironment') === 'local'
-  const isDocumentationPath = request.path.startsWith('/documentation')
-
-  const validation =
-    isLocalEnvironment || isDocumentationPath
-      ? { isValid: true }
-      : validateAuthToken(authHeader)
-
-  const valid = validation.isValid
-  if (valid) {
-    logger.warn('Call made with valid legacy auth')
-  }
-  return valid
+const validateAuthLegacy = (authorizationHeader) => {
+  const encryptedToken = authorizationHeader.slice(
+    AUTH_HEADER_BEARER_VALUE_PREFIX.length
+  )
+  const actualToken = decryptToken(encryptedToken)
+  return actualToken === config.get('auth.token')
 }
 const EXPECTED_TOKEN_PARTS = 3
 function decryptToken(encryptedToken) {
@@ -113,53 +128,7 @@ function decryptToken(encryptedToken) {
 
     return decrypted
   } catch (error) {
-    logger.error(error, 'Token decryption failed')
+    logger.error(error, 'LEGACY AUTH: token provided is not a valid')
     return null
   }
-}
-function validateAuthToken(authHeader) {
-  if (!authHeader?.startsWith('Bearer ')) {
-    return {
-      isValid: false,
-      error: 'Missing or invalid Authorization header format'
-    }
-  }
-
-  const expectedToken = config.get('auth.token')
-  if (!expectedToken) {
-    logger.error('Server auth token not configured')
-    return {
-      isValid: false,
-      error: 'Server authentication token not configured'
-    }
-  }
-
-  const encryptionKey = config.get('auth.encryptionKey')
-  if (!encryptionKey) {
-    logger.error(
-      'Encryption key not configured - encrypted tokens are required'
-    )
-    return { isValid: false, error: 'Server encryption not configured' }
-  }
-
-  try {
-    const encryptedToken = Buffer.from(
-      authHeader.split(' ').pop(),
-      'base64'
-    ).toString('utf-8')
-    const actualToken = decryptToken(encryptedToken)
-    if (!actualToken) {
-      return { isValid: false, error: 'Invalid encrypted token' }
-    }
-
-    const tokensMatch = actualToken === expectedToken
-
-    if (!tokensMatch) {
-      return { isValid: false, error: 'Invalid bearer token' }
-    }
-  } catch {
-    return { isValid: false, error: 'Invalid encrypted token' }
-  }
-
-  return { isValid: true }
 }
