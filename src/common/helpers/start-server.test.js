@@ -1,5 +1,7 @@
 import hapi from '@hapi/hapi'
 
+vi.mock('../../plugins/service-auth.js')
+
 const mockLogger = {
   info: vi.fn(),
   error: vi.fn()

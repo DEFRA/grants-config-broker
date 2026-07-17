@@ -1,4 +1,5 @@
 import Jwt from '@hapi/jwt'
+import Boom from '@hapi/boom'
 import crypto from 'node:crypto'
 import { config } from '../config.js'
 import { getLogger } from '../common/helpers/logging/logger.js'
@@ -9,12 +10,6 @@ export const serviceAuth = {
   plugin: {
     name: 'service-auth',
     register: async (server) => {
-      if (!config.get('serviceAuth.enabled')) {
-        logger.info('Service-to-service authentication is disabled')
-        return
-      }
-
-      logger.info('Registering service-to-service JWT authentication')
       await server.register(Jwt)
 
       const allowedServices = config
@@ -23,7 +18,8 @@ export const serviceAuth = {
         .map((s) => s.trim())
         .filter(Boolean)
 
-      server.auth.strategy('service', 'jwt', {
+      // JWT strategy
+      server.auth.strategy('service-jwt', 'jwt', {
         keys: {
           uri: config.get('serviceAuth.jwksUri')
         },
@@ -33,11 +29,6 @@ export const serviceAuth = {
           sub: false
         },
         validate: (artifacts, request) => {
-          // Check if called using legacy auth
-          if (validLegacyAuth(request)) {
-            return { isValid: true }
-          }
-
           const sub = artifacts.decoded.payload.sub
 
           if (!sub) {
@@ -46,7 +37,6 @@ export const serviceAuth = {
           }
 
           const serviceName = sub.split('/').pop()
-
           if (
             allowedServices.length > 0 &&
             !allowedServices.includes(serviceName)
@@ -61,13 +51,33 @@ export const serviceAuth = {
         }
       })
 
+      // Custom scheme
+      server.auth.scheme('service-auth', () => ({
+        authenticate: async (request, h) => {
+          const auth = request.headers.authorization
+
+          if (!auth?.startsWith('Bearer ')) {
+            throw Boom.unauthorized()
+          }
+
+          const actualToken = decryptToken(auth.slice(7))
+          if (actualToken === config.get('auth.token')) {
+            return validateAuthLegacy(request, h, actualToken)
+          }
+
+          // Otherwise fall back to JWT validation
+          return h.authenticated(await server.auth.test('service-jwt', request))
+        }
+      }))
+
+      server.auth.strategy('service', 'service-auth')
       server.auth.default('service')
     }
   }
 }
 
 // Legacy bearer auth scheme
-const validLegacyAuth = (request) => {
+const validateAuthLegacy = (request, h, actualToken) => {
   const authHeader = request.headers.authorization
   const isLocalEnvironment = config.get('cdpEnvironment') === 'local'
   const isDocumentationPath = request.path.startsWith('/documentation')
@@ -75,13 +85,14 @@ const validLegacyAuth = (request) => {
   const validation =
     isLocalEnvironment || isDocumentationPath
       ? { isValid: true }
-      : validateAuthToken(authHeader)
+      : validateAuthToken(authHeader, actualToken)
 
   const valid = validation.isValid
   if (valid) {
-    logger.warn('Call made with valid legacy auth')
+    logger.info('Call made with valid legacy auth')
+    return h.authenticated({ credentials: { type: 'custom' } })
   }
-  return valid
+  throw Boom.unauthorized()
 }
 const EXPECTED_TOKEN_PARTS = 3
 function decryptToken(encryptedToken) {
@@ -113,11 +124,11 @@ function decryptToken(encryptedToken) {
 
     return decrypted
   } catch (error) {
-    logger.error(error, 'Token decryption failed')
+    logger.error(error, 'LEGACY AUTH: token provided is not a valid')
     return null
   }
 }
-function validateAuthToken(authHeader) {
+function validateAuthToken(authHeader, actualToken) {
   if (!authHeader?.startsWith('Bearer ')) {
     return {
       isValid: false,
@@ -143,15 +154,6 @@ function validateAuthToken(authHeader) {
   }
 
   try {
-    const encryptedToken = Buffer.from(
-      authHeader.split(' ').pop(),
-      'base64'
-    ).toString('utf-8')
-    const actualToken = decryptToken(encryptedToken)
-    if (!actualToken) {
-      return { isValid: false, error: 'Invalid encrypted token' }
-    }
-
     const tokensMatch = actualToken === expectedToken
 
     if (!tokensMatch) {

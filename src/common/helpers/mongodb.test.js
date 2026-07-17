@@ -1,6 +1,8 @@
 import { Db, MongoClient } from 'mongodb'
 import { LockManager } from 'mongo-locks'
 
+vi.mock('../../plugins/service-auth.js')
+
 describe('#mongoDb', () => {
   let server
 

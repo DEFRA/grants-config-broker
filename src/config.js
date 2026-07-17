@@ -194,12 +194,6 @@ const config = convict({
     env: 'ENABLE_METRICS'
   },
   serviceAuth: {
-    enabled: {
-      doc: 'Enable service-to-service JWT authentication on all non-health routes',
-      format: Boolean,
-      default: false,
-      env: 'SERVICE_AUTH_ENABLED'
-    },
     jwksUri: {
       doc: 'JWKS endpoint URI for verifying service JWT tokens (CDP_JWT_JWKS_URI)',
       format: String,
