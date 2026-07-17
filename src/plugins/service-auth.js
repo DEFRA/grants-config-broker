@@ -50,7 +50,8 @@ export const serviceAuth = {
               throw Boom.unauthorized()
             }
 
-            return { credentials: { authenticated: true, sub } }
+            logger.info(`Completed jwt auth test`)
+            return { isValid: true, credentials: { sub } }
           }
         })
       }
