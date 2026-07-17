@@ -4,6 +4,7 @@ import crypto from 'node:crypto'
 import { config } from '../config.js'
 import { getLogger } from '../common/helpers/logging/logger.js'
 
+const AUTH_HEADER_BEARER_VALUE_PREFIX = 'Bearer '
 const logger = getLogger()
 
 export const serviceAuth = {
@@ -33,7 +34,7 @@ export const serviceAuth = {
 
           if (!sub) {
             logger.warn('Service-to-service auth rejected: missing sub claim')
-            return { isValid: false }
+            throw Boom.unauthorized()
           }
 
           const serviceName = sub.split('/').pop()
@@ -44,25 +45,38 @@ export const serviceAuth = {
             logger.warn(
               `Service-to-service auth rejected: service '${serviceName}' is not in allowed list`
             )
-            return { isValid: false, credentials: { sub } }
+            throw Boom.unauthorized()
           }
 
-          return { isValid: true, credentials: { sub } }
+          return { credentials: { authenticated: true, sub } }
         }
       })
 
       // Custom scheme
       server.auth.scheme('service-custom', () => ({
         authenticate: async (request, h) => {
-          const auth = request.headers.authorization
+          const isLocalEnvironment = config.get('cdpEnvironment') === 'local'
+          const isDocumentationPath = request.path.startsWith('/documentation')
 
-          if (!auth?.startsWith('Bearer ')) {
+          if (isLocalEnvironment || isDocumentationPath) {
+            logger.info(
+              'Auth not required for local environment or documentation path'
+            )
+            return h.authenticated({ credentials: { authenticated: true } })
+          }
+
+          const authorizationHeader = request.headers.authorization
+
+          if (
+            !authorizationHeader?.startsWith(AUTH_HEADER_BEARER_VALUE_PREFIX)
+          ) {
             throw Boom.unauthorized()
           }
 
-          const actualToken = decryptToken(auth.slice(7))
-          if (actualToken === config.get('auth.token')) {
-            return validateAuthLegacy(request, h, actualToken)
+          if (validateAuthLegacy(authorizationHeader)) {
+            return h.authenticated({
+              credentials: { authenticated: true, type: 'custom' }
+            })
           }
 
           // Otherwise fall back to JWT validation
@@ -77,25 +91,12 @@ export const serviceAuth = {
 }
 
 // Legacy bearer auth scheme
-const validateAuthLegacy = (request, h, actualToken) => {
-  const authHeader = request.headers.authorization
-  const isLocalEnvironment = config.get('cdpEnvironment') === 'local'
-  const isDocumentationPath = request.path.startsWith('/documentation')
-
-  const validation =
-    isLocalEnvironment || isDocumentationPath
-      ? { isValid: true }
-      : validateAuthToken(authHeader, actualToken)
-
-  const valid = validation.isValid
-
-  if (valid) {
-    logger.info('Call made with valid legacy auth')
-    return h.authenticated({ credentials: { type: 'custom' } })
-  }
-
-  logger.error(`Server auth token not valid, error: ${validation.error}`)
-  throw Boom.unauthorized()
+const validateAuthLegacy = (authorizationHeader) => {
+  const encryptedToken = authorizationHeader.slice(
+    AUTH_HEADER_BEARER_VALUE_PREFIX.length
+  )
+  const actualToken = decryptToken(encryptedToken)
+  return actualToken === config.get('auth.token')
 }
 const EXPECTED_TOKEN_PARTS = 3
 function decryptToken(encryptedToken) {
@@ -130,41 +131,4 @@ function decryptToken(encryptedToken) {
     logger.error(error, 'LEGACY AUTH: token provided is not a valid')
     return null
   }
-}
-function validateAuthToken(authHeader, actualToken) {
-  if (!authHeader?.startsWith('Bearer ')) {
-    return {
-      isValid: false,
-      error: 'Missing or invalid Authorization header format'
-    }
-  }
-
-  const expectedToken = config.get('auth.token')
-  if (!expectedToken) {
-    logger.error('Server auth token not configured')
-    return {
-      isValid: false,
-      error: 'Server authentication token not configured'
-    }
-  }
-
-  const encryptionKey = config.get('auth.encryptionKey')
-  if (!encryptionKey) {
-    logger.error(
-      'Encryption key not configured - encrypted tokens are required'
-    )
-    return { isValid: false, error: 'Server encryption not configured' }
-  }
-
-  try {
-    const tokensMatch = actualToken === expectedToken
-
-    if (!tokensMatch) {
-      return { isValid: false, error: 'Invalid bearer token' }
-    }
-  } catch {
-    return { isValid: false, error: 'Invalid encrypted token' }
-  }
-
-  return { isValid: true }
 }
