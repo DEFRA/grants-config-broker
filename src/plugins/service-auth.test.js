@@ -135,7 +135,7 @@ describe.skip('service-auth plugin', () => {
       await serviceAuth.plugin.register(mockServer)
 
       expect(mockServer.auth.strategy).toHaveBeenCalledWith(
-        'service-auth',
+        'service',
         'jwt',
         expect.any(Object)
       )

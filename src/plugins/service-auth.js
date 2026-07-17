@@ -28,7 +28,7 @@ export const serviceAuth = {
           iss: config.get('serviceAuth.issuer'),
           sub: false
         },
-        validate: (artifacts, request) => {
+        validate: (artifacts) => {
           const sub = artifacts.decoded.payload.sub
 
           if (!sub) {
@@ -52,7 +52,7 @@ export const serviceAuth = {
       })
 
       // Custom scheme
-      server.auth.scheme('service-auth', () => ({
+      server.auth.scheme('service-custom', () => ({
         authenticate: async (request, h) => {
           const auth = request.headers.authorization
 
@@ -70,7 +70,7 @@ export const serviceAuth = {
         }
       }))
 
-      server.auth.strategy('service', 'service-auth')
+      server.auth.strategy('service', 'service-custom')
       server.auth.default('service')
     }
   }
