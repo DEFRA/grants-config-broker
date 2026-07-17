@@ -19,38 +19,41 @@ export const serviceAuth = {
         .map((s) => s.trim())
         .filter(Boolean)
 
-      // JWT strategy
-      server.auth.strategy('service-jwt', 'jwt', {
-        keys: {
-          uri: config.get('serviceAuth.jwksUri')
-        },
-        verify: {
-          aud: config.get('serviceAuth.audience'),
-          iss: config.get('serviceAuth.issuer'),
-          sub: false
-        },
-        validate: (artifacts) => {
-          const sub = artifacts.decoded.payload.sub
+      // JWT strategy if enabled
+      if (config.get('serviceAuth.enabled')) {
+        server.auth.strategy('service-jwt', 'jwt', {
+          keys: {
+            uri: config.get('serviceAuth.jwksUri')
+          },
+          verify: {
+            aud: config.get('serviceAuth.audience'),
+            iss: config.get('serviceAuth.issuer'),
+            sub: false
+          },
+          validate: (artifacts) => {
+            logger.info('Falling back to JWT auth')
+            const sub = artifacts.decoded.payload.sub
 
-          if (!sub) {
-            logger.warn('Service-to-service auth rejected: missing sub claim')
-            throw Boom.unauthorized()
+            if (!sub) {
+              logger.warn('Service-to-service auth rejected: missing sub claim')
+              throw Boom.unauthorized()
+            }
+
+            const serviceName = sub.split('/').pop()
+            if (
+              allowedServices.length > 0 &&
+              !allowedServices.includes(serviceName)
+            ) {
+              logger.warn(
+                `Service-to-service auth rejected: service '${serviceName}' is not in allowed list`
+              )
+              throw Boom.unauthorized()
+            }
+
+            return { credentials: { authenticated: true, sub } }
           }
-
-          const serviceName = sub.split('/').pop()
-          if (
-            allowedServices.length > 0 &&
-            !allowedServices.includes(serviceName)
-          ) {
-            logger.warn(
-              `Service-to-service auth rejected: service '${serviceName}' is not in allowed list`
-            )
-            throw Boom.unauthorized()
-          }
-
-          return { credentials: { authenticated: true, sub } }
-        }
-      })
+        })
+      }
 
       // Custom scheme
       server.auth.scheme('service-custom', () => ({
@@ -73,13 +76,18 @@ export const serviceAuth = {
             throw Boom.unauthorized()
           }
 
-          if (validateAuthLegacy(authorizationHeader)) {
+          if (validLegacyToken(authorizationHeader)) {
             return h.authenticated({
               credentials: { authenticated: true, type: 'custom' }
             })
           }
 
-          // Otherwise fall back to JWT validation
+          logger.info(
+            'Not valid legacy token, falling back to JWT auth if enabled'
+          )
+          if (!config.get('serviceAuth.enabled')) {
+            throw Boom.unauthorized()
+          }
           return h.authenticated(await server.auth.test('service-jwt', request))
         }
       }))
@@ -91,7 +99,7 @@ export const serviceAuth = {
 }
 
 // Legacy bearer auth scheme
-const validateAuthLegacy = (authorizationHeader) => {
+const validLegacyToken = (authorizationHeader) => {
   const encryptedToken = authorizationHeader.slice(
     AUTH_HEADER_BEARER_VALUE_PREFIX.length
   )
@@ -107,6 +115,7 @@ function decryptToken(encryptedToken) {
 
   try {
     const parts = encryptedToken.split(':')
+    logger.info(`Num parts: ${parts.length}`)
     if (parts.length !== EXPECTED_TOKEN_PARTS) {
       throw new Error('Malformed encrypted token')
     }
