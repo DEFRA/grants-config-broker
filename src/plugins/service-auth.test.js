@@ -57,13 +57,13 @@ describe('serviceAuth plugin', () => {
     if (server) await server.stop()
   })
 
-  describe('Plugin Registration', () => {
+  describe('plugin registration', () => {
     it('should register successfully', async () => {
       await server.register(serviceAuth)
     })
   })
 
-  describe('Authentication Bypasses', () => {
+  describe('auth bypasses', () => {
     it('should bypass auth in local environment', async () => {
       config.get.mockImplementation((key) => {
         if (key === 'cdpEnvironment') return 'local'
@@ -100,7 +100,7 @@ describe('serviceAuth plugin', () => {
     })
   })
 
-  describe('Legacy Token Authentication', () => {
+  describe('legacy auth', () => {
     beforeEach(async () => {
       await server.register(serviceAuth)
       server.route({
@@ -125,7 +125,7 @@ describe('serviceAuth plugin', () => {
       expect(res.statusCode).toBe(StatusCodes.OK)
     })
 
-    it('should fail with missing Bearer prefix', async () => {
+    it('should fail with missing bearer prefix', async () => {
       const res = await server.inject({
         method: 'GET',
         url: '/t',
@@ -135,71 +135,88 @@ describe('serviceAuth plugin', () => {
       expect(res.statusCode).toBe(StatusCodes.UNAUTHORIZED)
     })
 
-    describe('Error Paths', () => {
-      it('should log error for malformed token (missing parts)', async () => {
-        await server.inject({
-          method: 'GET',
-          url: '/t',
-          headers: {
-            authorization: `Bearer ${Buffer.from('a:b').toString('base64')}`
-          }
-        })
-
-        expect(getLogger().error).toHaveBeenCalled()
+    it('should log error for malformed token (missing parts)', async () => {
+      await server.inject({
+        method: 'GET',
+        url: '/t',
+        headers: {
+          authorization: `Bearer ${Buffer.from('a:b').toString('base64')}`
+        }
       })
 
-      it('should log error for invalid base64 encoding', async () => {
-        const res = await server.inject({
-          method: 'GET',
-          url: '/t',
-          headers: { authorization: 'Bearer !!!!' }
-        })
-        expect(res.statusCode).toBe(StatusCodes.UNAUTHORIZED)
+      expect(getLogger().error).toHaveBeenCalled()
+    })
+
+    it('should log error for invalid base64 encoding', async () => {
+      const res = await server.inject({
+        method: 'GET',
+        url: '/t',
+        headers: { authorization: 'Bearer !!!!' }
+      })
+      expect(res.statusCode).toBe(StatusCodes.UNAUTHORIZED)
+    })
+
+    it('should log error for invalid token parts format', async () => {
+      await server.inject({
+        method: 'GET',
+        url: '/t',
+        headers: {
+          authorization: `Bearer ${Buffer.from('a:b:').toString('base64')}`
+        }
+      })
+      expect(getLogger().error).toHaveBeenCalled()
+    })
+
+    it('should log error and fallback to JWT on decryption failure', async () => {
+      const res = await server.inject({
+        method: 'GET',
+        url: '/t',
+        headers: {
+          authorization: `Bearer ${Buffer.from('iv:tag:data').toString('base64')}`
+        }
+      })
+      expect(getLogger().error).toHaveBeenCalled()
+      expect(res.statusCode).toBe(StatusCodes.UNAUTHORIZED)
+    })
+
+    it('should fail when JWT fallback is disabled', async () => {
+      config.get.mockImplementation((key) => {
+        if (key === 'serviceAuth.enabled') return false
+        return defaultConfigValues[key] ?? null
       })
 
-      it('should log error for invalid token parts format', async () => {
-        await server.inject({
-          method: 'GET',
-          url: '/t',
-          headers: {
-            authorization: `Bearer ${Buffer.from('a:b:').toString('base64')}`
-          }
-        })
-        expect(getLogger().error).toHaveBeenCalled()
+      const invalidLegacyHeader = `Bearer ${Buffer.from(encrypt('not-the-token', defaultConfigValues['auth.encryptionKey'])).toString('base64')}`
+
+      const res = await server.inject({
+        method: 'GET',
+        url: '/t',
+        headers: { authorization: invalidLegacyHeader }
       })
 
-      it('should log error and fallback to JWT on decryption failure', async () => {
-        const res = await server.inject({
-          method: 'GET',
-          url: '/t',
-          headers: {
-            authorization: `Bearer ${Buffer.from('iv:tag:data').toString('base64')}`
-          }
-        })
-        expect(getLogger().error).toHaveBeenCalled()
-        expect(res.statusCode).toBe(StatusCodes.UNAUTHORIZED)
+      expect(res.statusCode).toBe(StatusCodes.UNAUTHORIZED)
+    })
+
+    it('should fail with encryption key missing', async () => {
+      const encryptionKey = defaultConfigValues['auth.encryptionKey']
+      const token = defaultConfigValues['auth.token']
+      const authHeader = `Bearer ${Buffer.from(encrypt(token, encryptionKey)).toString('base64')}`
+      config.get.mockImplementation((key) => {
+        if (key === 'auth.encryptionKey') return ''
+        if (key === 'serviceAuth.enabled') return false
+        return defaultConfigValues[key] ?? null
       })
 
-      it('should fail when JWT fallback is disabled', async () => {
-        config.get.mockImplementation((key) => {
-          if (key === 'serviceAuth.enabled') return false
-          return defaultConfigValues[key] ?? null
-        })
-
-        const invalidLegacyHeader = `Bearer ${Buffer.from(encrypt('not-the-token', defaultConfigValues['auth.encryptionKey'])).toString('base64')}`
-
-        const res = await server.inject({
-          method: 'GET',
-          url: '/t',
-          headers: { authorization: invalidLegacyHeader }
-        })
-
-        expect(res.statusCode).toBe(StatusCodes.UNAUTHORIZED)
+      const res = await server.inject({
+        method: 'GET',
+        url: '/t',
+        headers: { authorization: authHeader }
       })
+
+      expect(res.statusCode).toBe(StatusCodes.UNAUTHORIZED)
     })
   })
 
-  describe('JWT Authentication Logic', () => {
+  describe('jwt auth validate', () => {
     let capturedValidate
 
     const setupMockServer = async () => {
@@ -219,9 +236,11 @@ describe('serviceAuth plugin', () => {
 
     it('should validate a correct token', async () => {
       await setupMockServer()
+
       const res = await capturedValidate({
         decoded: { payload: { sub: 's/test' } }
       })
+
       expect(res.isValid).toBe(true)
     })
 
