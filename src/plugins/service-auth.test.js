@@ -1,278 +1,286 @@
+import Hapi from '@hapi/hapi'
 import crypto from 'node:crypto'
+import { StatusCodes } from 'http-status-codes'
 import { serviceAuth } from './service-auth.js'
-import { config } from '../config.js'
 import { getLogger } from '../common/helpers/logging/logger.js'
+import { config } from '../config.js'
 
-vi.mock('@hapi/jwt', async () => {
-  const jwt = await vi.importActual('@hapi/jwt')
+vi.mock('../config.js')
+
+vi.mock('../common/helpers/logging/logger.js', () => {
+  const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
   return {
-    ...jwt,
-    default: {
-      plugin: {
-        name: 'jwt',
-        register: vi.fn().mockImplementation(async (server) => {
-          server.auth.scheme('jwt', () => ({
-            authenticate: vi.fn()
-          }))
-        })
-      }
-    }
+    getLogger: vi.fn(() => logger)
   }
 })
 
-vi.mock('../common/helpers/logging/logger.js', () => ({
-  getLogger: vi.fn().mockReturnValue({
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn()
+describe('serviceAuth plugin', () => {
+  let server
+
+  beforeEach(async () => {
+    vi.clearAllMocks()
+    server = Hapi.server()
+
+    const defaultConfig = (key) => {
+      if (key === 'serviceAuth.enabled') return true
+      if (key === 'serviceAuth.allowedServices') return ''
+      if (key === 'serviceAuth.jwksUri') return 'http://jwks'
+      if (key === 'serviceAuth.audience') return 'test-audience'
+      if (key === 'serviceAuth.issuer') return 'test-issuer'
+      if (key === 'cdpEnvironment') return 'prod'
+      if (key === 'auth.token') return 'test-token'
+      if (key === 'auth.encryptionKey') return 'test-encryption-key'
+      if (key === 'log') {
+        return {
+          isEnabled: false,
+          redact: [],
+          level: 'silent',
+          format: 'pino-pretty'
+        }
+      }
+      if (key === 'serviceName') return 'test'
+      if (key === 'serviceVersion') return '1.0.0'
+      return null
+    }
+    config.get.mockImplementation(defaultConfig)
   })
-}))
 
-vi.mock('../common/helpers/mongodb.js')
+  afterEach(async () => {
+    if (server) await server.stop()
+  })
 
-const FAKE_ENCRYPTION_KEY = 'fake-encryption-key'
-const FAKE_TOKEN = 'fake-auth-token'
+  it('covers plugin registration', async () => {
+    await server.register(serviceAuth)
+  })
 
-describe.skip('service-auth plugin', () => {
-  let mockServer
-  const mockValues = new Map()
-
-  beforeAll(() => {
-    vi.spyOn(config, 'get').mockImplementation((key) => {
-      if (mockValues.has(key)) return mockValues.get(key)
+  it('covers cdpEnvironment local bypass', async () => {
+    config.get.mockImplementation((key) => {
+      if (key === 'cdpEnvironment') return 'local'
+      if (key === 'serviceAuth.enabled') return true
+      if (key === 'serviceAuth.allowedServices') return ''
+      if (key === 'serviceAuth.jwksUri') return 'http://jwks'
+      if (key === 'serviceAuth.audience') return 'test-audience'
+      if (key === 'serviceAuth.issuer') return 'test-issuer'
       return null
     })
-    vi.spyOn(config, 'set').mockImplementation((key, value) => {
-      mockValues.set(key, value)
+    await server.register(serviceAuth)
+    server.route({
+      method: 'GET',
+      path: '/t',
+      handler: () => 'ok',
+      options: { auth: 'service' }
     })
+
+    const res = await server.inject({ method: 'GET', url: '/t' })
+
+    expect(res.statusCode).toBe(StatusCodes.OK)
   })
 
-  beforeEach(() => {
-    vi.clearAllMocks()
-    mockValues.clear()
-    mockServer = {
+  it('covers documentation path bypass', async () => {
+    await server.register(serviceAuth)
+    server.route({
+      method: 'GET',
+      path: '/documentation/test',
+      handler: () => 'ok',
+      options: { auth: 'service' }
+    })
+
+    const res = await server.inject({
+      method: 'GET',
+      url: '/documentation/test'
+    })
+
+    expect(res.statusCode).toBe(StatusCodes.OK)
+  })
+
+  it('covers legacy token validation', async () => {
+    await server.register(serviceAuth)
+    server.route({
+      method: 'GET',
+      path: '/t',
+      handler: () => 'ok',
+      options: { auth: 'service' }
+    })
+    const encryptionKey = 'test-encryption-key'
+    const token = 'test-token'
+    const encrypt = (text, key) => {
+      const iv = crypto.randomBytes(12)
+      const cipher = crypto.createCipheriv(
+        'aes-256-gcm',
+        crypto.scryptSync(key, 'salt', 32),
+        iv
+      )
+      let encrypted = cipher.update(text, 'utf8', 'base64')
+      encrypted += cipher.final('base64')
+      return `${iv.toString('base64')}:${cipher.getAuthTag().toString('base64')}:${encrypted}`
+    }
+    const authHeader = `Bearer ${Buffer.from(encrypt(token, encryptionKey)).toString('base64')}`
+
+    const res = await server.inject({
+      method: 'GET',
+      url: '/t',
+      headers: { authorization: authHeader }
+    })
+
+    expect(res.statusCode).toBe(StatusCodes.OK)
+  })
+
+  it('covers jwt validation logic', async () => {
+    let capturedValidate
+    const mockServer = {
       register: vi.fn(),
       auth: {
+        strategy: vi.fn((name, type, options) => {
+          if (name === 'service-jwt') capturedValidate = options.validate
+        }),
         scheme: vi.fn(),
-        strategy: vi.fn(),
         default: vi.fn()
       }
     }
+    await serviceAuth.plugin.register(mockServer)
+
+    const res = await capturedValidate({
+      decoded: { payload: { sub: 's/test' } }
+    })
+    expect(res.isValid).toBe(true)
+
+    // Missing sub
+    await expect(
+      async () => await capturedValidate({ decoded: { payload: {} } })
+    ).rejects.toThrow()
+
+    // Disallowed service
+    config.get.mockImplementation((key) => {
+      if (key === 'serviceAuth.allowedServices') return 'other'
+      if (key === 'serviceAuth.enabled') return true
+      return null
+    })
+    const mockServer2 = {
+      register: vi.fn(),
+      auth: {
+        strategy: vi.fn((name, type, options) => {
+          if (name === 'service-jwt') capturedValidate = options.validate
+        }),
+        scheme: vi.fn(),
+        default: vi.fn()
+      }
+    }
+
+    await serviceAuth.plugin.register(mockServer2)
+
+    await expect(
+      async () =>
+        await capturedValidate({ decoded: { payload: { sub: 's/test' } } })
+    ).rejects.toThrow()
   })
 
-  test('should have the name service-auth', () => {
-    expect(serviceAuth.plugin.name).toBe('service-auth')
+  it('covers legacy token error paths and jwt fallback', async () => {
+    const s = Hapi.server()
+    await s.register(serviceAuth)
+    s.route({
+      method: 'GET',
+      path: '/t',
+      handler: () => 'ok',
+      options: { auth: 'service' }
+    })
+
+    // Malformed (missing parts)
+    await s.inject({
+      method: 'GET',
+      url: '/t',
+      headers: {
+        authorization: `Bearer ${Buffer.from('a:b').toString('base64')}`
+      }
+    })
+
+    expect(getLogger().error).toHaveBeenCalled()
+
+    // Invalid base64
+    await s.inject({
+      method: 'GET',
+      url: '/t',
+      headers: { authorization: 'Bearer !!!!' }
+    })
+
+    // Invalid token (wrong parts - empty data)
+    await s.inject({
+      method: 'GET',
+      url: '/t',
+      headers: {
+        authorization: `Bearer ${Buffer.from('::').toString('base64')}`
+      }
+    })
+
+    // Invalid token (wrong parts - missing one part)
+    await s.inject({
+      method: 'GET',
+      url: '/t',
+      headers: {
+        authorization: `Bearer ${Buffer.from('a:b:').toString('base64')}`
+      }
+    })
+
+    // Decryption error (invalid data)
+    const resFallback = await s.inject({
+      method: 'GET',
+      url: '/t',
+      headers: {
+        authorization: `Bearer ${Buffer.from('iv:tag:data').toString('base64')}`
+      }
+    })
+    expect(getLogger().error).toHaveBeenCalled()
+    expect(resFallback.statusCode).toBe(StatusCodes.UNAUTHORIZED)
+
+    // JWT disabled
+    config.get.mockImplementation((key) => {
+      if (key === 'serviceAuth.enabled') return false
+      // Return something that doesn't match the valid legacy token
+      if (key === 'auth.token') return 'something-else'
+      if (key === 'auth.encryptionKey') return 'test-encryption-key'
+      return null
+    })
+    // Use a token that looks valid enough to pass decrypt but won't match auth.token
+    const encryptionKey = 'test-encryption-key'
+    const encrypt = (text, key) => {
+      const iv = crypto.randomBytes(12)
+      const cipher = crypto.createCipheriv(
+        'aes-256-gcm',
+        crypto.scryptSync(key, 'salt', 32),
+        iv
+      )
+      let encrypted = cipher.update(text, 'utf8', 'base64')
+      encrypted += cipher.final('base64')
+      return `${iv.toString('base64')}:${cipher.getAuthTag().toString('base64')}:${encrypted}`
+    }
+    const invalidLegacyHeader = `Bearer ${Buffer.from(encrypt('not-the-token', encryptionKey)).toString('base64')}`
+
+    const resDisabled = await s.inject({
+      method: 'GET',
+      url: '/t',
+      headers: {
+        authorization: invalidLegacyHeader
+      }
+    })
+
+    expect(resDisabled.statusCode).toBe(StatusCodes.UNAUTHORIZED)
   })
 
-  describe('when service-to-service auth is disabled', () => {
-    beforeEach(() => {
-      config.set('serviceAuth.enabled', false)
+  it('should get UNAUTHORIZED when authorization header present but is not bearer token', async () => {
+    await server.register(serviceAuth)
+    server.route({
+      method: 'GET',
+      path: '/t',
+      handler: () => 'ok',
+      options: { auth: 'service' }
+    })
+    const authHeader = 'NOT_BEARER fake-token'
+
+    const res = await server.inject({
+      method: 'GET',
+      url: '/t',
+      headers: { authorization: authHeader }
     })
 
-    test('should not register strategy or set default when service auth is disabled', async () => {
-      await serviceAuth.plugin.register(mockServer)
-
-      expect(mockServer.auth.strategy).not.toHaveBeenCalledWith(
-        'service',
-        'jwt',
-        expect.any(Object)
-      )
-      expect(mockServer.auth.default).not.toHaveBeenCalledWith('service')
-      expect(getLogger().info).toHaveBeenCalledWith(
-        'Service-to-service authentication is disabled'
-      )
-    })
-  })
-
-  describe('when service-to-service auth is enabled', () => {
-    beforeEach(() => {
-      config.set('serviceAuth.enabled', true)
-      config.set('serviceAuth.jwksUri', 'https://test-jwks.example.com')
-      config.set('serviceAuth.issuer', 'https://test-issuer.example.com')
-      config.set('serviceAuth.audience', 'grants-config-broker')
-      config.set('serviceAuth.allowedServices', '')
-      config.set('auth.token', FAKE_TOKEN)
-      config.set('auth.encryptionKey', FAKE_ENCRYPTION_KEY)
-    })
-
-    test('should register the JWT plugin', async () => {
-      await serviceAuth.plugin.register(mockServer)
-
-      expect(mockServer.register).toHaveBeenCalled()
-      const call = mockServer.register.mock.calls[0][0]
-      expect(call.plugin.name).toBe('jwt')
-    })
-
-    test('should create a service auth strategy with the correct keys', async () => {
-      await serviceAuth.plugin.register(mockServer)
-
-      expect(mockServer.auth.strategy).toHaveBeenCalledWith(
-        'service',
-        'jwt',
-        expect.objectContaining({
-          keys: { uri: 'https://test-jwks.example.com' }
-        })
-      )
-    })
-
-    test('should create a service auth strategy with the correct verification options', async () => {
-      await serviceAuth.plugin.register(mockServer)
-
-      expect(mockServer.auth.strategy).toHaveBeenCalledWith(
-        'service',
-        'jwt',
-        expect.objectContaining({
-          verify: {
-            aud: 'grants-config-broker',
-            iss: 'https://test-issuer.example.com',
-            sub: false
-          }
-        })
-      )
-    })
-
-    test('should set service auth correctly', async () => {
-      await serviceAuth.plugin.register(mockServer)
-
-      expect(mockServer.auth.strategy).toHaveBeenCalledWith(
-        'service',
-        'jwt',
-        expect.any(Object)
-      )
-      expect(mockServer.auth.default).toHaveBeenCalledWith('service')
-      expect(getLogger().info).toHaveBeenCalledWith(
-        'Registering service-to-service JWT authentication'
-      )
-    })
-
-    test('validate should return valid credentials from the JWT payload', async () => {
-      await serviceAuth.plugin.register(mockServer)
-
-      const serviceStrategyCall = mockServer.auth.strategy.mock.calls.find(
-        (call) => call[0] === 'service'
-      )
-      const strategyOptions = serviceStrategyCall[2]
-      const result = strategyOptions.validate(
-        {
-          decoded: {
-            payload: {
-              sub: 'arn:aws:iam::123456789012:role/grants-config-browser'
-            }
-          }
-        },
-        { headers: { authorization: 'Bearer new-token' }, path: '' }
-      )
-      expect(result).toEqual({
-        isValid: true,
-        credentials: {
-          sub: 'arn:aws:iam::123456789012:role/grants-config-browser'
-        }
-      })
-    })
-
-    test('validate should return valid credentials when legacy token used TEMP', async () => {
-      await serviceAuth.plugin.register(mockServer)
-
-      const serviceStrategyCall = mockServer.auth.strategy.mock.calls.find(
-        (call) => call[0] === 'service'
-      )
-      const strategyOptions = serviceStrategyCall[2]
-      const result = strategyOptions.validate(
-        {
-          ignored: true
-        },
-        { headers: { authorization: getFakeAuthHeaderValue() }, path: '' }
-      )
-      expect(result).toEqual({
-        isValid: true
-      })
-    })
-
-    test('validate callback should reject a token with no sub claim', async () => {
-      await serviceAuth.plugin.register(mockServer)
-
-      const serviceStrategyCall = mockServer.auth.strategy.mock.calls.find(
-        (call) => call[0] === 'service'
-      )
-      const strategyOptions = serviceStrategyCall[2]
-      const result = strategyOptions.validate(
-        {
-          decoded: { payload: {} }
-        },
-        { headers: {}, path: '' }
-      )
-      expect(result).toEqual({ isValid: false })
-    })
-
-    describe('when allowedServices is configured', () => {
-      beforeEach(() => {
-        config.set(
-          'serviceAuth.allowedServices',
-          'grants-config-browser,grants-ui-backend'
-        )
-      })
-
-      test('validate callback should accept a service in the allowed list', async () => {
-        await serviceAuth.plugin.register(mockServer)
-
-        const serviceStrategyCall = mockServer.auth.strategy.mock.calls.find(
-          (call) => call[0] === 'service'
-        )
-        const strategyOptions = serviceStrategyCall[2]
-        const result = strategyOptions.validate(
-          {
-            decoded: {
-              payload: {
-                sub: 'arn:aws:iam::123456789012:role/grants-config-browser'
-              }
-            }
-          },
-          { headers: {}, path: '' }
-        )
-        expect(result).toEqual({
-          isValid: true,
-          credentials: {
-            sub: 'arn:aws:iam::123456789012:role/grants-config-browser'
-          }
-        })
-      })
-
-      test('validate callback should reject a service not in the allowed list', async () => {
-        await serviceAuth.plugin.register(mockServer)
-
-        const serviceStrategyCall = mockServer.auth.strategy.mock.calls.find(
-          (call) => call[0] === 'service'
-        )
-        const strategyOptions = serviceStrategyCall[2]
-        const result = strategyOptions.validate(
-          {
-            decoded: {
-              payload: {
-                sub: 'arn:aws:iam::123456789012:role/some-other-service'
-              }
-            }
-          },
-          { headers: {}, path: '' }
-        )
-        expect(result).toEqual({
-          isValid: false,
-          credentials: {
-            sub: 'arn:aws:iam::123456789012:role/some-other-service'
-          }
-        })
-      })
-    })
+    expect(res.statusCode).toBe(StatusCodes.UNAUTHORIZED)
   })
 })
-
-const getFakeAuthHeaderValue = () => {
-  const iv = crypto.randomBytes(12)
-  const key = crypto.scryptSync(FAKE_ENCRYPTION_KEY, 'salt', 32)
-  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv)
-  let encrypted = cipher.update(FAKE_TOKEN, 'utf8', 'base64')
-  encrypted += cipher.final('base64')
-  const authTag = cipher.getAuthTag()
-  const encryptedToken = `${iv.toString('base64')}:${authTag.toString('base64')}:${encrypted}`
-
-  return `Bearer ${Buffer.from(encryptedToken).toString('base64')}`
-}

@@ -113,6 +113,7 @@ function decryptLegacyToken(encryptedToken) {
 
   try {
     const EXPECTED_TOKEN_PARTS = 3
+
     const parts = encryptedToken.split(':')
     if (parts.length !== EXPECTED_TOKEN_PARTS) {
       throw new Error('Malformed encrypted token')
