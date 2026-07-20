@@ -16,33 +16,41 @@ vi.mock('../common/helpers/logging/logger.js', () => {
 
 describe('serviceAuth plugin', () => {
   let server
+  const defaultConfigValues = {
+    'serviceAuth.enabled': true,
+    'serviceAuth.allowedServices': '',
+    'serviceAuth.jwksUri': 'http://jwks',
+    'serviceAuth.audience': 'test-audience',
+    'serviceAuth.issuer': 'test-issuer',
+    cdpEnvironment: 'prod',
+    'auth.token': 'test-token',
+    'auth.encryptionKey': 'test-encryption-key',
+    log: {
+      isEnabled: false,
+      redact: [],
+      level: 'silent',
+      format: 'pino-pretty'
+    },
+    serviceName: 'test',
+    serviceVersion: '1.0.0'
+  }
+
+  const encrypt = (text, key) => {
+    const iv = crypto.randomBytes(12)
+    const cipher = crypto.createCipheriv(
+      'aes-256-gcm',
+      crypto.scryptSync(key, 'salt', 32),
+      iv
+    )
+    let encrypted = cipher.update(text, 'utf8', 'base64')
+    encrypted += cipher.final('base64')
+    return `${iv.toString('base64')}:${cipher.getAuthTag().toString('base64')}:${encrypted}`
+  }
 
   beforeEach(async () => {
     vi.clearAllMocks()
     server = Hapi.server()
-
-    const defaultConfig = (key) => {
-      if (key === 'serviceAuth.enabled') return true
-      if (key === 'serviceAuth.allowedServices') return ''
-      if (key === 'serviceAuth.jwksUri') return 'http://jwks'
-      if (key === 'serviceAuth.audience') return 'test-audience'
-      if (key === 'serviceAuth.issuer') return 'test-issuer'
-      if (key === 'cdpEnvironment') return 'prod'
-      if (key === 'auth.token') return 'test-token'
-      if (key === 'auth.encryptionKey') return 'test-encryption-key'
-      if (key === 'log') {
-        return {
-          isEnabled: false,
-          redact: [],
-          level: 'silent',
-          format: 'pino-pretty'
-        }
-      }
-      if (key === 'serviceName') return 'test'
-      if (key === 'serviceVersion') return '1.0.0'
-      return null
-    }
-    config.get.mockImplementation(defaultConfig)
+    config.get.mockImplementation((key) => defaultConfigValues[key] ?? null)
   })
 
   afterEach(async () => {
@@ -56,12 +64,7 @@ describe('serviceAuth plugin', () => {
   it('covers cdpEnvironment local bypass', async () => {
     config.get.mockImplementation((key) => {
       if (key === 'cdpEnvironment') return 'local'
-      if (key === 'serviceAuth.enabled') return true
-      if (key === 'serviceAuth.allowedServices') return ''
-      if (key === 'serviceAuth.jwksUri') return 'http://jwks'
-      if (key === 'serviceAuth.audience') return 'test-audience'
-      if (key === 'serviceAuth.issuer') return 'test-issuer'
-      return null
+      return defaultConfigValues[key] ?? null
     })
     await server.register(serviceAuth)
     server.route({
@@ -103,17 +106,6 @@ describe('serviceAuth plugin', () => {
     })
     const encryptionKey = 'test-encryption-key'
     const token = 'test-token'
-    const encrypt = (text, key) => {
-      const iv = crypto.randomBytes(12)
-      const cipher = crypto.createCipheriv(
-        'aes-256-gcm',
-        crypto.scryptSync(key, 'salt', 32),
-        iv
-      )
-      let encrypted = cipher.update(text, 'utf8', 'base64')
-      encrypted += cipher.final('base64')
-      return `${iv.toString('base64')}:${cipher.getAuthTag().toString('base64')}:${encrypted}`
-    }
     const authHeader = `Bearer ${Buffer.from(encrypt(token, encryptionKey)).toString('base64')}`
 
     const res = await server.inject({
@@ -152,8 +144,7 @@ describe('serviceAuth plugin', () => {
     // Disallowed service
     config.get.mockImplementation((key) => {
       if (key === 'serviceAuth.allowedServices') return 'other'
-      if (key === 'serviceAuth.enabled') return true
-      return null
+      return defaultConfigValues[key] ?? null
     })
     const mockServer2 = {
       register: vi.fn(),
@@ -234,25 +225,10 @@ describe('serviceAuth plugin', () => {
     // JWT disabled
     config.get.mockImplementation((key) => {
       if (key === 'serviceAuth.enabled') return false
-      // Return something that doesn't match the valid legacy token
-      if (key === 'auth.token') return 'something-else'
-      if (key === 'auth.encryptionKey') return 'test-encryption-key'
-      return null
+      return defaultConfigValues[key] ?? null
     })
     // Use a token that looks valid enough to pass decrypt but won't match auth.token
-    const encryptionKey = 'test-encryption-key'
-    const encrypt = (text, key) => {
-      const iv = crypto.randomBytes(12)
-      const cipher = crypto.createCipheriv(
-        'aes-256-gcm',
-        crypto.scryptSync(key, 'salt', 32),
-        iv
-      )
-      let encrypted = cipher.update(text, 'utf8', 'base64')
-      encrypted += cipher.final('base64')
-      return `${iv.toString('base64')}:${cipher.getAuthTag().toString('base64')}:${encrypted}`
-    }
-    const invalidLegacyHeader = `Bearer ${Buffer.from(encrypt('not-the-token', encryptionKey)).toString('base64')}`
+    const invalidLegacyHeader = `Bearer ${Buffer.from(encrypt('not-the-token', defaultConfigValues['auth.encryptionKey'])).toString('base64')}`
 
     const resDisabled = await s.inject({
       method: 'GET',
