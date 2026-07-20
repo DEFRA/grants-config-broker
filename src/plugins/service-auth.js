@@ -4,7 +4,6 @@ import crypto from 'node:crypto'
 import { config } from '../config.js'
 import { getLogger } from '../common/helpers/logging/logger.js'
 
-const AUTH_HEADER_BEARER_VALUE_PREFIX = 'Bearer '
 const logger = getLogger()
 
 export const serviceAuth = {
@@ -19,7 +18,6 @@ export const serviceAuth = {
         .map((s) => s.trim())
         .filter(Boolean)
 
-      // JWT strategy if enabled
       if (config.get('serviceAuth.enabled')) {
         server.auth.strategy('service-jwt', 'jwt', {
           keys: {
@@ -56,7 +54,6 @@ export const serviceAuth = {
         })
       }
 
-      // Custom scheme
       server.auth.scheme('service-custom', () => ({
         authenticate: async (request, h) => {
           const isLocalEnvironment = config.get('cdpEnvironment') === 'local'
@@ -71,9 +68,7 @@ export const serviceAuth = {
 
           const authorizationHeader = request.headers.authorization
 
-          if (
-            !authorizationHeader?.startsWith(AUTH_HEADER_BEARER_VALUE_PREFIX)
-          ) {
+          if (!authorizationHeader?.startsWith('Bearer ')) {
             throw Boom.unauthorized()
           }
 
