@@ -57,206 +57,192 @@ describe('serviceAuth plugin', () => {
     if (server) await server.stop()
   })
 
-  it('covers plugin registration', async () => {
-    await server.register(serviceAuth)
+  describe('Plugin Registration', () => {
+    it('should register successfully', async () => {
+      await server.register(serviceAuth)
+    })
   })
 
-  it('covers cdpEnvironment local bypass', async () => {
-    config.get.mockImplementation((key) => {
-      if (key === 'cdpEnvironment') return 'local'
-      return defaultConfigValues[key] ?? null
-    })
-    await server.register(serviceAuth)
-    server.route({
-      method: 'GET',
-      path: '/t',
-      handler: () => 'ok',
-      options: { auth: 'service' }
+  describe('Authentication Bypasses', () => {
+    it('should bypass auth in local environment', async () => {
+      config.get.mockImplementation((key) => {
+        if (key === 'cdpEnvironment') return 'local'
+        return defaultConfigValues[key] ?? null
+      })
+
+      await server.register(serviceAuth)
+      server.route({
+        method: 'GET',
+        path: '/t',
+        handler: () => 'ok',
+        options: { auth: 'service' }
+      })
+
+      const res = await server.inject({ method: 'GET', url: '/t' })
+      expect(res.statusCode).toBe(StatusCodes.OK)
     })
 
-    const res = await server.inject({ method: 'GET', url: '/t' })
+    it('should bypass auth for documentation paths', async () => {
+      await server.register(serviceAuth)
+      server.route({
+        method: 'GET',
+        path: '/documentation/test',
+        handler: () => 'ok',
+        options: { auth: 'service' }
+      })
 
-    expect(res.statusCode).toBe(StatusCodes.OK)
+      const res = await server.inject({
+        method: 'GET',
+        url: '/documentation/test'
+      })
+
+      expect(res.statusCode).toBe(StatusCodes.OK)
+    })
   })
 
-  it('covers documentation path bypass', async () => {
-    await server.register(serviceAuth)
-    server.route({
-      method: 'GET',
-      path: '/documentation/test',
-      handler: () => 'ok',
-      options: { auth: 'service' }
+  describe('Legacy Token Authentication', () => {
+    beforeEach(async () => {
+      await server.register(serviceAuth)
+      server.route({
+        method: 'GET',
+        path: '/t',
+        handler: () => 'ok',
+        options: { auth: 'service' }
+      })
     })
 
-    const res = await server.inject({
-      method: 'GET',
-      url: '/documentation/test'
+    it('should authenticate with a valid legacy token', async () => {
+      const encryptionKey = defaultConfigValues['auth.encryptionKey']
+      const token = defaultConfigValues['auth.token']
+      const authHeader = `Bearer ${Buffer.from(encrypt(token, encryptionKey)).toString('base64')}`
+
+      const res = await server.inject({
+        method: 'GET',
+        url: '/t',
+        headers: { authorization: authHeader }
+      })
+
+      expect(res.statusCode).toBe(StatusCodes.OK)
     })
 
-    expect(res.statusCode).toBe(StatusCodes.OK)
+    it('should fail with missing Bearer prefix', async () => {
+      const res = await server.inject({
+        method: 'GET',
+        url: '/t',
+        headers: { authorization: 'NOT_BEARER token' }
+      })
+
+      expect(res.statusCode).toBe(StatusCodes.UNAUTHORIZED)
+    })
+
+    describe('Error Paths', () => {
+      it('should log error for malformed token (missing parts)', async () => {
+        await server.inject({
+          method: 'GET',
+          url: '/t',
+          headers: {
+            authorization: `Bearer ${Buffer.from('a:b').toString('base64')}`
+          }
+        })
+
+        expect(getLogger().error).toHaveBeenCalled()
+      })
+
+      it('should log error for invalid base64 encoding', async () => {
+        const res = await server.inject({
+          method: 'GET',
+          url: '/t',
+          headers: { authorization: 'Bearer !!!!' }
+        })
+        expect(res.statusCode).toBe(StatusCodes.UNAUTHORIZED)
+      })
+
+      it('should log error for invalid token parts format', async () => {
+        await server.inject({
+          method: 'GET',
+          url: '/t',
+          headers: {
+            authorization: `Bearer ${Buffer.from('a:b:').toString('base64')}`
+          }
+        })
+        expect(getLogger().error).toHaveBeenCalled()
+      })
+
+      it('should log error and fallback to JWT on decryption failure', async () => {
+        const res = await server.inject({
+          method: 'GET',
+          url: '/t',
+          headers: {
+            authorization: `Bearer ${Buffer.from('iv:tag:data').toString('base64')}`
+          }
+        })
+        expect(getLogger().error).toHaveBeenCalled()
+        expect(res.statusCode).toBe(StatusCodes.UNAUTHORIZED)
+      })
+
+      it('should fail when JWT fallback is disabled', async () => {
+        config.get.mockImplementation((key) => {
+          if (key === 'serviceAuth.enabled') return false
+          return defaultConfigValues[key] ?? null
+        })
+
+        const invalidLegacyHeader = `Bearer ${Buffer.from(encrypt('not-the-token', defaultConfigValues['auth.encryptionKey'])).toString('base64')}`
+
+        const res = await server.inject({
+          method: 'GET',
+          url: '/t',
+          headers: { authorization: invalidLegacyHeader }
+        })
+
+        expect(res.statusCode).toBe(StatusCodes.UNAUTHORIZED)
+      })
+    })
   })
 
-  it('covers legacy token validation', async () => {
-    await server.register(serviceAuth)
-    server.route({
-      method: 'GET',
-      path: '/t',
-      handler: () => 'ok',
-      options: { auth: 'service' }
-    })
-    const encryptionKey = 'test-encryption-key'
-    const token = 'test-token'
-    const authHeader = `Bearer ${Buffer.from(encrypt(token, encryptionKey)).toString('base64')}`
-
-    const res = await server.inject({
-      method: 'GET',
-      url: '/t',
-      headers: { authorization: authHeader }
-    })
-
-    expect(res.statusCode).toBe(StatusCodes.OK)
-  })
-
-  it('covers jwt validation logic', async () => {
+  describe('JWT Authentication Logic', () => {
     let capturedValidate
-    const mockServer = {
-      register: vi.fn(),
-      auth: {
-        strategy: vi.fn((name, type, options) => {
-          if (name === 'service-jwt') capturedValidate = options.validate
-        }),
-        scheme: vi.fn(),
-        default: vi.fn()
+
+    const setupMockServer = async () => {
+      const mockServer = {
+        register: vi.fn(),
+        auth: {
+          strategy: vi.fn((name, type, options) => {
+            if (name === 'service-jwt') capturedValidate = options.validate
+          }),
+          scheme: vi.fn(),
+          default: vi.fn()
+        }
       }
-    }
-    await serviceAuth.plugin.register(mockServer)
-
-    const res = await capturedValidate({
-      decoded: { payload: { sub: 's/test' } }
-    })
-    expect(res.isValid).toBe(true)
-
-    // Missing sub
-    await expect(
-      async () => await capturedValidate({ decoded: { payload: {} } })
-    ).rejects.toThrow()
-
-    // Disallowed service
-    config.get.mockImplementation((key) => {
-      if (key === 'serviceAuth.allowedServices') return 'other'
-      return defaultConfigValues[key] ?? null
-    })
-    const mockServer2 = {
-      register: vi.fn(),
-      auth: {
-        strategy: vi.fn((name, type, options) => {
-          if (name === 'service-jwt') capturedValidate = options.validate
-        }),
-        scheme: vi.fn(),
-        default: vi.fn()
-      }
+      await serviceAuth.plugin.register(mockServer)
+      return mockServer
     }
 
-    await serviceAuth.plugin.register(mockServer2)
-
-    await expect(
-      async () =>
-        await capturedValidate({ decoded: { payload: { sub: 's/test' } } })
-    ).rejects.toThrow()
-  })
-
-  it('covers legacy token error paths and jwt fallback', async () => {
-    const s = Hapi.server()
-    await s.register(serviceAuth)
-    s.route({
-      method: 'GET',
-      path: '/t',
-      handler: () => 'ok',
-      options: { auth: 'service' }
+    it('should validate a correct token', async () => {
+      await setupMockServer()
+      const res = await capturedValidate({
+        decoded: { payload: { sub: 's/test' } }
+      })
+      expect(res.isValid).toBe(true)
     })
 
-    // Malformed (missing parts)
-    await s.inject({
-      method: 'GET',
-      url: '/t',
-      headers: {
-        authorization: `Bearer ${Buffer.from('a:b').toString('base64')}`
-      }
+    it('should reject tokens missing the sub claim', async () => {
+      await setupMockServer()
+      await expect(
+        async () => await capturedValidate({ decoded: { payload: {} } })
+      ).rejects.toThrow()
     })
 
-    expect(getLogger().error).toHaveBeenCalled()
+    it('should reject services not in the allowed list', async () => {
+      config.get.mockImplementation((key) => {
+        if (key === 'serviceAuth.allowedServices') return 'other'
+        return defaultConfigValues[key] ?? null
+      })
 
-    // Invalid base64
-    await s.inject({
-      method: 'GET',
-      url: '/t',
-      headers: { authorization: 'Bearer !!!!' }
+      await setupMockServer()
+      await expect(
+        async () =>
+          await capturedValidate({ decoded: { payload: { sub: 's/test' } } })
+      ).rejects.toThrow()
     })
-
-    // Invalid token (wrong parts - empty data)
-    await s.inject({
-      method: 'GET',
-      url: '/t',
-      headers: {
-        authorization: `Bearer ${Buffer.from('::').toString('base64')}`
-      }
-    })
-
-    // Invalid token (wrong parts - missing one part)
-    await s.inject({
-      method: 'GET',
-      url: '/t',
-      headers: {
-        authorization: `Bearer ${Buffer.from('a:b:').toString('base64')}`
-      }
-    })
-
-    // Decryption error (invalid data)
-    const resFallback = await s.inject({
-      method: 'GET',
-      url: '/t',
-      headers: {
-        authorization: `Bearer ${Buffer.from('iv:tag:data').toString('base64')}`
-      }
-    })
-    expect(getLogger().error).toHaveBeenCalled()
-    expect(resFallback.statusCode).toBe(StatusCodes.UNAUTHORIZED)
-
-    // JWT disabled
-    config.get.mockImplementation((key) => {
-      if (key === 'serviceAuth.enabled') return false
-      return defaultConfigValues[key] ?? null
-    })
-    // Use a token that looks valid enough to pass decrypt but won't match auth.token
-    const invalidLegacyHeader = `Bearer ${Buffer.from(encrypt('not-the-token', defaultConfigValues['auth.encryptionKey'])).toString('base64')}`
-
-    const resDisabled = await s.inject({
-      method: 'GET',
-      url: '/t',
-      headers: {
-        authorization: invalidLegacyHeader
-      }
-    })
-
-    expect(resDisabled.statusCode).toBe(StatusCodes.UNAUTHORIZED)
-  })
-
-  it('should get UNAUTHORIZED when authorization header present but is not bearer token', async () => {
-    await server.register(serviceAuth)
-    server.route({
-      method: 'GET',
-      path: '/t',
-      handler: () => 'ok',
-      options: { auth: 'service' }
-    })
-    const authHeader = 'NOT_BEARER fake-token'
-
-    const res = await server.inject({
-      method: 'GET',
-      url: '/t',
-      headers: { authorization: authHeader }
-    })
-
-    expect(res.statusCode).toBe(StatusCodes.UNAUTHORIZED)
   })
 })
