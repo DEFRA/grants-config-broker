@@ -12,13 +12,13 @@ export const serviceAuth = {
     register: async (server) => {
       await server.register(Jwt)
 
-      const allowedServices = config
-        .get('serviceAuth.allowedServices')
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean)
-
       if (config.get('serviceAuth.enabled')) {
+        const allowedServices = config
+          .get('serviceAuth.allowedServices')
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+
         server.auth.strategy('service-jwt', 'jwt', {
           keys: {
             uri: config.get('serviceAuth.jwksUri')
@@ -78,44 +78,41 @@ export const serviceAuth = {
             })
           }
 
-          logger.info(
-            'Not valid legacy token, falling back to JWT auth if enabled'
-          )
+          logger.info('Not valid legacy token')
           if (!config.get('serviceAuth.enabled')) {
+            logger.info('jwt auth not enabled')
             throw Boom.unauthorized()
           }
 
-          logger.info(`Running jwt auth test`)
+          logger.info('check if valid jwt')
           await server.auth.test('service-jwt', request)
           return h.authenticated({
             credentials: { authenticated: true, type: 'jwt' }
           })
         }
       }))
-
       server.auth.strategy('service', 'service-custom')
       server.auth.default('service')
     }
   }
 }
 
-// Legacy bearer auth scheme
 const validLegacyToken = (authorizationHeader) => {
   const encryptedToken = Buffer.from(
     authorizationHeader.split(' ').pop(),
     'base64'
   ).toString('utf-8')
-  const actualToken = decryptToken(encryptedToken)
+  const actualToken = decryptLegacyToken(encryptedToken)
   return actualToken === config.get('auth.token')
 }
-const EXPECTED_TOKEN_PARTS = 3
-function decryptToken(encryptedToken) {
+function decryptLegacyToken(encryptedToken) {
   const encryptionKey = config.get('auth.encryptionKey')
   if (!encryptionKey) {
     return null
   }
 
   try {
+    const EXPECTED_TOKEN_PARTS = 3
     const parts = encryptedToken.split(':')
     if (parts.length !== EXPECTED_TOKEN_PARTS) {
       throw new Error('Malformed encrypted token')
