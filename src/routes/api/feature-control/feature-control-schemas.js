@@ -9,6 +9,15 @@ export const typeMap = {
   number: Joi.number().strict()
 }
 
+const allowedEnvironments = [
+  'local',
+  'dev',
+  'test',
+  'perf-test',
+  'ext-test',
+  'prod'
+]
+
 const getInitialValueSchema = (valueSchema) =>
   Joi.object({
     default: valueSchema,
@@ -49,7 +58,11 @@ export const postAddFeatureControlSchema = Joi.object({
   owner: Joi.string().required(),
   expiryDate: Joi.date().required(),
   createdBy: Joi.string().required(),
-  roleRequired: Joi.array().items(Joi.string()).min(0).optional()
+  roleRequired: Joi.array().items(Joi.string()).min(0).optional(),
+  environments: Joi.array()
+    .items(Joi.string().valid(...allowedEnvironments))
+    .min(0)
+    .optional()
 }).when('.type', {
   switch: Object.entries(typeMap).map(([type, schema]) => ({
     is: type,

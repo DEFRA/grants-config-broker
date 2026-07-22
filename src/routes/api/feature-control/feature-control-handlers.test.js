@@ -208,6 +208,72 @@ describe('feature-control-handlers', () => {
       expect(result).toBe(mockH)
     })
 
+    it('should return unprocessable entity if current env is not included in environments field', async () => {
+      const payloadWithEnvs = {
+        ...payload,
+        environments: ['perf-test']
+      }
+      const mockRequestWithEnvs = {
+        payload: payloadWithEnvs,
+        logger: mockLogger,
+        db: mockDb
+      }
+
+      const result = await postAddFeatureControlHandler(
+        mockRequestWithEnvs,
+        mockH
+      )
+
+      expect(getFeatureControlByName).not.toHaveBeenCalled()
+      expect(updateFeatureControlDefinition).not.toHaveBeenCalled()
+      expect(mockH.code).toHaveBeenCalledWith(StatusCodes.UNPROCESSABLE_ENTITY)
+      expect(result).toBe(mockH)
+    })
+
+    it('should return accepted if current env is included in environments field', async () => {
+      const payloadWithEnvs = {
+        ...payload,
+        environments: ['local', 'dev', 'test', 'perf-test', 'ext-test', 'prod']
+      }
+      const mockRequestWithEnvs = {
+        payload: payloadWithEnvs,
+        logger: mockLogger,
+        db: mockDb
+      }
+      getFeatureControlByName.mockResolvedValue(null)
+
+      const result = await postAddFeatureControlHandler(
+        mockRequestWithEnvs,
+        mockH
+      )
+
+      expect(getFeatureControlByName).toHaveBeenCalledWith(payload.name, mockDb)
+      expect(storeFeatureControl).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: payload.name,
+          type: payload.type,
+          value: [456], // Uses 'dev' from mocked config
+          scopes: payload.scopes,
+          description: payload.description,
+          owner: payload.owner,
+          createdBy: payload.createdBy
+        }),
+        mockDb
+      )
+      expect(notifyFeatureControlUpdate).toHaveBeenCalledWith(
+        {
+          name: payload.name,
+          scopes: payload.scopes,
+          value: [456],
+          updatedBy: payload.createdBy,
+          valueType: 'list-number'
+        },
+        mockLogger
+      )
+      expect(mockH.code).toHaveBeenCalledWith(StatusCodes.ACCEPTED)
+      expect(result).toBe(mockH)
+    })
+
     it('should return conflict if immutable field (type) is changed', async () => {
       const existing = {
         name: payload.name,
