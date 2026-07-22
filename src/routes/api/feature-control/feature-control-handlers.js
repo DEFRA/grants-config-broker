@@ -22,11 +22,17 @@ export const postAddFeatureControlHandler = async (req, h) => {
       owner,
       expiryDate,
       createdBy,
-      roleRequired
+      roleRequired,
+      environments
     }
   } = req
 
   const currentEnv = config.get('cdpEnvironment')
+
+  if (environments && !environments.includes(currentEnv)) {
+    return h.response().code(StatusCodes.UNPROCESSABLE_ENTITY)
+  }
+
   let emitEvent = false
   let value = null
 
