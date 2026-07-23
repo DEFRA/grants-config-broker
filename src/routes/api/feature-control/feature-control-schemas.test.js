@@ -44,6 +44,32 @@ describe('feature-control-schemas', () => {
           ...validPayload,
           type: 'date',
           initialValue: { default: '2025-01-01' }
+        },
+        {
+          // environments present and no default, check initialValue includes required envs
+          ...validPayload,
+          environments: ['dev', 'test'],
+          type: 'string',
+          initialValue: { dev: 'a', test: 'b' }
+        },
+        {
+          // environments absent and no default, check initialValue includes all envs
+          ...validPayload,
+          type: 'string',
+          initialValue: {
+            dev: 'a',
+            test: 'b',
+            'perf-test': 'c',
+            'ext-test': 'd',
+            prod: 'e'
+          }
+        },
+        {
+          // environments present, initialValue contains default and some envs have override
+          ...validPayload,
+          environments: ['dev', 'test', 'perf-test'],
+          type: 'boolean',
+          initialValue: { default: false, dev: true, test: true }
         }
       ]
 
@@ -165,6 +191,34 @@ describe('feature-control-schemas', () => {
           }
         })
         expect(result.error).toBeDefined()
+      })
+
+      it('should fail when no default, environments provide and initialValue missing envs', () => {
+        const result = postAddFeatureControlSchema.validate({
+          ...validPayload,
+          environments: ['dev', 'test', 'perf-test'],
+          initialValue: {
+            dev: [1]
+          }
+        })
+        expect(result.error).toBeDefined()
+        expect(result.error.message).toBe(
+          '"initialValue" must contain either a "default" value or values for required environments. Missing: test, perf-test'
+        )
+      })
+
+      it('should fail when no default, environments absent and initialValue missing envs', () => {
+        const result = postAddFeatureControlSchema.validate({
+          ...validPayload,
+          initialValue: {
+            dev: [1],
+            prod: [5]
+          }
+        })
+        expect(result.error).toBeDefined()
+        expect(result.error.message).toBe(
+          '"initialValue" must contain either a "default" value or values for required environments. Missing: test, perf-test, ext-test'
+        )
       })
     })
 

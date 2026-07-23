@@ -9,14 +9,7 @@ export const typeMap = {
   number: Joi.number().strict()
 }
 
-const allowedEnvironments = [
-  'local',
-  'dev',
-  'test',
-  'perf-test',
-  'ext-test',
-  'prod'
-]
+const allEnvironments = ['dev', 'test', 'perf-test', 'ext-test', 'prod']
 
 const getInitialValueSchema = (valueSchema) =>
   Joi.object({
@@ -27,15 +20,30 @@ const getInitialValueSchema = (valueSchema) =>
     'perf-test': valueSchema,
     prod: valueSchema
   })
-    .when(Joi.object({ default: Joi.exist() }).unknown(), {
-      then: Joi.object(),
-      otherwise: Joi.object({
-        dev: Joi.required(),
-        test: Joi.required(),
-        'ext-test': Joi.required(),
-        'perf-test': Joi.required(),
-        prod: Joi.required()
-      })
+    .custom((value, helpers) => {
+      // short-circuit if default is present
+      if (value.default !== undefined) {
+        return value
+      }
+
+      // check if required envs are present
+      const { environments } = helpers.state.ancestors[0]
+      const requiredEnvs = environments?.length ? environments : allEnvironments
+      const missingEnvValues = requiredEnvs.filter(
+        (env) => value[env] === undefined
+      )
+      if (missingEnvValues.length) {
+        return helpers.error('initialValue.defaultOrEnvironments', {
+          missing: missingEnvValues.join(', ')
+        })
+      }
+
+      // required envs are present
+      return value
+    })
+    .messages({
+      'initialValue.defaultOrEnvironments':
+        '"initialValue" must contain either a "default" value or values for required environments. Missing: {{#missing}}'
     })
     .unknown(false)
 
@@ -60,7 +68,7 @@ export const postAddFeatureControlSchema = Joi.object({
   createdBy: Joi.string().required(),
   roleRequired: Joi.array().items(Joi.string()).min(0).optional(),
   environments: Joi.array()
-    .items(Joi.string().valid(...allowedEnvironments))
+    .items(Joi.string().valid(...allEnvironments))
     .min(0)
     .optional()
 }).when('.type', {
