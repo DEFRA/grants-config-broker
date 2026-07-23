@@ -22,7 +22,7 @@ const getInitialValueSchema = (valueSchema) =>
   })
     .custom((value, helpers) => {
       // short-circuit if default is present
-      if (value.default) {
+      if (value.default !== undefined) {
         return value
       }
 

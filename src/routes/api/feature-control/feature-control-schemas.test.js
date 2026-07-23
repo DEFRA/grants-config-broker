@@ -63,6 +63,13 @@ describe('feature-control-schemas', () => {
             'ext-test': 'd',
             prod: 'e'
           }
+        },
+        {
+          // environments present, initialValue contains default and some envs have override
+          ...validPayload,
+          environments: ['dev', 'test', 'perf-test'],
+          type: 'boolean',
+          initialValue: { default: false, dev: true, test: true }
         }
       ]
 
