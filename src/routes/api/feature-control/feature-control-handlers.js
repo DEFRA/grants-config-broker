@@ -36,7 +36,7 @@ export const postAddFeatureControlHandler = async (req, h) => {
   let emitEvent = false
   let value = null
 
-  const alreadyExistingFeatureControl = await getFeatureControlByName(
+  const alreadyExistingFeatureControl = await getFeatureControlDetailedByName(
     name,
     req.db
   )

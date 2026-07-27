@@ -7,6 +7,7 @@ import {
 import { StatusCodes } from 'http-status-codes'
 
 vi.mock('../../../repositories/feature-control-repository.js', () => ({
+  getFeatureControlDetailedByName: vi.fn(),
   getFeatureControlByName: vi.fn(),
   getFeatureControls: vi.fn(),
   storeFeatureControl: vi.fn(),
@@ -26,6 +27,7 @@ vi.mock('../../../config.js', () => ({
 
 import {
   getFeatureControlByName,
+  getFeatureControlDetailedByName,
   getFeatureControls,
   storeFeatureControl,
   updateFeatureControlDefinition,
@@ -71,11 +73,14 @@ describe('feature-control-handlers', () => {
     }
 
     it('should store new feature control and return accepted', async () => {
-      getFeatureControlByName.mockResolvedValue(null)
+      getFeatureControlDetailedByName.mockResolvedValue(null)
 
       const result = await postAddFeatureControlHandler(mockRequest, mockH)
 
-      expect(getFeatureControlByName).toHaveBeenCalledWith(payload.name, mockDb)
+      expect(getFeatureControlDetailedByName).toHaveBeenCalledWith(
+        payload.name,
+        mockDb
+      )
       expect(storeFeatureControl).toHaveBeenCalledWith(
         expect.objectContaining({
           name: payload.name,
@@ -113,7 +118,7 @@ describe('feature-control-handlers', () => {
         ...mockRequest,
         payload: payloadNoDev
       }
-      getFeatureControlByName.mockResolvedValue(null)
+      getFeatureControlDetailedByName.mockResolvedValue(null)
 
       await postAddFeatureControlHandler(mockRequestNoDev, mockH)
 
@@ -136,7 +141,7 @@ describe('feature-control-handlers', () => {
         expiryDate: new Date('2027-01-01'),
         roleRequired: ['old.role']
       }
-      getFeatureControlByName.mockResolvedValue(existing)
+      getFeatureControlDetailedByName.mockResolvedValue(existing)
 
       const result = await postAddFeatureControlHandler(mockRequest, mockH)
 
@@ -177,7 +182,7 @@ describe('feature-control-handlers', () => {
         expiryDate: payload.expiryDate,
         roleRequired: payload.roleRequired
       }
-      getFeatureControlByName.mockResolvedValue(existing)
+      getFeatureControlDetailedByName.mockResolvedValue(existing)
 
       const result = await postAddFeatureControlHandler(mockRequest, mockH)
 
@@ -199,7 +204,7 @@ describe('feature-control-handlers', () => {
         expiryDate: payload.expiryDate,
         roleRequired: payload.roleRequired
       }
-      getFeatureControlByName.mockResolvedValue(existing)
+      getFeatureControlDetailedByName.mockResolvedValue(existing)
 
       const result = await postAddFeatureControlHandler(mockRequest, mockH)
 
@@ -224,7 +229,7 @@ describe('feature-control-handlers', () => {
         mockH
       )
 
-      expect(getFeatureControlByName).not.toHaveBeenCalled()
+      expect(getFeatureControlDetailedByName).not.toHaveBeenCalled()
       expect(updateFeatureControlDefinition).not.toHaveBeenCalled()
       expect(mockH.code).toHaveBeenCalledWith(StatusCodes.UNPROCESSABLE_ENTITY)
       expect(result).toBe(mockH)
@@ -240,14 +245,17 @@ describe('feature-control-handlers', () => {
         logger: mockLogger,
         db: mockDb
       }
-      getFeatureControlByName.mockResolvedValue(null)
+      getFeatureControlDetailedByName.mockResolvedValue(null)
 
       const result = await postAddFeatureControlHandler(
         mockRequestWithEnvs,
         mockH
       )
 
-      expect(getFeatureControlByName).toHaveBeenCalledWith(payload.name, mockDb)
+      expect(getFeatureControlDetailedByName).toHaveBeenCalledWith(
+        payload.name,
+        mockDb
+      )
       expect(storeFeatureControl).toHaveBeenCalledWith(
         expect.objectContaining({
           name: payload.name,
@@ -284,7 +292,7 @@ describe('feature-control-handlers', () => {
         expiryDate: payload.expiryDate,
         roleRequired: payload.roleRequired
       }
-      getFeatureControlByName.mockResolvedValue(existing)
+      getFeatureControlDetailedByName.mockResolvedValue(existing)
 
       const result = await postAddFeatureControlHandler(mockRequest, mockH)
 
@@ -298,7 +306,7 @@ describe('feature-control-handlers', () => {
         ...payload,
         roleRequired: ['old.role']
       }
-      getFeatureControlByName.mockResolvedValue(existing)
+      getFeatureControlDetailedByName.mockResolvedValue(existing)
 
       const result = await postAddFeatureControlHandler(mockRequest, mockH)
 
@@ -322,7 +330,7 @@ describe('feature-control-handlers', () => {
         ...payload,
         roleRequired: ['some-role']
       }
-      getFeatureControlByName.mockResolvedValue(existing)
+      getFeatureControlDetailedByName.mockResolvedValue(existing)
 
       const result = await postAddFeatureControlHandler(
         mockRequestNoRole,
