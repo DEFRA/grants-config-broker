@@ -22,6 +22,7 @@ export const getFeatureControlByName = async (name, db) => {
       projection: {
         _id: 0,
         name: 1,
+        displayName: 1,
         value: 1,
         type: 1,
         scopes: 1
@@ -59,6 +60,7 @@ export const updateFeatureControlValue = async (
 export const updateFeatureControlDefinition = async (data, db) => {
   const {
     name,
+    displayName,
     scopes,
     description,
     owner,
@@ -72,6 +74,7 @@ export const updateFeatureControlDefinition = async (data, db) => {
     { name },
     {
       $set: {
+        displayName,
         scopes,
         description,
         owner,

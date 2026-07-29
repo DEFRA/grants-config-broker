@@ -49,6 +49,7 @@ const getInitialValueSchema = (valueSchema) =>
 
 export const postAddFeatureControlSchema = Joi.object({
   name: Joi.string().uppercase().required(),
+  displayName: Joi.string().required(),
   type: Joi.string()
     .valid(...Object.keys(typeMap))
     .required(),

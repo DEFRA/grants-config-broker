@@ -58,6 +58,7 @@ describe('feature-control-repository', () => {
           projection: {
             _id: 0,
             name: 1,
+            displayName: 1,
             value: 1,
             type: 1,
             scopes: 1
