@@ -469,6 +469,13 @@ paths:
             type: string
             enum: [list-string, list-number, boolean, date, string, number]
           description: Exact type match.
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [active, expired, withdrawn]
+          description: Exact status match.
       responses:
         '200':
           description: Successfully retrieved the list of feature controls.
@@ -502,6 +509,11 @@ components:
         - $ref: '#/components/schemas/FeatureControl'
         - type: object
           properties:
+            status:
+              type: string
+              enum: [active, expired, withdrawn]
+            displayName:
+              type: string
             description:
               type: string
             owner:
@@ -559,7 +571,7 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/FeatureControl'
+            $ref: '#/components/schemas/DetailedFeatureControl'
         total:
           type: integer
         page:
@@ -576,6 +588,7 @@ components:
         - type
         - initialValue
         - scopes
+        - displayName
         - description
         - owner
         - expiryDate
@@ -596,6 +609,8 @@ components:
           items:
             type: string
           minItems: 1
+        displayName:
+          type: string
         description:
           type: string
         owner:

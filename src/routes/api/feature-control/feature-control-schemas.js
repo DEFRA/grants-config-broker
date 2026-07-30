@@ -9,6 +9,8 @@ export const typeMap = {
   number: Joi.number().strict()
 }
 
+const statusList = ['active', 'expired', 'withdrawn']
+
 const allEnvironments = ['dev', 'test', 'perf-test', 'ext-test', 'prod']
 
 const getInitialValueSchema = (valueSchema) =>
@@ -49,6 +51,7 @@ const getInitialValueSchema = (valueSchema) =>
 
 export const postAddFeatureControlSchema = Joi.object({
   name: Joi.string().uppercase().required(),
+  displayName: Joi.string().required(),
   type: Joi.string()
     .valid(...Object.keys(typeMap))
     .required(),
@@ -99,5 +102,8 @@ export const getFeatureControlsSchema = Joi.object({
   scope: Joi.string().optional(),
   type: Joi.string()
     .valid(...Object.keys(typeMap))
+    .optional(),
+  status: Joi.string()
+    .valid(...statusList)
     .optional()
 })

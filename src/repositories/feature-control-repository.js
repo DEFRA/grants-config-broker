@@ -1,7 +1,10 @@
 const FEATURE_CONTROL_COLLECTION = 'feature-controls'
 
 export const storeFeatureControl = async (data, db) => {
-  return db.collection(FEATURE_CONTROL_COLLECTION).insertOne(data)
+  // Hardcoded status for now, but will change in the near future
+  return db
+    .collection(FEATURE_CONTROL_COLLECTION)
+    .insertOne({ ...data, status: 'active' })
 }
 
 export const getFeatureControlDetailedByName = async (name, db) => {
@@ -59,6 +62,7 @@ export const updateFeatureControlValue = async (
 export const updateFeatureControlDefinition = async (data, db) => {
   const {
     name,
+    displayName,
     scopes,
     description,
     owner,
@@ -72,6 +76,7 @@ export const updateFeatureControlDefinition = async (data, db) => {
     { name },
     {
       $set: {
+        displayName,
         scopes,
         description,
         owner,
@@ -93,7 +98,7 @@ export const updateFeatureControlDefinition = async (data, db) => {
 }
 
 export const getFeatureControls = async (
-  { page, pageSize, name, scope, type, owner },
+  { page, pageSize, name, scope, type, owner, status },
   db
 ) => {
   const filter = {}
@@ -108,6 +113,9 @@ export const getFeatureControls = async (
   }
   if (type) {
     filter.type = type
+  }
+  if (status) {
+    filter.status = status
   }
 
   const skip = (page - 1) * pageSize

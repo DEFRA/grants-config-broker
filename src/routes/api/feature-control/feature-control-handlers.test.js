@@ -525,7 +525,13 @@ describe('feature-control-handlers', () => {
 
   describe('getFeatureControlsHandler', () => {
     it('should return paginated results', async () => {
-      const query = { page: 1, pageSize: 10, name: 'test', owner: 'test-owner' }
+      const query = {
+        page: 1,
+        pageSize: 10,
+        name: 'test',
+        owner: 'test-owner',
+        status: 'active'
+      }
       const mockRequest = { query, db: mockDb }
       const expectedResults = { items: [], total: 0 }
       getFeatureControls.mockResolvedValue(expectedResults)
