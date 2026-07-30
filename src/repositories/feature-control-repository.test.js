@@ -32,7 +32,11 @@ describe('feature-control-repository', () => {
 
   describe('storeFeatureControl', () => {
     it('should insert a feature control into the collection', async () => {
-      const data = { name: 'TEST_FEATURE', value: true }
+      const data = {
+        name: 'TEST_FEATURE',
+        displayName: 'Test Feature',
+        value: true
+      }
       mockCollection.insertOne.mockResolvedValue({ insertedId: '123' })
 
       const result = await storeFeatureControl(data, mockDb)
@@ -58,7 +62,6 @@ describe('feature-control-repository', () => {
           projection: {
             _id: 0,
             name: 1,
-            displayName: 1,
             value: 1,
             type: 1,
             scopes: 1
@@ -130,6 +133,7 @@ describe('feature-control-repository', () => {
     it('should update the definition and push to history', async () => {
       const data = {
         name: 'TEST_FEATURE',
+        displayName: 'Test Feature',
         scopes: ['scope1'],
         description: 'desc',
         owner: 'owner',
@@ -147,6 +151,7 @@ describe('feature-control-repository', () => {
         { name: data.name },
         expect.objectContaining({
           $set: expect.objectContaining({
+            displayName: data.displayName,
             scopes: data.scopes,
             description: data.description,
             owner: data.owner,

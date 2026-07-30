@@ -22,7 +22,6 @@ export const getFeatureControlByName = async (name, db) => {
       projection: {
         _id: 0,
         name: 1,
-        displayName: 1,
         value: 1,
         type: 1,
         scopes: 1

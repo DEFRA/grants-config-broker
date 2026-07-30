@@ -502,6 +502,8 @@ components:
         - $ref: '#/components/schemas/FeatureControl'
         - type: object
           properties:
+            displayName:
+              type: string
             description:
               type: string
             owner:
@@ -559,7 +561,7 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/FeatureControl'
+            $ref: '#/components/schemas/DetailedFeatureControl'
         total:
           type: integer
         page:
@@ -576,6 +578,7 @@ components:
         - type
         - initialValue
         - scopes
+        - displayName
         - description
         - owner
         - expiryDate
@@ -596,6 +599,8 @@ components:
           items:
             type: string
           minItems: 1
+        displayName:
+          type: string
         description:
           type: string
         owner:
