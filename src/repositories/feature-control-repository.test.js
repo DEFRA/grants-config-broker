@@ -181,7 +181,8 @@ describe('feature-control-repository', () => {
         name: 'TEST',
         owner: 'test-owner',
         scope: 'grant.test',
-        type: 'boolean'
+        type: 'boolean',
+        status: 'active'
       }
       const items = [{ name: 'TEST_FEATURE', type: 'boolean' }]
       const total = 10
@@ -196,13 +197,15 @@ describe('feature-control-repository', () => {
         name: { $regex: 'TEST', $options: 'i' },
         owner: { $regex: 'test-owner', $options: 'i' },
         scopes: 'grant.test',
-        type: 'boolean'
+        type: 'boolean',
+        status: 'active'
       })
       expect(mockCollection.find).toHaveBeenCalledWith({
         name: { $regex: 'TEST', $options: 'i' },
         owner: { $regex: 'test-owner', $options: 'i' },
         scopes: 'grant.test',
-        type: 'boolean'
+        type: 'boolean',
+        status: 'active'
       })
       expect(mockCollection.sort).toHaveBeenCalledWith({ name: 1 })
       expect(mockCollection.skip).toHaveBeenCalledWith(5)

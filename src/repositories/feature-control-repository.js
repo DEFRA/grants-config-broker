@@ -98,7 +98,7 @@ export const updateFeatureControlDefinition = async (data, db) => {
 }
 
 export const getFeatureControls = async (
-  { page, pageSize, name, scope, type, owner },
+  { page, pageSize, name, scope, type, owner, status },
   db
 ) => {
   const filter = {}
@@ -113,6 +113,9 @@ export const getFeatureControls = async (
   }
   if (type) {
     filter.type = type
+  }
+  if (status) {
+    filter.status = status
   }
 
   const skip = (page - 1) * pageSize
