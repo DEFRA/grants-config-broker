@@ -1,7 +1,10 @@
 const FEATURE_CONTROL_COLLECTION = 'feature-controls'
 
 export const storeFeatureControl = async (data, db) => {
-  return db.collection(FEATURE_CONTROL_COLLECTION).insertOne(data)
+  // Hardcoded status for now, but will change in the near future
+  return db
+    .collection(FEATURE_CONTROL_COLLECTION)
+    .insertOne({ ...data, status: 'active' })
 }
 
 export const getFeatureControlDetailedByName = async (name, db) => {
@@ -59,7 +62,6 @@ export const updateFeatureControlValue = async (
 export const updateFeatureControlDefinition = async (data, db) => {
   const {
     name,
-    status,
     displayName,
     scopes,
     description,
@@ -74,7 +76,6 @@ export const updateFeatureControlDefinition = async (data, db) => {
     { name },
     {
       $set: {
-        status,
         displayName,
         scopes,
         description,

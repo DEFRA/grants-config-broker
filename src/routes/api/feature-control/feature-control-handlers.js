@@ -15,6 +15,7 @@ export const postAddFeatureControlHandler = async (req, h) => {
   const {
     payload: {
       name,
+      displayName,
       type,
       initialValue,
       scopes,
@@ -45,6 +46,7 @@ export const postAddFeatureControlHandler = async (req, h) => {
     // but not to the initialValue, name, or type; value must be updated separately
     const { changed, shouldEmit, immutableFieldChanged } =
       definitionUpdatedLegally(alreadyExistingFeatureControl, {
+        displayName,
         type,
         scopes,
         description,
@@ -62,6 +64,7 @@ export const postAddFeatureControlHandler = async (req, h) => {
       await updateFeatureControlDefinition(
         {
           name,
+          displayName,
           scopes,
           description,
           owner,
@@ -85,6 +88,7 @@ export const postAddFeatureControlHandler = async (req, h) => {
     value = initialValue[currentEnv] ?? initialValue.default
     const featureControl = {
       name,
+      displayName,
       type,
       value,
       scopes,
@@ -133,14 +137,12 @@ export const postAddFeatureControlHandler = async (req, h) => {
 const definitionUpdatedLegally = (existing, newDefinition) => {
   const scopesA = new Set(existing.scopes)
   const scopesB = new Set(newDefinition.scopes)
-
   const scopesUnchanged =
     scopesA.size === scopesB.size &&
     [...scopesA].every((value) => scopesB.has(value))
 
   const rolesA = new Set(existing.roleRequired)
   const rolesB = new Set(newDefinition.roleRequired)
-
   const rolesUnchanged =
     rolesA.size === rolesB.size &&
     [...rolesA].every((value) => rolesB.has(value))
@@ -150,6 +152,7 @@ const definitionUpdatedLegally = (existing, newDefinition) => {
   const hasChanged =
     !scopesUnchanged ||
     !rolesUnchanged ||
+    existing.displayName !== newDefinition.displayName ||
     existing.description !== newDefinition.description ||
     existing.owner !== newDefinition.owner ||
     existing.expiryDate.getTime() !== newDefinition.expiryDate.getTime()

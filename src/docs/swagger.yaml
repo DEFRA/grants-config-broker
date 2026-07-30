@@ -588,7 +588,6 @@ components:
         - type
         - initialValue
         - scopes
-        - status
         - displayName
         - description
         - owner
@@ -610,9 +609,6 @@ components:
           items:
             type: string
           minItems: 1
-        status:
-          type: string
-          enum: [active, expired, withdrawn]
         displayName:
           type: string
         description:
