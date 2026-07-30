@@ -9,7 +9,6 @@ describe('feature-control-schemas', () => {
   describe('postAddFeatureControlSchema', () => {
     const validPayload = {
       name: 'ALLOW_LIST_WOODLANDS',
-      status: 'active',
       displayName: 'Woodlands grant allow list',
       type: 'list-number',
       initialValue: {
