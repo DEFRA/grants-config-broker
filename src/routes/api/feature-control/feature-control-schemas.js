@@ -9,6 +9,8 @@ export const typeMap = {
   number: Joi.number().strict()
 }
 
+const statusList = ['active', 'expired', 'withdrawn']
+
 const allEnvironments = ['dev', 'test', 'perf-test', 'ext-test', 'prod']
 
 const getInitialValueSchema = (valueSchema) =>
@@ -49,6 +51,9 @@ const getInitialValueSchema = (valueSchema) =>
 
 export const postAddFeatureControlSchema = Joi.object({
   name: Joi.string().uppercase().required(),
+  status: Joi.string()
+    .valid(...statusList)
+    .required(),
   displayName: Joi.string().required(),
   type: Joi.string()
     .valid(...Object.keys(typeMap))

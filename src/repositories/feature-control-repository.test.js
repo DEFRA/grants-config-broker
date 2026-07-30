@@ -34,6 +34,7 @@ describe('feature-control-repository', () => {
     it('should insert a feature control into the collection', async () => {
       const data = {
         name: 'TEST_FEATURE',
+        status: 'active',
         displayName: 'Test Feature',
         value: true
       }
@@ -133,6 +134,7 @@ describe('feature-control-repository', () => {
     it('should update the definition and push to history', async () => {
       const data = {
         name: 'TEST_FEATURE',
+        status: 'active',
         displayName: 'Test Feature',
         scopes: ['scope1'],
         description: 'desc',
@@ -151,6 +153,7 @@ describe('feature-control-repository', () => {
         { name: data.name },
         expect.objectContaining({
           $set: expect.objectContaining({
+            status: data.status,
             displayName: data.displayName,
             scopes: data.scopes,
             description: data.description,

@@ -59,6 +59,7 @@ export const updateFeatureControlValue = async (
 export const updateFeatureControlDefinition = async (data, db) => {
   const {
     name,
+    status,
     displayName,
     scopes,
     description,
@@ -73,6 +74,7 @@ export const updateFeatureControlDefinition = async (data, db) => {
     { name },
     {
       $set: {
+        status,
         displayName,
         scopes,
         description,
