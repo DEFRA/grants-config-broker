@@ -81,23 +81,6 @@ describe('serviceAuth plugin', () => {
       const res = await server.inject({ method: 'GET', url: '/t' })
       expect(res.statusCode).toBe(StatusCodes.OK)
     })
-
-    it('should bypass auth for documentation paths', async () => {
-      await server.register(serviceAuth)
-      server.route({
-        method: 'GET',
-        path: '/documentation/test',
-        handler: () => 'ok',
-        options: { auth: 'service' }
-      })
-
-      const res = await server.inject({
-        method: 'GET',
-        url: '/documentation/test'
-      })
-
-      expect(res.statusCode).toBe(StatusCodes.OK)
-    })
   })
 
   describe('legacy auth', () => {

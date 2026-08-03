@@ -141,7 +141,8 @@ describe('feature-control-repository', () => {
         expiryDate: '2025-01-01',
         createdBy: 'user1',
         existingValue: true,
-        roleRequired: ['admin']
+        roleRequired: ['admin'],
+        note: 'Definition updated (description)'
       }
       mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 })
 
@@ -164,7 +165,7 @@ describe('feature-control-repository', () => {
             history: expect.objectContaining({
               value: data.existingValue,
               setBy: data.createdBy,
-              note: 'Definition updated'
+              note: data.note
             })
           }
         })

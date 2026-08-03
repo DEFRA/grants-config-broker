@@ -69,7 +69,8 @@ export const updateFeatureControlDefinition = async (data, db) => {
     expiryDate,
     createdBy,
     existingValue,
-    roleRequired
+    roleRequired,
+    note
   } = data
   const updateTime = new Date()
   return db.collection(FEATURE_CONTROL_COLLECTION).updateOne(
@@ -90,7 +91,7 @@ export const updateFeatureControlDefinition = async (data, db) => {
           value: existingValue,
           setBy: createdBy,
           dateTime: updateTime,
-          note: 'Definition updated'
+          note
         }
       }
     }
