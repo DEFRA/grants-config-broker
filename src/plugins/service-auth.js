@@ -48,7 +48,6 @@ export const serviceAuth = {
               throw Boom.unauthorized()
             }
 
-            logger.info(`Completed jwt auth test`)
             return { isValid: true, credentials: { sub } }
           }
         })
@@ -57,12 +56,9 @@ export const serviceAuth = {
       server.auth.scheme('service-custom', () => ({
         authenticate: async (request, h) => {
           const isLocalEnvironment = config.get('cdpEnvironment') === 'local'
-          const isDocumentationPath = request.path.startsWith('/documentation')
 
-          if (isLocalEnvironment || isDocumentationPath) {
-            logger.info(
-              'Auth not required for local environment or documentation path'
-            )
+          if (isLocalEnvironment) {
+            logger.info('Auth not required for local environment')
             return h.authenticated({ credentials: { authenticated: true } })
           }
 
@@ -78,13 +74,11 @@ export const serviceAuth = {
             })
           }
 
-          logger.info('Not valid legacy token')
           if (!config.get('serviceAuth.enabled')) {
             logger.info('jwt auth not enabled')
             throw Boom.unauthorized()
           }
 
-          logger.info('check if valid jwt')
           await server.auth.test('service-jwt', request)
           return h.authenticated({
             credentials: { authenticated: true, type: 'jwt' }
@@ -136,7 +130,10 @@ function decryptLegacyToken(encryptedToken) {
 
     return decrypted
   } catch (error) {
-    logger.error(error, 'LEGACY AUTH: token provided is not a valid')
+    logger.error(
+      error,
+      'LEGACY AUTH: token provided is not valid - will fall back to service auth if available'
+    )
     return null
   }
 }

@@ -60,7 +60,7 @@ export const postAddFeatureControlHandler = async (req, h) => {
       )
       return h.response().code(StatusCodes.CONFLICT)
     }
-    if (changed) {
+    if (changed.length) {
       await updateFeatureControlDefinition(
         {
           name,
@@ -71,7 +71,8 @@ export const postAddFeatureControlHandler = async (req, h) => {
           expiryDate,
           createdBy,
           roleRequired,
-          existingValue: alreadyExistingFeatureControl.value
+          existingValue: alreadyExistingFeatureControl.value,
+          note: `Definition updated: (${changed.join(', ')})`
         },
         req.db
       )
@@ -149,13 +150,18 @@ const definitionUpdatedLegally = (existing, newDefinition) => {
 
   const immutableFieldChanged = existing.type !== newDefinition.type
 
-  const hasChanged =
-    !scopesUnchanged ||
-    !rolesUnchanged ||
-    existing.displayName !== newDefinition.displayName ||
-    existing.description !== newDefinition.description ||
-    existing.owner !== newDefinition.owner ||
+  const hasChanged = [
+    scopesUnchanged ? null : 'scopes',
+    rolesUnchanged ? null : 'roles',
+    existing.displayName !== newDefinition.displayName ? 'displayName' : null,
+    existing.description !== newDefinition.description ? 'description' : null,
+    existing.owner !== newDefinition.owner ? 'owner' : null,
     existing.expiryDate.getTime() !== newDefinition.expiryDate.getTime()
+      ? 'expiryDate'
+      : null
+  ]
+    .filter((value) => !!value)
+    .sort()
 
   return {
     immutableFieldChanged,
