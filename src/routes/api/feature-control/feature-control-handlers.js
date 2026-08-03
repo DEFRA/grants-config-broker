@@ -161,7 +161,7 @@ const definitionUpdatedLegally = (existing, newDefinition) => {
       : null
   ]
     .filter((value) => !!value)
-    .sort()
+    .sort((a, b) => a.localeCompare(b))
 
   return {
     immutableFieldChanged,
