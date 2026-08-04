@@ -5,5 +5,5 @@ export const inputMessageSchema = Joi.object({
   version: Joi.string().required(),
   files: Joi.array().items(Joi.string()).min(1).required(),
   status: Joi.string().valid('draft', 'active').optional(),
-  user: Joi.string().optional()
+  user: Joi.string().required()
 }).unknown(true)

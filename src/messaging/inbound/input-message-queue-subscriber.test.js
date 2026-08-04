@@ -3,12 +3,12 @@ import {
   stopMessageSubscriber
 } from './input-message-queue-subscriber.js'
 import { getLogger } from '../../common/helpers/logging/logger.js'
-import { SqsSubscriber } from '../../common/helpers/sqs/sqs-subscriber.js'
 import { config } from '../../config.js'
 import { processInputMessage } from './process-message.js'
+import { SqsSubscriber } from '@defra/grants-config-utils/sqs-subscriber'
 
 vi.mock('../../common/helpers/logging/logger.js')
-vi.mock('../../common/helpers/sqs/sqs-subscriber.js')
+vi.mock('@defra/grants-config-utils/sqs-subscriber')
 vi.mock('./process-message.js')
 
 const mockServer = {

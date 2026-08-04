@@ -6,7 +6,8 @@ describe('release-schemas', () => {
       const result = postReleaseConfigSchema.validate({
         grant: 'grant',
         version: '1.0.0',
-        files: ['file1.json']
+        files: ['file1.json'],
+        user: 'user-id'
       })
 
       expect(result.error).toBeUndefined()
@@ -29,7 +30,8 @@ describe('release-schemas', () => {
         grant: 'grant',
         version: '1.0.0',
         files: ['file1.json'],
-        status: 'draft'
+        status: 'draft',
+        user: 'user-id'
       })
 
       expect(result.error).toBeUndefined()
@@ -40,7 +42,8 @@ describe('release-schemas', () => {
         grant: 'grant',
         version: '1.0.0',
         files: ['file1.json'],
-        status: 'ACTIVE'
+        status: 'ACTIVE',
+        user: 'user-id'
       })
 
       expect(result.error).toBeUndefined()
@@ -106,6 +109,7 @@ describe('release-schemas', () => {
         grant: 'grant',
         version: '1.0.0',
         files: ['file1.json'],
+        user: 'user-id',
         unknown: 'option'
       })
 

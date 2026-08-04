@@ -9,7 +9,6 @@ import { mongoDb } from './common/helpers/mongodb.js'
 import { failAction } from './common/helpers/fail-action.js'
 import { pulse } from './common/helpers/pulse.js'
 import { requestTracing } from './common/helpers/request-tracing.js'
-import { setupProxy } from './common/helpers/proxy/setup-proxy.js'
 import { metrics } from '@defra/cdp-metrics'
 import { getLogger } from './common/helpers/logging/logger.js'
 import { notifyVersion } from './messaging/outbound/notify-version.js'
@@ -27,7 +26,6 @@ import {
 import { createAliasesLookup } from './check-aliases.js'
 
 async function createServer() {
-  setupProxy()
   const opts = {
     host: config.get('host'),
     port: config.get('port'),
