@@ -1,9 +1,9 @@
 import { loggerOptions } from './logger-options.js'
 import { getTraceId } from '@defra/hapi-tracing'
-import { getTraceParent } from '../sqs/trace-parent.js'
+import { getTraceParent } from '@defra/grants-config-utils/trace-parent'
 
 vi.mock('@defra/hapi-tracing')
-vi.mock('../sqs/trace-parent')
+vi.mock('@defra/grants-config-utils/trace-parent')
 
 describe('logger-options', () => {
   it('mixin adds trace id when available', () => {

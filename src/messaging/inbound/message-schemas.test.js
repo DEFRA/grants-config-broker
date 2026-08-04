@@ -19,7 +19,8 @@ describe('message-schemas', () => {
       const message = {
         grant: 'grant-name',
         version: '1.0.0',
-        files: ['file1.json']
+        files: ['file1.json'],
+        user: 'user-id'
       }
       const { error } = inputMessageSchema.validate(message)
       expect(error).toBeUndefined()

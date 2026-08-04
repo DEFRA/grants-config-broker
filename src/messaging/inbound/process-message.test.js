@@ -37,7 +37,8 @@ describe('Process Message test', () => {
         grant: 'some-grant',
         status: 'draft',
         version: '1.0.0',
-        files: ['some-grant/1.0.0/some/file.txt']
+        files: ['some-grant/1.0.0/some/file.txt'],
+        user: 'test-user'
       },
       mockDb,
       mockLogger,
@@ -105,7 +106,8 @@ describe('Process Message test', () => {
       {
         grant: 'some-grant',
         version: '1.0.0',
-        files: ['some-grant/1.0.0/some/file.txt']
+        files: ['some-grant/1.0.0/some/file.txt'],
+        user: 'test-user'
       },
       mockDb,
       mockLogger,
@@ -148,7 +150,8 @@ describe('Process Message test', () => {
         {
           grant: 'some-grant',
           version: '1.0.0',
-          files: ['some-grant/1.0.0/file1.txt', 'some-grant/1.0.0/file2.txt']
+          files: ['some-grant/1.0.0/file1.txt', 'some-grant/1.0.0/file2.txt'],
+          user: 'test-user'
         },
         mockDb,
         mockLogger,
@@ -171,7 +174,8 @@ describe('Process Message test', () => {
         {
           grant: 'some-grant',
           version: '1.0.0',
-          files: ['file1.txt']
+          files: ['file1.txt'],
+          user: 'test-user'
         },
         mockDb,
         mockLogger,
