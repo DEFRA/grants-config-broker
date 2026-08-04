@@ -371,6 +371,8 @@ paths:
           description: Unauthorized.
         '404':
           description: Not Found - Feature control does not exist.
+
+  /api/feature-control:
     post:
       summary: Add or update a feature control definition
       description: Creates a new feature control or updates the definition of an existing one. Immutable fields (name, type, initialValue) cannot be updated.
@@ -396,6 +398,8 @@ paths:
           description: Unauthorized.
         '409':
           description: Conflict - Attempted to update an immutable field.
+
+  /api/feature-control/value:
     put:
       summary: Update a feature control value
       description: Updates the current value of a feature control for the current environment.
@@ -624,6 +628,12 @@ components:
           type: array
           items:
             type: string
+        environments:
+          type: array
+          items:
+            type: string
+            enum: [dev, test, perf-test, ext-test, prod]
+          description: Optional list of environments this feature control applies to.
 
     PutFeatureControlValueRequest:
       type: object
@@ -647,6 +657,7 @@ components:
         - grant
         - version
         - files
+        - user
       properties:
         grant:
           type: string
