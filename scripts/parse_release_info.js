@@ -1,5 +1,5 @@
 import fs from 'fs';
-import yaml from 'js-yaml';
+import { load } from 'js-yaml';
 
 function fail(message) {
   console.error(message);
@@ -18,7 +18,7 @@ function main() {
 
   let releaseData;
   try {
-    releaseData = yaml.load(fs.readFileSync(releaseFile, 'utf8'));
+    releaseData = load(fs.readFileSync(releaseFile, 'utf8'));
   } catch (e) {
     fail(`Error parsing ${releaseFile}: ${e.message}`);
   }
@@ -45,7 +45,7 @@ function main() {
 
   let locationsData;
   try {
-    locationsData = yaml.load(fs.readFileSync(locationsFile, 'utf8'));
+    locationsData = load(fs.readFileSync(locationsFile, 'utf8'));
   } catch (e) {
     fail(`Error parsing ${locationsFile}: ${e.message}`);
   }

@@ -1,4 +1,7 @@
 import Hapi from '@hapi/hapi'
+import https from 'node:https'
+import http from 'node:http'
+import Wreck from '@hapi/wreck'
 
 import { secureContext } from '@defra/hapi-secure-context'
 
@@ -9,14 +12,13 @@ import { mongoDb } from './common/helpers/mongodb.js'
 import { failAction } from './common/helpers/fail-action.js'
 import { pulse } from './common/helpers/pulse.js'
 import { requestTracing } from './common/helpers/request-tracing.js'
-import { setupProxy } from './common/helpers/proxy/setup-proxy.js'
 import { metrics } from '@defra/cdp-metrics'
 import { getLogger } from './common/helpers/logging/logger.js'
 import { notifyVersion } from './messaging/outbound/notify-version.js'
 import { serviceAuth } from './plugins/service-auth.js'
 import Inert from '@hapi/inert'
 import Scalar from 'hapi-scalar'
-import yaml from 'js-yaml'
+import { load } from 'js-yaml'
 import fs from 'node:fs'
 import path from 'node:path'
 import { checkReleaseFileForVersionDeployment } from './check-file-based-releases.js'
@@ -27,7 +29,8 @@ import {
 import { createAliasesLookup } from './check-aliases.js'
 
 async function createServer() {
-  setupProxy()
+  Wreck.agents.https = https.globalAgent
+  Wreck.agents.http = http.globalAgent
   const opts = {
     host: config.get('host'),
     port: config.get('port'),
@@ -124,7 +127,7 @@ const registerApiDocsPlugin = async (server) => {
   // inert         - serves static files (required by scalar)
   const swaggerPath = path.resolve(process.cwd(), 'src/docs/swagger.yaml')
   const swaggerFile = fs.readFileSync(swaggerPath, 'utf8')
-  const swaggerDocument = yaml.load(swaggerFile, {})
+  const swaggerDocument = load(swaggerFile, {})
 
   await server.register([
     {
