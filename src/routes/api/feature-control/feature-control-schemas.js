@@ -11,11 +11,13 @@ export const typeMap = {
 
 const statusList = ['active', 'expired', 'withdrawn']
 
-const allEnvironments = ['dev', 'test', 'perf-test', 'ext-test', 'prod']
+const mandatoryEnvironments = ['dev', 'test', 'perf-test', 'ext-test', 'prod']
+const allEnvironments = mandatoryEnvironments.concat(['local'])
 
 const getInitialValueSchema = (valueSchema) =>
   Joi.object({
     default: valueSchema,
+    local: valueSchema,
     dev: valueSchema,
     test: valueSchema,
     'ext-test': valueSchema,
@@ -30,7 +32,9 @@ const getInitialValueSchema = (valueSchema) =>
 
       // check if required envs are present
       const { environments } = helpers.state.ancestors[0]
-      const requiredEnvs = environments?.length ? environments : allEnvironments
+      const requiredEnvs = environments?.length
+        ? environments
+        : mandatoryEnvironments
       const missingEnvValues = requiredEnvs.filter(
         (env) => value[env] === undefined
       )
@@ -69,7 +73,12 @@ export const postAddFeatureControlSchema = Joi.object({
   owner: Joi.string().required(),
   expiryDate: Joi.date().required(),
   createdBy: Joi.string().required(),
-  roleRequired: Joi.array().items(Joi.string()).min(0).optional(),
+  roleRequired: Joi.object()
+    .pattern(
+      Joi.string().valid('default', ...allEnvironments),
+      Joi.array().items(Joi.string()).min(1)
+    )
+    .optional(),
   environments: Joi.array()
     .items(Joi.string().valid(...allEnvironments))
     .min(0)

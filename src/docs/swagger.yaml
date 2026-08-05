@@ -625,9 +625,13 @@ components:
         createdBy:
           type: string
         roleRequired:
-          type: array
-          items:
-            type: string
+          type: object
+          description: Mapping of list of required role to update control value per environment. Can contain 'default' plus any of 'local', 'dev', 'test', 'ext-test', 'perf-test', 'prod'.
+          additionalProperties:
+            type: array
+            items:
+              type: string
+            minItems: 1
         environments:
           type: array
           items:

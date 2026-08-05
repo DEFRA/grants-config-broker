@@ -66,7 +66,7 @@ describe('feature-control-schemas', () => {
           }
         },
         {
-          // environments present, initialValue contains default and some envs have override
+          // environments present, initialValue contains default, and some envs have override
           ...validPayload,
           environments: ['dev', 'test', 'perf-test'],
           type: 'boolean',
@@ -137,6 +137,41 @@ describe('feature-control-schemas', () => {
           scopes: [scope]
         })
         expect(result.error).toBeUndefined()
+      })
+    })
+
+    describe('roleRequired validation', () => {
+      it('should validate successfully for valid roleRequired', () => {
+        const result = postAddFeatureControlSchema.validate({
+          ...validPayload,
+          roleRequired: {
+            default: ['admin'],
+            dev: ['dev-role'],
+            test: ['test-role']
+          }
+        })
+        expect(result.error).toBeUndefined()
+      })
+
+      it('should fail for invalid roleRequired keys', () => {
+        const result = postAddFeatureControlSchema.validate({
+          ...validPayload,
+          roleRequired: {
+            default: ['admin'],
+            invalidEnv: ['role']
+          }
+        })
+        expect(result.error).toBeDefined()
+      })
+
+      it('should fail for empty roleRequired arrays', () => {
+        const result = postAddFeatureControlSchema.validate({
+          ...validPayload,
+          roleRequired: {
+            default: []
+          }
+        })
+        expect(result.error).toBeDefined()
       })
     })
 

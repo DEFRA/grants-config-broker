@@ -41,6 +41,10 @@ export const postAddFeatureControlHandler = async (req, h) => {
     name,
     req.db
   )
+
+  const possibleRoleRequired =
+    roleRequired?.[currentEnv] ?? roleRequired?.default ?? null
+
   if (alreadyExistingFeatureControl) {
     // We will accept updates to the definition of a feature control
     // but not to the initialValue, name, or type; value must be updated separately
@@ -52,7 +56,7 @@ export const postAddFeatureControlHandler = async (req, h) => {
         description,
         owner,
         expiryDate,
-        roleRequired
+        roleRequired: possibleRoleRequired
       })
     if (immutableFieldChanged) {
       req.logger.error(
@@ -70,7 +74,7 @@ export const postAddFeatureControlHandler = async (req, h) => {
           owner,
           expiryDate,
           createdBy,
-          roleRequired,
+          roleRequired: possibleRoleRequired,
           existingValue: alreadyExistingFeatureControl.value,
           note: `Definition updated: (${changed.join(', ')})`
         },
@@ -97,7 +101,7 @@ export const postAddFeatureControlHandler = async (req, h) => {
       owner,
       createdBy,
       expiryDate,
-      roleRequired,
+      roleRequired: possibleRoleRequired,
       created: createdDate,
       lastUpdated: createdDate,
       lastUpdatedBy: createdBy,
