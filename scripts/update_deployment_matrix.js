@@ -1,5 +1,5 @@
 import fs from 'fs';
-import yaml from 'js-yaml';
+import { dump, load } from 'js-yaml';
 import semver from 'semver';
 
 function upsertVersion(array, newItem) {
@@ -61,8 +61,8 @@ function main() {
   let releaseData;
   let matrixData;
   try {
-    releaseData = yaml.load(fs.readFileSync(releaseFile, 'utf8'));
-    matrixData = yaml.load(fs.readFileSync(matrixFile, 'utf8'));
+    releaseData = load(fs.readFileSync(releaseFile, 'utf8'));
+    matrixData = load(fs.readFileSync(matrixFile, 'utf8'));
   } catch (e) {
     fail(`Error parsing input files: ${e.message}`);
   }
@@ -106,7 +106,7 @@ function main() {
 
   matrixData.lastUpdated = ((d) => `${d.getFullYear()}_${String(d.getMonth() + 1).padStart(2, '0')}_${String(d.getDate()).padStart(2, '0')}__${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}`)(new Date());
   try {
-    fs.writeFileSync(matrixFile, yaml.dump(matrixData));
+    fs.writeFileSync(matrixFile, dump(matrixData));
   } catch (e) {
     fail(`Error writing output file: ${e.message}`);
   }
