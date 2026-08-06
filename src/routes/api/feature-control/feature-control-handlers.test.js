@@ -64,7 +64,7 @@ describe('feature-control-handlers', () => {
       owner: 'Woodland team',
       expiryDate: new Date('2028-01-01'),
       createdBy: 'user1',
-      roleRequired: ['grant.view']
+      roleRequired: { default: ['grant.view'] }
     }
     const mockRequest = {
       payload,
@@ -89,7 +89,8 @@ describe('feature-control-handlers', () => {
           scopes: payload.scopes,
           description: payload.description,
           owner: payload.owner,
-          createdBy: payload.createdBy
+          createdBy: payload.createdBy,
+          roleRequired: ['grant.view']
         }),
         mockDb
       )
@@ -130,6 +131,29 @@ describe('feature-control-handlers', () => {
       )
     })
 
+    it('should use environment specific roleRequired value if specified', async () => {
+      const payloadRoles = {
+        ...payload,
+        roleRequired: {
+          dev: ['grant.update', 'grant.admin']
+        }
+      }
+      const mockRequestRoles = {
+        ...mockRequest,
+        payload: payloadRoles
+      }
+      getFeatureControlDetailedByName.mockResolvedValue(null)
+
+      await postAddFeatureControlHandler(mockRequestRoles, mockH)
+
+      expect(storeFeatureControl).toHaveBeenCalledWith(
+        expect.objectContaining({
+          roleRequired: ['grant.update', 'grant.admin']
+        }),
+        mockDb
+      )
+    })
+
     it('should update existing feature control definition if changed and return accepted', async () => {
       const existing = {
         name: payload.name,
@@ -153,7 +177,7 @@ describe('feature-control-handlers', () => {
           owner: payload.owner,
           expiryDate: payload.expiryDate,
           createdBy: payload.createdBy,
-          roleRequired: payload.roleRequired,
+          roleRequired: payload.roleRequired.default,
           existingValue: existing.value,
           note: `Definition updated: (description, expiryDate, owner, roles, scopes)`
         }),
@@ -181,7 +205,7 @@ describe('feature-control-handlers', () => {
         description: 'old desc',
         owner: payload.owner,
         expiryDate: payload.expiryDate,
-        roleRequired: payload.roleRequired
+        roleRequired: payload.roleRequired.default
       }
       getFeatureControlDetailedByName.mockResolvedValue(existing)
 
@@ -203,7 +227,7 @@ describe('feature-control-handlers', () => {
         description: payload.description,
         owner: payload.owner,
         expiryDate: payload.expiryDate,
-        roleRequired: payload.roleRequired
+        roleRequired: payload.roleRequired.default
       }
       getFeatureControlDetailedByName.mockResolvedValue(existing)
 
@@ -291,7 +315,7 @@ describe('feature-control-handlers', () => {
         description: payload.description,
         owner: payload.owner,
         expiryDate: payload.expiryDate,
-        roleRequired: payload.roleRequired
+        roleRequired: payload.roleRequired.default
       }
       getFeatureControlDetailedByName.mockResolvedValue(existing)
 
@@ -313,7 +337,7 @@ describe('feature-control-handlers', () => {
 
       expect(updateFeatureControlDefinition).toHaveBeenCalledWith(
         expect.objectContaining({
-          roleRequired: payload.roleRequired
+          roleRequired: payload.roleRequired.default
         }),
         mockDb
       )
@@ -340,7 +364,7 @@ describe('feature-control-handlers', () => {
 
       expect(updateFeatureControlDefinition).toHaveBeenCalledWith(
         expect.objectContaining({
-          roleRequired: undefined
+          roleRequired: null
         }),
         mockDb
       )
