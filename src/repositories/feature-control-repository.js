@@ -1,4 +1,5 @@
 const FEATURE_CONTROL_COLLECTION = 'feature-controls'
+import { escapeRegex } from '../utils/regex-utils.js'
 
 export const storeFeatureControl = async (data, db) => {
   // Hardcoded status for now, but will change in the near future
@@ -104,13 +105,13 @@ export const getFeatureControls = async (
 ) => {
   const filter = {}
   if (name) {
-    filter.name = { $regex: name, $options: 'i' }
+    filter.name = { $regex: escapeRegex(name), $options: 'i' }
   }
   if (displayName) {
-    filter.displayName = { $regex: displayName, $options: 'i' }
+    filter.displayName = { $regex: escapeRegex(displayName), $options: 'i' }
   }
   if (owner) {
-    filter.owner = { $regex: owner, $options: 'i' }
+    filter.owner = { $regex: escapeRegex(owner), $options: 'i' }
   }
   if (scope) {
     filter.scopes = scope

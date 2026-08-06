@@ -200,7 +200,7 @@ describe('feature-control-repository', () => {
       expect(mockCollection.countDocuments).toHaveBeenCalledWith({
         name: { $regex: 'TEST', $options: 'i' },
         displayName: { $regex: 'Test', $options: 'i' },
-        owner: { $regex: 'test-owner', $options: 'i' },
+        owner: { $regex: 'test\\-owner', $options: 'i' },
         scopes: 'grant.test',
         type: 'boolean',
         status: 'active'
@@ -208,7 +208,7 @@ describe('feature-control-repository', () => {
       expect(mockCollection.find).toHaveBeenCalledWith({
         name: { $regex: 'TEST', $options: 'i' },
         displayName: { $regex: 'Test', $options: 'i' },
-        owner: { $regex: 'test-owner', $options: 'i' },
+        owner: { $regex: 'test\\-owner', $options: 'i' },
         scopes: 'grant.test',
         type: 'boolean',
         status: 'active'
@@ -228,6 +228,29 @@ describe('feature-control-repository', () => {
         totalPages: 2,
         uniqueScopes: ['grant.test']
       })
+    })
+
+    it('should escape regex special characters in filters', async () => {
+      const params = {
+        page: 1,
+        pageSize: 10,
+        name: 'test.*',
+        displayName: 'Test (2)',
+        owner: 'user?'
+      }
+      mockCollection.countDocuments.mockResolvedValue(0)
+      mockCollection.toArray.mockResolvedValue([])
+
+      await getFeatureControls(params, mockDb)
+
+      const expectedFilter = {
+        name: { $regex: 'test\\.\\*', $options: 'i' },
+        displayName: { $regex: 'Test \\(2\\)', $options: 'i' },
+        owner: { $regex: 'user\\?', $options: 'i' }
+      }
+
+      expect(mockCollection.countDocuments).toHaveBeenCalledWith(expectedFilter)
+      expect(mockCollection.find).toHaveBeenCalledWith(expectedFilter)
     })
 
     it('should work without filters', async () => {
