@@ -111,7 +111,9 @@ export const postAddFeatureControlHandler = async (req, h) => {
           value,
           setBy: createdBy,
           dateTime: createdDate,
-          note: 'Initial value set'
+          note: 'Initial value set',
+          changeToValue: value,
+          notificationEmitted: true
         }
       ]
     }

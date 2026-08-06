@@ -19,10 +19,6 @@ describe('helpers', () => {
       it('should return Added, Removed and Changed correctly for numbers', () => {
         const oldVal = [1, 2, 3]
         const newVal = [2, 3, 4]
-        // Added: 4, Removed: 1. No changes in this simple list case?
-        // Usually changed implies same index or same key, but for simple lists it might just be added/removed.
-        // The TODO says "Added: 1,2 | Removed: 3,4 | Changed: 5,6"
-        // Let's assume for now simple set difference for added/removed.
         const result = deriveChange(newVal, oldVal, 'list-number')
         expect(result).toContain('Added: 4')
         expect(result).toContain('Removed: 1')
