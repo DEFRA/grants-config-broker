@@ -99,12 +99,15 @@ export const updateFeatureControlDefinition = async (data, db) => {
 }
 
 export const getFeatureControls = async (
-  { page, pageSize, name, scope, type, owner, status },
+  { page, pageSize, name, displayName, scope, type, owner, status },
   db
 ) => {
   const filter = {}
   if (name) {
     filter.name = { $regex: name, $options: 'i' }
+  }
+  if (displayName) {
+    filter.displayName = { $regex: displayName, $options: 'i' }
   }
   if (owner) {
     filter.owner = { $regex: owner, $options: 'i' }
@@ -133,11 +136,14 @@ export const getFeatureControls = async (
     .project({ _id: 0, history: 0 })
     .toArray()
 
+  const uniqueScopes = [...new Set(items.flatMap((item) => item.scopes))]
+
   return {
     items,
     total,
     page,
     pageSize,
-    totalPages: Math.ceil(total / pageSize)
+    totalPages: Math.ceil(total / pageSize),
+    uniqueScopes
   }
 }

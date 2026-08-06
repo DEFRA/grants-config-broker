@@ -180,12 +180,15 @@ describe('feature-control-repository', () => {
         page: 2,
         pageSize: 5,
         name: 'TEST',
+        displayName: 'Test',
         owner: 'test-owner',
         scope: 'grant.test',
         type: 'boolean',
         status: 'active'
       }
-      const items = [{ name: 'TEST_FEATURE', type: 'boolean' }]
+      const items = [
+        { name: 'TEST_FEATURE', type: 'boolean', scopes: ['grant.test'] }
+      ]
       const total = 10
 
       mockCollection.countDocuments.mockResolvedValue(total)
@@ -196,6 +199,7 @@ describe('feature-control-repository', () => {
       expect(mockDb.collection).toHaveBeenCalledWith('feature-controls')
       expect(mockCollection.countDocuments).toHaveBeenCalledWith({
         name: { $regex: 'TEST', $options: 'i' },
+        displayName: { $regex: 'Test', $options: 'i' },
         owner: { $regex: 'test-owner', $options: 'i' },
         scopes: 'grant.test',
         type: 'boolean',
@@ -203,6 +207,7 @@ describe('feature-control-repository', () => {
       })
       expect(mockCollection.find).toHaveBeenCalledWith({
         name: { $regex: 'TEST', $options: 'i' },
+        displayName: { $regex: 'Test', $options: 'i' },
         owner: { $regex: 'test-owner', $options: 'i' },
         scopes: 'grant.test',
         type: 'boolean',
@@ -220,7 +225,8 @@ describe('feature-control-repository', () => {
         total,
         page: 2,
         pageSize: 5,
-        totalPages: 2
+        totalPages: 2,
+        uniqueScopes: ['grant.test']
       })
     })
 

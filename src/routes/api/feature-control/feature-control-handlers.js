@@ -227,9 +227,10 @@ export const getFeatureControlByNameHandler = async (
 }
 
 export const getFeatureControlsHandler = async (req, h) => {
-  const { page, pageSize, name, scope, type, owner, status } = req.query
+  const { page, pageSize, name, displayName, scope, type, owner, status } =
+    req.query
   const results = await getFeatureControls(
-    { page, pageSize, name, scope, type, owner, status },
+    { page, pageSize, name, displayName, scope, type, owner, status },
     req.db
   )
   return h.response(results).code(StatusCodes.OK)

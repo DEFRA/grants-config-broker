@@ -584,6 +584,10 @@ components:
           type: integer
         totalPages:
           type: integer
+        uniqueScopes:
+          type: array
+          items:
+            type: string
 
     PostFeatureControlRequest:
       type: object
