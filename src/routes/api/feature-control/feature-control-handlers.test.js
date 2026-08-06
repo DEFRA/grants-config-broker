@@ -390,7 +390,8 @@ describe('feature-control-handlers', () => {
       const existing = {
         name: payload.name,
         type: 'list-number',
-        scopes: ['list', 'of', 'scopes']
+        scopes: ['list', 'of', 'scopes'],
+        value: [1, 2, 3, 4]
       }
       getFeatureControlByName.mockResolvedValue(existing)
       updateFeatureControlValue.mockResolvedValue(existing)
@@ -406,7 +407,9 @@ describe('feature-control-handlers', () => {
           name: payload.name,
           user: payload.user,
           value: payload.value,
-          note: payload.note
+          note: payload.note,
+          changeToValue: 'Removed: 4',
+          notificationEmitted: true
         },
         mockDb
       )

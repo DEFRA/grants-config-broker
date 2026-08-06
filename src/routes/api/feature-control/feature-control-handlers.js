@@ -10,6 +10,7 @@ import {
 import { config } from '../../../config.js'
 import { typeMap } from './feature-control-schemas.js'
 import { notifyFeatureControlUpdate } from '../../../messaging/outbound/notify-feature-control.js'
+import { deriveChange } from './helpers.js'
 
 export const postAddFeatureControlHandler = async (req, h) => {
   const {
@@ -193,8 +194,14 @@ export const putUpdateFeatureControlValueHandler = async (req, h) => {
     return h.response().code(StatusCodes.BAD_REQUEST)
   }
 
+  const changeToValue = deriveChange(
+    value,
+    featureControl.value,
+    featureControl.type
+  )
+
   featureControl = await updateFeatureControlValue(
-    { name, user, value, note },
+    { name, user, value, note, changeToValue, notificationEmitted: true },
     req.db
   )
   await notifyFeatureControlUpdate(

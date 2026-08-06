@@ -35,7 +35,7 @@ export const getFeatureControlByName = async (name, db) => {
 }
 
 export const updateFeatureControlValue = async (
-  { name, user, value, note },
+  { name, user, value, note, changeToValue, notificationEmitted },
   db
 ) => {
   const updateTime = new Date()
@@ -52,7 +52,9 @@ export const updateFeatureControlValue = async (
           value,
           setBy: user,
           dateTime: updateTime,
-          note
+          note,
+          changeToValue,
+          notificationEmitted
         }
       }
     },

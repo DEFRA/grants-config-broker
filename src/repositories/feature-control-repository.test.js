@@ -100,7 +100,9 @@ describe('feature-control-repository', () => {
         name: 'TEST_FEATURE',
         user: 'user1',
         value: false,
-        note: 'test note'
+        note: 'test note',
+        changeToValue: 'true ➜ false',
+        notificationEmitted: true
       }
       mockCollection.findOneAndUpdate.mockResolvedValue({
         value: { ...params }
