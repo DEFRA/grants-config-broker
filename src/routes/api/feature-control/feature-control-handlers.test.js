@@ -554,6 +554,7 @@ describe('feature-control-handlers', () => {
         page: 1,
         pageSize: 10,
         name: 'test',
+        displayName: 'Test display name',
         owner: 'test-owner',
         status: 'active'
       }

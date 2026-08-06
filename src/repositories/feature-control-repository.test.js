@@ -180,12 +180,15 @@ describe('feature-control-repository', () => {
         page: 2,
         pageSize: 5,
         name: 'TEST',
+        displayName: 'Test',
         owner: 'test-owner',
         scope: 'grant.test',
         type: 'boolean',
         status: 'active'
       }
-      const items = [{ name: 'TEST_FEATURE', type: 'boolean' }]
+      const items = [
+        { name: 'TEST_FEATURE', type: 'boolean', scopes: ['grant.test'] }
+      ]
       const total = 10
 
       mockCollection.countDocuments.mockResolvedValue(total)
@@ -196,14 +199,16 @@ describe('feature-control-repository', () => {
       expect(mockDb.collection).toHaveBeenCalledWith('feature-controls')
       expect(mockCollection.countDocuments).toHaveBeenCalledWith({
         name: { $regex: 'TEST', $options: 'i' },
-        owner: { $regex: 'test-owner', $options: 'i' },
+        displayName: { $regex: 'Test', $options: 'i' },
+        owner: { $regex: 'test\\-owner', $options: 'i' },
         scopes: 'grant.test',
         type: 'boolean',
         status: 'active'
       })
       expect(mockCollection.find).toHaveBeenCalledWith({
         name: { $regex: 'TEST', $options: 'i' },
-        owner: { $regex: 'test-owner', $options: 'i' },
+        displayName: { $regex: 'Test', $options: 'i' },
+        owner: { $regex: 'test\\-owner', $options: 'i' },
         scopes: 'grant.test',
         type: 'boolean',
         status: 'active'
@@ -220,8 +225,32 @@ describe('feature-control-repository', () => {
         total,
         page: 2,
         pageSize: 5,
-        totalPages: 2
+        totalPages: 2,
+        uniqueScopes: ['grant.test']
       })
+    })
+
+    it('should escape regex special characters in filters', async () => {
+      const params = {
+        page: 1,
+        pageSize: 10,
+        name: 'test.*',
+        displayName: 'Test (2)',
+        owner: 'user?'
+      }
+      mockCollection.countDocuments.mockResolvedValue(0)
+      mockCollection.toArray.mockResolvedValue([])
+
+      await getFeatureControls(params, mockDb)
+
+      const expectedFilter = {
+        name: { $regex: 'test\\.\\*', $options: 'i' },
+        displayName: { $regex: 'Test \\(2\\)', $options: 'i' },
+        owner: { $regex: 'user\\?', $options: 'i' }
+      }
+
+      expect(mockCollection.countDocuments).toHaveBeenCalledWith(expectedFilter)
+      expect(mockCollection.find).toHaveBeenCalledWith(expectedFilter)
     })
 
     it('should work without filters', async () => {

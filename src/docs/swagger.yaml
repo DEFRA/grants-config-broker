@@ -454,6 +454,12 @@ paths:
           schema:
             type: string
           description: Partial name match (case-insensitive).
+        - name: displayName
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Partial display name match (case-insensitive).
         - name: owner
           in: query
           required: false
@@ -584,6 +590,10 @@ components:
           type: integer
         totalPages:
           type: integer
+        uniqueScopes:
+          type: array
+          items:
+            type: string
 
     PostFeatureControlRequest:
       type: object
