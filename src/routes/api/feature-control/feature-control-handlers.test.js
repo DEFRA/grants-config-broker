@@ -5,13 +5,18 @@ import {
   putUpdateFeatureControlValueHandler
 } from './feature-control-handlers.js'
 import { StatusCodes } from 'http-status-codes'
+import {
+  getFeatureControlByName,
+  getFeatureControls,
+  updateFeatureControlValue
+} from '../../../repositories/feature-control-repository.js'
+import { notifyFeatureControlUpdate } from '../../../messaging/outbound/notify-feature-control.js'
+import { addOrUpdateFeatureControlDefinition } from '../../../service/feature-control-definition-processor.js'
+import { publishEvent } from '../../../common/helpers/audit/event-publisher.js'
 
 vi.mock('../../../repositories/feature-control-repository.js', () => ({
-  getFeatureControlDetailedByName: vi.fn(),
   getFeatureControlByName: vi.fn(),
   getFeatureControls: vi.fn(),
-  storeFeatureControl: vi.fn(),
-  updateFeatureControlDefinition: vi.fn(),
   updateFeatureControlValue: vi.fn()
 }))
 
@@ -25,15 +30,11 @@ vi.mock('../../../config.js', () => ({
   }
 }))
 
-import {
-  getFeatureControlByName,
-  getFeatureControlDetailedByName,
-  getFeatureControls,
-  storeFeatureControl,
-  updateFeatureControlDefinition,
-  updateFeatureControlValue
-} from '../../../repositories/feature-control-repository.js'
-import { notifyFeatureControlUpdate } from '../../../messaging/outbound/notify-feature-control.js'
+vi.mock('../../../service/feature-control-definition-processor.js')
+
+vi.mock('../../../common/helpers/audit/event-publisher.js', () => ({
+  publishEvent: vi.fn()
+}))
 
 describe('feature-control-handlers', () => {
   const mockLogger = {
@@ -72,173 +73,6 @@ describe('feature-control-handlers', () => {
       db: mockDb
     }
 
-    it('should store new feature control and return accepted', async () => {
-      getFeatureControlDetailedByName.mockResolvedValue(null)
-
-      const result = await postAddFeatureControlHandler(mockRequest, mockH)
-
-      expect(getFeatureControlDetailedByName).toHaveBeenCalledWith(
-        payload.name,
-        mockDb
-      )
-      expect(storeFeatureControl).toHaveBeenCalledWith(
-        expect.objectContaining({
-          name: payload.name,
-          type: payload.type,
-          value: [456], // Uses 'dev' from mocked config
-          scopes: payload.scopes,
-          description: payload.description,
-          owner: payload.owner,
-          createdBy: payload.createdBy,
-          roleRequired: ['grant.view']
-        }),
-        mockDb
-      )
-      expect(notifyFeatureControlUpdate).toHaveBeenCalledWith(
-        {
-          name: payload.name,
-          scopes: payload.scopes,
-          value: [456],
-          updatedBy: payload.createdBy,
-          valueType: 'list-number'
-        },
-        mockLogger
-      )
-      expect(mockH.code).toHaveBeenCalledWith(StatusCodes.ACCEPTED)
-      expect(result).toBe(mockH)
-    })
-
-    it('should use default initial value if current environment is not present', async () => {
-      const payloadNoDev = {
-        ...payload,
-        initialValue: {
-          default: [123]
-        }
-      }
-      const mockRequestNoDev = {
-        ...mockRequest,
-        payload: payloadNoDev
-      }
-      getFeatureControlDetailedByName.mockResolvedValue(null)
-
-      await postAddFeatureControlHandler(mockRequestNoDev, mockH)
-
-      expect(storeFeatureControl).toHaveBeenCalledWith(
-        expect.objectContaining({
-          value: [123]
-        }),
-        mockDb
-      )
-    })
-
-    it('should use environment specific roleRequired value if specified', async () => {
-      const payloadRoles = {
-        ...payload,
-        roleRequired: {
-          dev: ['grant.update', 'grant.admin']
-        }
-      }
-      const mockRequestRoles = {
-        ...mockRequest,
-        payload: payloadRoles
-      }
-      getFeatureControlDetailedByName.mockResolvedValue(null)
-
-      await postAddFeatureControlHandler(mockRequestRoles, mockH)
-
-      expect(storeFeatureControl).toHaveBeenCalledWith(
-        expect.objectContaining({
-          roleRequired: ['grant.update', 'grant.admin']
-        }),
-        mockDb
-      )
-    })
-
-    it('should update existing feature control definition if changed and return accepted', async () => {
-      const existing = {
-        name: payload.name,
-        type: payload.type,
-        value: 'some-value',
-        scopes: ['old.scope'],
-        description: 'old desc',
-        owner: 'old owner',
-        expiryDate: new Date('2027-01-01'),
-        roleRequired: ['old.role']
-      }
-      getFeatureControlDetailedByName.mockResolvedValue(existing)
-
-      const result = await postAddFeatureControlHandler(mockRequest, mockH)
-
-      expect(updateFeatureControlDefinition).toHaveBeenCalledWith(
-        expect.objectContaining({
-          name: payload.name,
-          scopes: payload.scopes,
-          description: payload.description,
-          owner: payload.owner,
-          expiryDate: payload.expiryDate,
-          createdBy: payload.createdBy,
-          roleRequired: payload.roleRequired.default,
-          existingValue: existing.value,
-          note: `Definition updated: (description, expiryDate, owner, roles, scopes)`,
-          notificationEmitted: true
-        }),
-        mockDb
-      )
-      expect(notifyFeatureControlUpdate).toHaveBeenCalledWith(
-        {
-          name: payload.name,
-          scopes: payload.scopes,
-          value: existing.value,
-          updatedBy: payload.createdBy,
-          valueType: payload.type
-        },
-        mockLogger
-      )
-      expect(mockH.code).toHaveBeenCalledWith(StatusCodes.ACCEPTED)
-      expect(result).toBe(mockH)
-    })
-
-    it('should update existing feature control definition if only description changed and return accepted without emitting', async () => {
-      const existing = {
-        name: payload.name,
-        type: payload.type,
-        scopes: payload.scopes,
-        description: 'old desc',
-        owner: payload.owner,
-        expiryDate: payload.expiryDate,
-        roleRequired: payload.roleRequired.default
-      }
-      getFeatureControlDetailedByName.mockResolvedValue(existing)
-
-      const result = await postAddFeatureControlHandler(mockRequest, mockH)
-
-      expect(updateFeatureControlDefinition).toHaveBeenCalled()
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        expect.stringContaining('Not emitting')
-      )
-      expect(mockH.code).toHaveBeenCalledWith(StatusCodes.ACCEPTED)
-      expect(result).toBe(mockH)
-    })
-
-    it('should return no content if existing feature control definition is unchanged', async () => {
-      const existing = {
-        name: payload.name,
-        type: payload.type,
-        scopes: payload.scopes,
-        description: payload.description,
-        owner: payload.owner,
-        expiryDate: payload.expiryDate,
-        roleRequired: payload.roleRequired.default
-      }
-      getFeatureControlDetailedByName.mockResolvedValue(existing)
-
-      const result = await postAddFeatureControlHandler(mockRequest, mockH)
-
-      expect(updateFeatureControlDefinition).not.toHaveBeenCalled()
-      expect(mockH.code).toHaveBeenCalledWith(StatusCodes.NO_CONTENT)
-      expect(result).toBe(mockH)
-    })
-
     it('should return unprocessable entity if current env is not included in environments field', async () => {
       const payloadWithEnvs = {
         ...payload,
@@ -255,120 +89,99 @@ describe('feature-control-handlers', () => {
         mockH
       )
 
-      expect(getFeatureControlDetailedByName).not.toHaveBeenCalled()
-      expect(updateFeatureControlDefinition).not.toHaveBeenCalled()
+      expect(addOrUpdateFeatureControlDefinition).not.toHaveBeenCalled()
       expect(mockH.code).toHaveBeenCalledWith(StatusCodes.UNPROCESSABLE_ENTITY)
       expect(result).toBe(mockH)
     })
 
-    it('should return accepted if current env is included in environments field', async () => {
-      const payloadWithEnvs = {
-        ...payload,
-        environments: ['local', 'dev', 'test', 'perf-test', 'ext-test', 'prod']
-      }
-      const mockRequestWithEnvs = {
-        payload: payloadWithEnvs,
-        logger: mockLogger,
-        db: mockDb
-      }
-      getFeatureControlDetailedByName.mockResolvedValue(null)
-
-      const result = await postAddFeatureControlHandler(
-        mockRequestWithEnvs,
-        mockH
+    it('should handle undefined roleRequired in definition update and return status code form addOrUpdate function', async () => {
+      addOrUpdateFeatureControlDefinition.mockResolvedValue(
+        StatusCodes.ACCEPTED
       )
-
-      expect(getFeatureControlDetailedByName).toHaveBeenCalledWith(
-        payload.name,
-        mockDb
-      )
-      expect(storeFeatureControl).toHaveBeenCalledWith(
-        expect.objectContaining({
-          name: payload.name,
-          type: payload.type,
-          value: [456], // Uses 'dev' from mocked config
-          scopes: payload.scopes,
-          description: payload.description,
-          owner: payload.owner,
-          createdBy: payload.createdBy
-        }),
-        mockDb
-      )
-      expect(notifyFeatureControlUpdate).toHaveBeenCalledWith(
-        {
-          name: payload.name,
-          scopes: payload.scopes,
-          value: [456],
-          updatedBy: payload.createdBy,
-          valueType: 'list-number'
-        },
-        mockLogger
-      )
-      expect(mockH.code).toHaveBeenCalledWith(StatusCodes.ACCEPTED)
-      expect(result).toBe(mockH)
-    })
-
-    it('should return conflict if immutable field (type) is changed', async () => {
-      const existing = {
-        name: payload.name,
-        type: 'different-type',
-        scopes: payload.scopes,
-        description: payload.description,
-        owner: payload.owner,
-        expiryDate: payload.expiryDate,
-        roleRequired: payload.roleRequired.default
-      }
-      getFeatureControlDetailedByName.mockResolvedValue(existing)
-
-      const result = await postAddFeatureControlHandler(mockRequest, mockH)
-
-      expect(updateFeatureControlDefinition).not.toHaveBeenCalled()
-      expect(mockH.code).toHaveBeenCalledWith(StatusCodes.CONFLICT)
-      expect(result).toBe(mockH)
-    })
-
-    it('should update definition when roleRequired changes', async () => {
-      const existing = {
-        ...payload,
-        roleRequired: ['old.role']
-      }
-      getFeatureControlDetailedByName.mockResolvedValue(existing)
-
-      const result = await postAddFeatureControlHandler(mockRequest, mockH)
-
-      expect(updateFeatureControlDefinition).toHaveBeenCalledWith(
-        expect.objectContaining({
-          roleRequired: payload.roleRequired.default
-        }),
-        mockDb
-      )
-      expect(mockH.code).toHaveBeenCalledWith(StatusCodes.ACCEPTED)
-      expect(result).toBe(mockH)
-    })
-
-    it('should handle undefined roleRequired in definition update', async () => {
       const { roleRequired, ...payloadNoRole } = payload
       const mockRequestNoRole = {
         ...mockRequest,
         payload: payloadNoRole
       }
-      const existing = {
-        ...payload,
-        roleRequired: ['some-role']
-      }
-      getFeatureControlDetailedByName.mockResolvedValue(existing)
 
       const result = await postAddFeatureControlHandler(
         mockRequestNoRole,
         mockH
       )
 
-      expect(updateFeatureControlDefinition).toHaveBeenCalledWith(
-        expect.objectContaining({
-          roleRequired: null
-        }),
-        mockDb
+      expect(addOrUpdateFeatureControlDefinition).toHaveBeenCalledWith(
+        {
+          ...mockRequestNoRole.payload,
+          possibleRoleRequired: null,
+          currentEnv: 'dev'
+        },
+        mockDb,
+        mockLogger
       )
+
+      expect(mockH.code).toHaveBeenCalledWith(StatusCodes.ACCEPTED)
+      expect(result).toBe(mockH)
+    })
+
+    it('should handle specific roleRequired in definition update and return status code form addOrUpdate function', async () => {
+      addOrUpdateFeatureControlDefinition.mockResolvedValue(
+        StatusCodes.ACCEPTED
+      )
+      const { roleRequired, ...payloadNoRole } = payload
+      const mockRequestNoRole = {
+        ...mockRequest,
+        payload: {
+          ...payloadNoRole,
+          roleRequired: {
+            dev: ['grant.update', 'grant.admin'],
+            default: ['grant.view']
+          }
+        }
+      }
+
+      const result = await postAddFeatureControlHandler(
+        mockRequestNoRole,
+        mockH
+      )
+
+      expect(addOrUpdateFeatureControlDefinition).toHaveBeenCalledWith(
+        {
+          ...mockRequestNoRole.payload,
+          possibleRoleRequired: ['grant.update', 'grant.admin'],
+          currentEnv: 'dev'
+        },
+        mockDb,
+        mockLogger
+      )
+
+      expect(mockH.code).toHaveBeenCalledWith(StatusCodes.ACCEPTED)
+      expect(result).toBe(mockH)
+    })
+
+    it('should handle default roleRequired in definition update and return status code form addOrUpdate function', async () => {
+      addOrUpdateFeatureControlDefinition.mockResolvedValue(
+        StatusCodes.ACCEPTED
+      )
+      const mockRequestNoRole = {
+        ...mockRequest,
+        payload
+      }
+
+      const result = await postAddFeatureControlHandler(
+        mockRequestNoRole,
+        mockH
+      )
+
+      expect(addOrUpdateFeatureControlDefinition).toHaveBeenCalledWith(
+        {
+          ...mockRequestNoRole.payload,
+          possibleRoleRequired: ['grant.view'],
+          currentEnv: 'dev'
+        },
+        mockDb,
+        mockLogger
+      )
+
       expect(mockH.code).toHaveBeenCalledWith(StatusCodes.ACCEPTED)
       expect(result).toBe(mockH)
     })
@@ -422,6 +235,23 @@ describe('feature-control-handlers', () => {
           updatedBy: payload.user,
           valueType: existing.type
         },
+        mockLogger
+      )
+      expect(publishEvent).toHaveBeenCalledWith(
+        {
+          entities: [
+            {
+              entity: 'feature-control',
+              action: 'value-update',
+              entityid: payload.name
+            }
+          ],
+          status: 'success',
+          details: {
+            value: payload.value
+          }
+        },
+        payload.user,
         mockLogger
       )
       expect(mockH.code).toHaveBeenCalledWith(StatusCodes.ACCEPTED)

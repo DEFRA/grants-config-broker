@@ -77,7 +77,7 @@ export const updateFeatureControlDefinition = async (data, db) => {
     notificationEmitted
   } = data
   const updateTime = new Date()
-  return db.collection(FEATURE_CONTROL_COLLECTION).updateOne(
+  return db.collection(FEATURE_CONTROL_COLLECTION).findOneAndUpdate(
     { name },
     {
       $set: {
@@ -99,7 +99,8 @@ export const updateFeatureControlDefinition = async (data, db) => {
           notificationEmitted
         }
       }
-    }
+    },
+    { returnDocument: 'after' }
   )
 }
 

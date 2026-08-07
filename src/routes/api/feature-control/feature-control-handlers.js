@@ -3,30 +3,18 @@ import {
   getFeatureControlByName,
   getFeatureControlDetailedByName,
   getFeatureControls,
-  storeFeatureControl,
-  updateFeatureControlDefinition,
   updateFeatureControlValue
 } from '../../../repositories/feature-control-repository.js'
 import { config } from '../../../config.js'
 import { typeMap } from './feature-control-schemas.js'
 import { notifyFeatureControlUpdate } from '../../../messaging/outbound/notify-feature-control.js'
 import { deriveChange } from './helpers.js'
+import { addOrUpdateFeatureControlDefinition } from '../../../service/feature-control-definition-processor.js'
+import { publishEvent } from '../../../common/helpers/audit/event-publisher.js'
 
 export const postAddFeatureControlHandler = async (req, h) => {
   const {
-    payload: {
-      name,
-      displayName,
-      type,
-      initialValue,
-      scopes,
-      description,
-      owner,
-      expiryDate,
-      createdBy,
-      roleRequired,
-      environments
-    }
+    payload: { roleRequired, environments }
   } = req
 
   const currentEnv = config.get('cdpEnvironment')
@@ -35,147 +23,16 @@ export const postAddFeatureControlHandler = async (req, h) => {
     return h.response().code(StatusCodes.UNPROCESSABLE_ENTITY)
   }
 
-  let emitEvent = false
-  let value = null
-
-  const alreadyExistingFeatureControl = await getFeatureControlDetailedByName(
-    name,
-    req.db
-  )
-
   const possibleRoleRequired =
     roleRequired?.[currentEnv] ?? roleRequired?.default ?? null
 
-  if (alreadyExistingFeatureControl) {
-    // We will accept updates to the definition of a feature control
-    // but not to the initialValue, name, or type; value must be updated separately
-    const { changed, shouldEmit, immutableFieldChanged } =
-      definitionUpdatedLegally(alreadyExistingFeatureControl, {
-        displayName,
-        type,
-        scopes,
-        description,
-        owner,
-        expiryDate,
-        roleRequired: possibleRoleRequired
-      })
-    if (immutableFieldChanged) {
-      req.logger.error(
-        `Not updating feature control ${name} as request includes update to immutable field`
-      )
-      return h.response().code(StatusCodes.CONFLICT)
-    }
-    if (changed.length) {
-      await updateFeatureControlDefinition(
-        {
-          name,
-          displayName,
-          scopes,
-          description,
-          owner,
-          expiryDate,
-          createdBy,
-          roleRequired: possibleRoleRequired,
-          existingValue: alreadyExistingFeatureControl.value,
-          note: `Definition updated: (${changed.join(', ')})`,
-          notificationEmitted: shouldEmit
-        },
-        req.db
-      )
-      emitEvent = shouldEmit
-      value = alreadyExistingFeatureControl.value
-    } else {
-      req.logger.info(
-        `Not updating feature control ${name} as it already exists, and none of the changeable fields have changed`
-      )
-      return h.response().code(StatusCodes.NO_CONTENT)
-    }
-  } else {
-    const createdDate = new Date()
-    value = initialValue[currentEnv] ?? initialValue.default
-    const featureControl = {
-      name,
-      displayName,
-      type,
-      value,
-      scopes,
-      description,
-      owner,
-      createdBy,
-      expiryDate,
-      roleRequired: possibleRoleRequired,
-      created: createdDate,
-      lastUpdated: createdDate,
-      lastUpdatedBy: createdBy,
-      history: [
-        {
-          value,
-          setBy: createdBy,
-          dateTime: createdDate,
-          note: 'Initial value set',
-          changeToValue: value,
-          notificationEmitted: true
-        }
-      ]
-    }
-    //pass to repository
-    await storeFeatureControl(featureControl, req.db)
-    emitEvent = true
-  }
+  const processDataResponseCode = await addOrUpdateFeatureControlDefinition(
+    { ...req.payload, possibleRoleRequired, currentEnv },
+    req.db,
+    req.logger
+  )
 
-  //if brand new, always emit the value next
-  //if an update, only emit if the scopes have changed
-  if (emitEvent) {
-    await notifyFeatureControlUpdate(
-      {
-        name,
-        scopes,
-        value,
-        valueType: type,
-        updatedBy: createdBy
-      },
-      req.logger
-    )
-  } else {
-    req.logger.info(`Not emitting feature control ${name} `)
-  }
-
-  return h.response().code(StatusCodes.ACCEPTED)
-}
-
-const definitionUpdatedLegally = (existing, newDefinition) => {
-  const scopesA = new Set(existing.scopes)
-  const scopesB = new Set(newDefinition.scopes)
-  const scopesUnchanged =
-    scopesA.size === scopesB.size &&
-    [...scopesA].every((value) => scopesB.has(value))
-
-  const rolesA = new Set(existing.roleRequired)
-  const rolesB = new Set(newDefinition.roleRequired)
-  const rolesUnchanged =
-    rolesA.size === rolesB.size &&
-    [...rolesA].every((value) => rolesB.has(value))
-
-  const immutableFieldChanged = existing.type !== newDefinition.type
-
-  const hasChanged = [
-    scopesUnchanged ? null : 'scopes',
-    rolesUnchanged ? null : 'roles',
-    existing.displayName !== newDefinition.displayName ? 'displayName' : null,
-    existing.description !== newDefinition.description ? 'description' : null,
-    existing.owner !== newDefinition.owner ? 'owner' : null,
-    existing.expiryDate.getTime() !== newDefinition.expiryDate.getTime()
-      ? 'expiryDate'
-      : null
-  ]
-    .filter((value) => !!value)
-    .sort((a, b) => a.localeCompare(b))
-
-  return {
-    immutableFieldChanged,
-    changed: hasChanged,
-    shouldEmit: !scopesUnchanged
-  }
+  return h.response().code(processDataResponseCode)
 }
 
 export const putUpdateFeatureControlValueHandler = async (req, h) => {
@@ -217,6 +74,22 @@ export const putUpdateFeatureControlValueHandler = async (req, h) => {
     },
     req.logger
   )
+
+  const audit = {
+    entities: [
+      {
+        entity: 'feature-control',
+        action: 'value-update',
+        entityid: name
+      }
+    ],
+    status: 'success',
+    details: {
+      value
+    }
+  }
+
+  await publishEvent(audit, user, logger)
 
   return h.response().code(StatusCodes.ACCEPTED)
 }
