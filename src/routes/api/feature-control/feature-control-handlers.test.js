@@ -179,7 +179,8 @@ describe('feature-control-handlers', () => {
           createdBy: payload.createdBy,
           roleRequired: payload.roleRequired.default,
           existingValue: existing.value,
-          note: `Definition updated: (description, expiryDate, owner, roles, scopes)`
+          note: `Definition updated: (description, expiryDate, owner, roles, scopes)`,
+          notificationEmitted: true
         }),
         mockDb
       )

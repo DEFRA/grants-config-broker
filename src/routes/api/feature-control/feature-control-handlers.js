@@ -77,7 +77,8 @@ export const postAddFeatureControlHandler = async (req, h) => {
           createdBy,
           roleRequired: possibleRoleRequired,
           existingValue: alreadyExistingFeatureControl.value,
-          note: `Definition updated: (${changed.join(', ')})`
+          note: `Definition updated: (${changed.join(', ')})`,
+          notificationEmitted: shouldEmit
         },
         req.db
       )

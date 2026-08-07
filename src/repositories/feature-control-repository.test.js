@@ -144,7 +144,8 @@ describe('feature-control-repository', () => {
         createdBy: 'user1',
         existingValue: true,
         roleRequired: ['admin'],
-        note: 'Definition updated (description)'
+        note: 'Definition updated (description)',
+        notificationEmitted: false
       }
       mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 })
 
@@ -167,7 +168,8 @@ describe('feature-control-repository', () => {
             history: expect.objectContaining({
               value: data.existingValue,
               setBy: data.createdBy,
-              note: data.note
+              note: data.note,
+              notificationEmitted: data.notificationEmitted
             })
           }
         })
