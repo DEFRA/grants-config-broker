@@ -8,6 +8,90 @@ import { notifyFeatureControlUpdate } from '../messaging/outbound/notify-feature
 import { publishEvent } from '../common/helpers/audit/event-publisher.js'
 
 export const addOrUpdateFeatureControlDefinition = async (data, db, logger) => {
+  const alreadyExistingFeatureControl = await getFeatureControlDetailedByName(
+    data.name,
+    db
+  )
+
+  if (alreadyExistingFeatureControl) {
+    return handleExistingFeatureControl(
+      alreadyExistingFeatureControl,
+      data,
+      db,
+      logger
+    )
+  }
+
+  return handleNewFeatureControl(data, db, logger)
+}
+
+const handleExistingFeatureControl = async (existing, data, db, logger) => {
+  const {
+    name,
+    displayName,
+    type,
+    scopes,
+    description,
+    owner,
+    expiryDate,
+    createdBy,
+    possibleRoleRequired
+  } = data
+
+  const { changed, shouldEmit, immutableFieldChanged } =
+    definitionUpdatedLegally(existing, {
+      displayName,
+      type,
+      scopes,
+      description,
+      owner,
+      expiryDate,
+      roleRequired: possibleRoleRequired
+    })
+
+  if (immutableFieldChanged) {
+    logger.error(
+      `Not updating feature control ${name} as request includes update to immutable field`
+    )
+    return StatusCodes.CONFLICT
+  }
+
+  if (!changed.length) {
+    logger.info(
+      `Not updating feature control ${name} as it already exists, and none of the changeable fields have changed`
+    )
+    return StatusCodes.NO_CONTENT
+  }
+
+  const updatedFeatureControl = await updateFeatureControlDefinition(
+    {
+      name,
+      displayName,
+      scopes,
+      description,
+      owner,
+      expiryDate,
+      createdBy,
+      roleRequired: possibleRoleRequired,
+      existingValue: existing.value,
+      note: `Definition updated: (${changed.join(', ')})`,
+      notificationEmitted: shouldEmit
+    },
+    db
+  )
+
+  await constructAndSendAuditEvent(updatedFeatureControl, logger)
+
+  if (shouldEmit) {
+    await emitNotification(data, existing.value, logger)
+  } else {
+    logger.info(`Not emitting feature control ${name} `)
+  }
+
+  return StatusCodes.ACCEPTED
+}
+
+const handleNewFeatureControl = async (data, db, logger) => {
   const {
     name,
     displayName,
@@ -22,109 +106,54 @@ export const addOrUpdateFeatureControlDefinition = async (data, db, logger) => {
     currentEnv
   } = data
 
-  const alreadyExistingFeatureControl = await getFeatureControlDetailedByName(
+  const createdDate = new Date()
+  const value = initialValue[currentEnv] ?? initialValue.default
+
+  const featureControl = {
     name,
-    db
-  )
-
-  let emitEvent = false
-  let value = null
-
-  if (alreadyExistingFeatureControl) {
-    // We will accept updates to the definition of a feature control
-    // but not to the initialValue, name, or type; value must be updated separately
-    const { changed, shouldEmit, immutableFieldChanged } =
-      definitionUpdatedLegally(alreadyExistingFeatureControl, {
-        displayName,
-        type,
-        scopes,
-        description,
-        owner,
-        expiryDate,
-        roleRequired: possibleRoleRequired
-      })
-    if (immutableFieldChanged) {
-      logger.error(
-        `Not updating feature control ${name} as request includes update to immutable field`
-      )
-      return StatusCodes.CONFLICT
-    }
-    if (changed.length) {
-      const updatedFeatureControl = await updateFeatureControlDefinition(
-        {
-          name,
-          displayName,
-          scopes,
-          description,
-          owner,
-          expiryDate,
-          createdBy,
-          roleRequired: possibleRoleRequired,
-          existingValue: alreadyExistingFeatureControl.value,
-          note: `Definition updated: (${changed.join(', ')})`,
-          notificationEmitted: shouldEmit
-        },
-        db
-      )
-      emitEvent = shouldEmit
-      value = alreadyExistingFeatureControl.value
-      await constructAndSendAuditEvent(updatedFeatureControl, logger)
-    } else {
-      logger.info(
-        `Not updating feature control ${name} as it already exists, and none of the changeable fields have changed`
-      )
-      return StatusCodes.NO_CONTENT
-    }
-  } else {
-    const createdDate = new Date()
-    value = initialValue[currentEnv] ?? initialValue.default
-    const featureControl = {
-      name,
-      displayName,
-      type,
-      value,
-      scopes,
-      description,
-      owner,
-      createdBy,
-      expiryDate,
-      roleRequired: possibleRoleRequired,
-      created: createdDate,
-      lastUpdated: createdDate,
-      lastUpdatedBy: createdBy,
-      history: [
-        {
-          value,
-          setBy: createdBy,
-          dateTime: createdDate,
-          note: 'Initial value set',
-          changeToValue: value,
-          notificationEmitted: true
-        }
-      ]
-    }
-    //pass to repository
-    await storeFeatureControl(featureControl, db)
-    emitEvent = true
-    await constructAndSendAuditEvent(featureControl, logger)
-  }
-
-  if (emitEvent) {
-    await notifyFeatureControlUpdate(
+    displayName,
+    type,
+    value,
+    scopes,
+    description,
+    owner,
+    createdBy,
+    expiryDate,
+    roleRequired: possibleRoleRequired,
+    created: createdDate,
+    lastUpdated: createdDate,
+    lastUpdatedBy: createdBy,
+    history: [
       {
-        name,
-        scopes,
         value,
-        valueType: type,
-        updatedBy: createdBy
-      },
-      logger
-    )
-  } else {
-    logger.info(`Not emitting feature control ${name} `)
+        setBy: createdBy,
+        dateTime: createdDate,
+        note: 'Initial value set',
+        changeToValue: value,
+        notificationEmitted: true
+      }
+    ]
   }
+
+  await storeFeatureControl(featureControl, db)
+  await constructAndSendAuditEvent(featureControl, logger)
+  await emitNotification(data, value, logger)
 
   return StatusCodes.ACCEPTED
+}
+
+const emitNotification = async (data, value, logger) => {
+  const { name, scopes, type, createdBy } = data
+  await notifyFeatureControlUpdate(
+    {
+      name,
+      scopes,
+      value,
+      valueType: type,
+      updatedBy: createdBy
+    },
+    logger
+  )
 }
 
 const constructAndSendAuditEvent = async (data, logger) => {
