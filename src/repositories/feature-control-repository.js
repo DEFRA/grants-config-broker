@@ -35,7 +35,7 @@ export const getFeatureControlByName = async (name, db) => {
 }
 
 export const updateFeatureControlValue = async (
-  { name, user, value, note },
+  { name, user, value, note, changeToValue, notificationEmitted },
   db
 ) => {
   const updateTime = new Date()
@@ -52,7 +52,9 @@ export const updateFeatureControlValue = async (
           value,
           setBy: user,
           dateTime: updateTime,
-          note
+          note,
+          changeToValue,
+          notificationEmitted
         }
       }
     },
@@ -71,7 +73,8 @@ export const updateFeatureControlDefinition = async (data, db) => {
     createdBy,
     existingValue,
     roleRequired,
-    note
+    note,
+    notificationEmitted
   } = data
   const updateTime = new Date()
   return db.collection(FEATURE_CONTROL_COLLECTION).updateOne(
@@ -92,7 +95,8 @@ export const updateFeatureControlDefinition = async (data, db) => {
           value: existingValue,
           setBy: createdBy,
           dateTime: updateTime,
-          note
+          note,
+          notificationEmitted
         }
       }
     }

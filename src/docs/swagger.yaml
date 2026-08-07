@@ -574,6 +574,10 @@ components:
           format: date-time
         note:
           type: string
+        changeToValue:
+          type: string
+        notificationEmitted:
+          type: boolean
 
     FeatureControlsResponse:
       type: object
