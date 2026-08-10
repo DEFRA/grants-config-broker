@@ -147,12 +147,15 @@ describe('feature-control-repository', () => {
         note: 'Definition updated (description)',
         notificationEmitted: false
       }
-      mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 })
+      mockCollection.findOneAndUpdate.mockResolvedValue({
+        ...data,
+        history: [{ someHistory: 'was-returned' }]
+      })
 
       const result = await updateFeatureControlDefinition(data, mockDb)
 
       expect(mockDb.collection).toHaveBeenCalledWith('feature-controls')
-      expect(mockCollection.updateOne).toHaveBeenCalledWith(
+      expect(mockCollection.findOneAndUpdate).toHaveBeenCalledWith(
         { name: data.name },
         expect.objectContaining({
           $set: expect.objectContaining({
@@ -172,9 +175,13 @@ describe('feature-control-repository', () => {
               notificationEmitted: data.notificationEmitted
             })
           }
-        })
+        }),
+        { returnDocument: 'after' }
       )
-      expect(result).toEqual({ modifiedCount: 1 })
+      expect(result).toEqual({
+        ...data,
+        history: [{ someHistory: 'was-returned' }]
+      })
     })
   })
 
