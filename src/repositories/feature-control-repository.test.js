@@ -58,7 +58,7 @@ describe('feature-control-repository', () => {
 
       expect(mockDb.collection).toHaveBeenCalledWith('feature-controls')
       expect(mockCollection.findOne).toHaveBeenCalledWith(
-        { name },
+        { name, status: 'active' },
         {
           projection: {
             _id: 0,

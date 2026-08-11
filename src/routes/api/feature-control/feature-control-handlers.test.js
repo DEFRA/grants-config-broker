@@ -380,6 +380,24 @@ describe('feature-control-handlers', () => {
       expect(mockH.code).toHaveBeenCalledWith(StatusCodes.NOT_FOUND)
       expect(result).toBe(mockH)
     })
+
+    it('should return not found when control exists but has a status of expired', async () => {
+      const mockRequest = {
+        params: { name: 'EXPIRED_FEATURE' },
+        db: mockDb
+      }
+      // getFeatureControlByName filters by status: 'active', so it returns null for expired ones
+      getFeatureControlByName.mockResolvedValue(null)
+
+      const result = await getFeatureControlByNameHandler(mockRequest, mockH)
+
+      expect(getFeatureControlByName).toHaveBeenCalledWith(
+        'EXPIRED_FEATURE',
+        mockDb
+      )
+      expect(mockH.code).toHaveBeenCalledWith(StatusCodes.NOT_FOUND)
+      expect(result).toBe(mockH)
+    })
   })
 
   describe('getFeatureControlsHandler', () => {

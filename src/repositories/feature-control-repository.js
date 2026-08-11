@@ -21,7 +21,10 @@ export const getFeatureControlDetailedByName = async (name, db) => {
 
 export const getFeatureControlByName = async (name, db) => {
   return db.collection(FEATURE_CONTROL_COLLECTION).findOne(
-    { name },
+    {
+      name,
+      status: 'active'
+    },
     {
       projection: {
         _id: 0,
