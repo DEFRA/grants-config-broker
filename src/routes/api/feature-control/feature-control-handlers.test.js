@@ -2,12 +2,14 @@ import {
   getFeatureControlByNameHandler,
   getFeatureControlsHandler,
   postAddFeatureControlHandler,
+  putUpdateFeatureControlStatusHandler,
   putUpdateFeatureControlValueHandler
 } from './feature-control-handlers.js'
 import { StatusCodes } from 'http-status-codes'
 import {
   getFeatureControlByName,
   getFeatureControls,
+  updateFeatureControlStatus,
   updateFeatureControlValue
 } from '../../../repositories/feature-control-repository.js'
 import { notifyFeatureControlUpdate } from '../../../messaging/outbound/notify-feature-control.js'
@@ -17,6 +19,7 @@ import { publishEvent } from '../../../common/helpers/audit/event-publisher.js'
 vi.mock('../../../repositories/feature-control-repository.js', () => ({
   getFeatureControlByName: vi.fn(),
   getFeatureControls: vi.fn(),
+  updateFeatureControlStatus: vi.fn(),
   updateFeatureControlValue: vi.fn()
 }))
 
@@ -344,6 +347,82 @@ describe('feature-control-handlers', () => {
       )
 
       expect(mockH.code).toHaveBeenCalledWith(StatusCodes.ACCEPTED)
+      expect(result).toBe(mockH)
+    })
+  })
+
+  describe('putUpdateFeatureControlStatusHandler', () => {
+    const payload = {
+      name: 'ALLOW_LIST_WOODLANDS',
+      status: 'expired',
+      user: 'user1',
+      note: 'test note'
+    }
+    const mockRequest = {
+      payload,
+      logger: mockLogger,
+      db: mockDb
+    }
+
+    it('should update feature control status and return accepted', async () => {
+      const existing = {
+        name: payload.name,
+        status: 'active'
+      }
+      getFeatureControlByName.mockResolvedValue(existing)
+      updateFeatureControlStatus.mockResolvedValue({
+        ...existing,
+        status: payload.status
+      })
+
+      const result = await putUpdateFeatureControlStatusHandler(
+        mockRequest,
+        mockH
+      )
+
+      expect(getFeatureControlByName).toHaveBeenCalledWith(payload.name, mockDb)
+      expect(updateFeatureControlStatus).toHaveBeenCalledWith(
+        {
+          name: payload.name,
+          user: payload.user,
+          status: payload.status,
+          note: payload.note,
+          changeToValue: `Status: active ➜ ${payload.status}`,
+          notificationEmitted: false
+        },
+        mockDb
+      )
+      expect(publishEvent).toHaveBeenCalledWith(
+        {
+          entities: [
+            {
+              entity: 'feature-control',
+              action: 'status-update',
+              entityid: payload.name
+            }
+          ],
+          status: 'success',
+          details: {
+            status: payload.status
+          }
+        },
+        payload.user,
+        mockLogger
+      )
+      expect(mockH.code).toHaveBeenCalledWith(StatusCodes.ACCEPTED)
+      expect(result).toBe(mockH)
+    })
+
+    it('should return not found if feature control does not exist', async () => {
+      getFeatureControlByName.mockResolvedValue(null)
+
+      const result = await putUpdateFeatureControlStatusHandler(
+        mockRequest,
+        mockH
+      )
+
+      expect(updateFeatureControlStatus).not.toHaveBeenCalled()
+      expect(mockH.code).toHaveBeenCalledWith(StatusCodes.NOT_FOUND)
       expect(result).toBe(mockH)
     })
   })

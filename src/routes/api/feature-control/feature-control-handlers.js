@@ -3,6 +3,7 @@ import {
   getFeatureControlByName,
   getFeatureControlDetailedByName,
   getFeatureControls,
+  updateFeatureControlStatus,
   updateFeatureControlValue
 } from '../../../repositories/feature-control-repository.js'
 import { config } from '../../../config.js'
@@ -86,6 +87,48 @@ export const putUpdateFeatureControlValueHandler = async (req, h) => {
     status: 'success',
     details: {
       value
+    }
+  }
+
+  await publishEvent(audit, user, logger)
+
+  return h.response().code(StatusCodes.ACCEPTED)
+}
+
+export const putUpdateFeatureControlStatusHandler = async (req, h) => {
+  const {
+    payload: { name, status, user, note },
+    logger
+  } = req
+
+  let featureControl = await getFeatureControlByName(name, req.db)
+  if (!featureControl) {
+    return h.response().code(StatusCodes.NOT_FOUND)
+  }
+
+  featureControl = await updateFeatureControlStatus(
+    {
+      name,
+      user,
+      status,
+      note,
+      changeToValue: `Status: active ➜ ${status}`,
+      notificationEmitted: false
+    },
+    req.db
+  )
+
+  const audit = {
+    entities: [
+      {
+        entity: 'feature-control',
+        action: 'status-update',
+        entityid: name
+      }
+    ],
+    status: 'success',
+    details: {
+      status: featureControl.status
     }
   }
 

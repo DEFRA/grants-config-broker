@@ -3,6 +3,7 @@ import {
   getFeatureControlByName,
   getFeatureControlDetailedByName,
   getFeatureControls,
+  updateFeatureControlStatus,
   updateFeatureControlValue,
   updateFeatureControlDefinition
 } from './feature-control-repository.js'
@@ -123,6 +124,46 @@ describe('feature-control-repository', () => {
               value: params.value,
               setBy: params.user,
               note: params.note
+            })
+          }
+        }),
+        { returnDocument: 'after' }
+      )
+      expect(result).toBeDefined()
+    })
+  })
+
+  describe('updateFeatureControlStatus', () => {
+    it('should update the status and push to history', async () => {
+      const params = {
+        name: 'TEST_FEATURE',
+        user: 'user1',
+        status: 'expired',
+        note: 'test note',
+        changeToValue: 'active ➜ expired',
+        notificationEmitted: false
+      }
+      mockCollection.findOneAndUpdate.mockResolvedValue({
+        value: { ...params }
+      })
+
+      const result = await updateFeatureControlStatus(params, mockDb)
+
+      expect(mockDb.collection).toHaveBeenCalledWith('feature-controls')
+      expect(mockCollection.findOneAndUpdate).toHaveBeenCalledWith(
+        { name: params.name },
+        expect.objectContaining({
+          $set: expect.objectContaining({
+            status: params.status,
+            lastUpdatedBy: params.user
+          }),
+          $push: {
+            history: expect.objectContaining({
+              status: params.status,
+              setBy: params.user,
+              note: params.note,
+              changeToValue: params.changeToValue,
+              notificationEmitted: params.notificationEmitted
             })
           }
         }),

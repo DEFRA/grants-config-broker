@@ -65,6 +65,34 @@ export const updateFeatureControlValue = async (
   )
 }
 
+export const updateFeatureControlStatus = async (
+  { name, user, status, note, changeToValue, notificationEmitted },
+  db
+) => {
+  const updateTime = new Date()
+  return db.collection(FEATURE_CONTROL_COLLECTION).findOneAndUpdate(
+    { name },
+    {
+      $set: {
+        status,
+        lastUpdated: updateTime,
+        lastUpdatedBy: user
+      },
+      $push: {
+        history: {
+          status,
+          setBy: user,
+          dateTime: updateTime,
+          note,
+          changeToValue,
+          notificationEmitted
+        }
+      }
+    },
+    { returnDocument: 'after' }
+  )
+}
+
 export const updateFeatureControlDefinition = async (data, db) => {
   const {
     name,

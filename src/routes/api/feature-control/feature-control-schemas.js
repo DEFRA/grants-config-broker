@@ -99,6 +99,15 @@ export const putUpdateFeatureControlValueSchema = Joi.object({
   note: Joi.string().allow('').optional()
 })
 
+export const putUpdateFeatureControlStatusSchema = Joi.object({
+  name: Joi.string().uppercase().required(),
+  status: Joi.string()
+    .valid(...statusList)
+    .required(),
+  user: Joi.string().required(),
+  note: Joi.string().allow('').optional()
+})
+
 export const getFeatureControlByNameSchema = Joi.object({
   name: Joi.string().uppercase().required()
 })
