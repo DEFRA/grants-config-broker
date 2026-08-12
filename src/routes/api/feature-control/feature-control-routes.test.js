@@ -105,4 +105,19 @@ describe('featureControlRoutes', () => {
       )
     })
   })
+
+  describe('PUT /api/feature-control/status', () => {
+    it('should return 400 and log the error when validation fails', () => {
+      expect(() =>
+        postRoute(
+          'PUT',
+          '/api/feature-control/status'
+        ).options.validate.failAction(mockRequest, null, mockError)
+      ).toThrow(Boom.badRequest(mockError))
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        mockError,
+        'Put feature control status update error'
+      )
+    })
+  })
 })
