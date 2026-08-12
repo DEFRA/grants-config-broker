@@ -684,6 +684,7 @@ components:
         - name
         - value
         - user
+        - note
       properties:
         name:
           type: string
@@ -700,6 +701,7 @@ components:
         - name
         - status
         - user
+        - note
       properties:
         name:
           type: string
