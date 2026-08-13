@@ -9,19 +9,25 @@ import {
 import { config } from '../../../config.js'
 import { typeMap } from './feature-control-schemas.js'
 import { notifyFeatureControlUpdate } from '../../../messaging/outbound/notify-feature-control.js'
-import { deriveChange } from './helpers.js'
+import { deriveChange, isDateTodayOrEarlier } from './helpers.js'
 import { addOrUpdateFeatureControlDefinition } from '../../../service/feature-control-definition-processor.js'
 import { publishEvent } from '../../../common/helpers/audit/event-publisher.js'
 
 export const postAddFeatureControlHandler = async (req, h) => {
   const {
-    payload: { roleRequired, environments }
+    payload: { roleRequired, environments, expiryDate }
   } = req
 
   const currentEnv = config.get('cdpEnvironment')
 
   if (environments && !environments.includes(currentEnv)) {
     return h.response().code(StatusCodes.UNPROCESSABLE_ENTITY)
+  }
+
+  if (isDateTodayOrEarlier(expiryDate)) {
+    return h
+      .response({ message: 'expiryDate must be in the future' })
+      .code(StatusCodes.BAD_REQUEST)
   }
 
   const possibleRoleRequired =
