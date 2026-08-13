@@ -221,7 +221,7 @@ const config = convict({
       env: 'SERVICE_AUTH_AUDIENCE'
     },
     allowedServices: {
-      doc: 'Comma-separated list of service names permitted to call this API (e.g. grants-config-broswer,grants-ui-backend). Leave empty to allow any valid JWT.',
+      doc: 'Comma-separated list of service names permitted to call this API (e.g. grants-config-browser,grants-ui-backend). Leave empty to allow any valid JWT.',
       format: String,
       default: '',
       env: 'SERVICE_AUTH_ALLOWED_SERVICES'
@@ -234,6 +234,12 @@ const config = convict({
       default: '',
       env: 'GRANTS_CONFIG_BROKER_AUTH_TOKEN',
       sensitive: true
+    },
+    defaultSubject: {
+      doc: 'Default subject for an unknown service using bearer token authentication',
+      format: String,
+      default: 'grants-config-browser',
+      env: 'GRANTS_CONFIG_BROKER_AUTH_DEFAULT_SUBJECT'
     },
     encryptionKey: {
       doc: 'Encryption key for decrypting bearer token',

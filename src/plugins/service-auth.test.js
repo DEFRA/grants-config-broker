@@ -205,6 +205,7 @@ describe('serviceAuth plugin', () => {
     const setupMockServer = async () => {
       const mockServer = {
         register: vi.fn(),
+        ext: vi.fn(),
         auth: {
           strategy: vi.fn((name, type, options) => {
             if (name === 'service-jwt') capturedValidate = options.validate
@@ -225,6 +226,7 @@ describe('serviceAuth plugin', () => {
       })
 
       expect(res.isValid).toBe(true)
+      expect(res.credentials).toEqual({ sub: 's/test', serviceName: 'test' })
     })
 
     it('should reject tokens missing the sub claim', async () => {
@@ -245,6 +247,107 @@ describe('serviceAuth plugin', () => {
         async () =>
           await capturedValidate({ decoded: { payload: { sub: 's/test' } } })
       ).rejects.toThrow()
+    })
+  })
+
+  describe('subject-based access control', () => {
+    beforeEach(async () => {
+      await server.register(serviceAuth)
+    })
+
+    it('should allow access if serviceName is in allowedSubjects', async () => {
+      server.route({
+        method: 'GET',
+        path: '/restricted',
+        handler: () => 'ok',
+        options: {
+          auth: 'service',
+          plugins: {
+            'service-auth': {
+              allowedSubjects: ['grants-config-browser']
+            }
+          }
+        }
+      })
+
+      const encryptionKey = defaultConfigValues['auth.encryptionKey']
+      const token = defaultConfigValues['auth.token']
+      const authHeader = `Bearer ${Buffer.from(encrypt(token, encryptionKey)).toString('base64')}`
+
+      config.get.mockImplementation((key) => {
+        if (key === 'auth.defaultSubject') return 'grants-config-browser'
+        return defaultConfigValues[key] ?? null
+      })
+
+      const res = await server.inject({
+        method: 'GET',
+        url: '/restricted',
+        headers: { authorization: authHeader }
+      })
+
+      expect(res.statusCode).toBe(StatusCodes.OK)
+    })
+
+    it('should deny access if serviceName is not in allowedSubjects', async () => {
+      server.route({
+        method: 'GET',
+        path: '/restricted',
+        handler: () => 'ok',
+        options: {
+          auth: 'service',
+          plugins: {
+            'service-auth': {
+              allowedSubjects: ['grants-config-browser']
+            }
+          }
+        }
+      })
+
+      const encryptionKey = defaultConfigValues['auth.encryptionKey']
+      const token = defaultConfigValues['auth.token']
+      const authHeader = `Bearer ${Buffer.from(encrypt(token, encryptionKey)).toString('base64')}`
+
+      config.get.mockImplementation((key) => {
+        if (key === 'auth.defaultSubject') return 'wrong-service'
+        return defaultConfigValues[key] ?? null
+      })
+
+      const res = await server.inject({
+        method: 'GET',
+        url: '/restricted',
+        headers: { authorization: authHeader }
+      })
+
+      expect(res.statusCode).toBe(StatusCodes.FORBIDDEN)
+    })
+
+    it('should pick up default local subject and allow request through for local call ', async () => {
+      server.route({
+        method: 'GET',
+        path: '/restricted',
+        handler: () => 'ok',
+        options: {
+          auth: 'service',
+          plugins: {
+            'service-auth': {
+              allowedSubjects: ['grants-config-browser']
+            }
+          }
+        }
+      })
+
+      config.get.mockImplementation((key) => {
+        if (key === 'cdpEnvironment') return 'local'
+        return defaultConfigValues[key] ?? null
+      })
+
+      const res = await server.inject({
+        method: 'GET',
+        url: '/restricted',
+        headers: {}
+      })
+
+      expect(res.statusCode).toBe(StatusCodes.OK)
     })
   })
 })

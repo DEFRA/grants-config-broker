@@ -36,6 +36,11 @@ export const featureControlRoutes = [
     options: {
       description: 'Get a detailed view of a single feature control by name',
       handler: (req, h) => getFeatureControlByNameHandler(req, h, true),
+      plugins: {
+        'service-auth': {
+          allowedSubjects: ['grants-config-browser']
+        }
+      },
       validate: {
         params: getFeatureControlByNameSchema,
         failAction(request, _h, err) {
@@ -67,6 +72,14 @@ export const featureControlRoutes = [
     options: {
       description: 'Add a new feature control',
       handler: postAddFeatureControlHandler,
+      plugins: {
+        'service-auth': {
+          allowedSubjects: [
+            'grants-config-browser',
+            'grants-config-feature-controls'
+          ]
+        }
+      },
       validate: {
         payload: postAddFeatureControlSchema,
         failAction(request, _h, err) {
@@ -82,6 +95,11 @@ export const featureControlRoutes = [
     options: {
       description: 'Update a feature control value',
       handler: putUpdateFeatureControlValueHandler,
+      plugins: {
+        'service-auth': {
+          allowedSubjects: ['grants-config-browser']
+        }
+      },
       validate: {
         payload: putUpdateFeatureControlValueSchema,
         failAction(request, _h, err) {
@@ -97,6 +115,14 @@ export const featureControlRoutes = [
     options: {
       description: 'Update a feature control status',
       handler: putUpdateFeatureControlStatusHandler,
+      plugins: {
+        'service-auth': {
+          allowedSubjects: [
+            'grants-config-browser',
+            'grants-config-feature-controls'
+          ]
+        }
+      },
       validate: {
         payload: putUpdateFeatureControlStatusSchema,
         failAction(request, _h, err) {

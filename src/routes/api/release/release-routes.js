@@ -9,6 +9,11 @@ export const releaseRoutes = [
     options: {
       description: 'Post release config for a given grant',
       handler: postReleaseConfigHandler,
+      plugins: {
+        'service-auth': {
+          allowedSubjects: ['grants-config-browser', 'local']
+        }
+      },
       validate: {
         payload: postReleaseConfigSchema,
         failAction(request, _h, err) {
