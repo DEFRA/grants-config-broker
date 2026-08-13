@@ -11,7 +11,7 @@ export const releaseRoutes = [
       handler: postReleaseConfigHandler,
       plugins: {
         'service-auth': {
-          allowedSubjects: ['grants-config-browser', 'local']
+          allowedSubjects: ['grants-config-browser']
         }
       },
       validate: {
