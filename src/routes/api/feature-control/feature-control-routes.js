@@ -13,6 +13,10 @@ import {
   putUpdateFeatureControlValueHandler
 } from './feature-control-handlers.js'
 import Boom from '@hapi/boom'
+import {
+  BROWSER_SUBJECT,
+  FEATURE_CONTROL_SUBJECT
+} from '../../../utils/constants.js'
 
 export const featureControlRoutes = [
   {
@@ -36,6 +40,11 @@ export const featureControlRoutes = [
     options: {
       description: 'Get a detailed view of a single feature control by name',
       handler: (req, h) => getFeatureControlByNameHandler(req, h, true),
+      plugins: {
+        'service-auth': {
+          allowedSubjects: [BROWSER_SUBJECT]
+        }
+      },
       validate: {
         params: getFeatureControlByNameSchema,
         failAction(request, _h, err) {
@@ -67,6 +76,11 @@ export const featureControlRoutes = [
     options: {
       description: 'Add a new feature control',
       handler: postAddFeatureControlHandler,
+      plugins: {
+        'service-auth': {
+          allowedSubjects: [BROWSER_SUBJECT, FEATURE_CONTROL_SUBJECT]
+        }
+      },
       validate: {
         payload: postAddFeatureControlSchema,
         failAction(request, _h, err) {
@@ -82,6 +96,11 @@ export const featureControlRoutes = [
     options: {
       description: 'Update a feature control value',
       handler: putUpdateFeatureControlValueHandler,
+      plugins: {
+        'service-auth': {
+          allowedSubjects: [BROWSER_SUBJECT]
+        }
+      },
       validate: {
         payload: putUpdateFeatureControlValueSchema,
         failAction(request, _h, err) {
@@ -97,6 +116,11 @@ export const featureControlRoutes = [
     options: {
       description: 'Update a feature control status',
       handler: putUpdateFeatureControlStatusHandler,
+      plugins: {
+        'service-auth': {
+          allowedSubjects: [BROWSER_SUBJECT, FEATURE_CONTROL_SUBJECT]
+        }
+      },
       validate: {
         payload: putUpdateFeatureControlStatusSchema,
         failAction(request, _h, err) {

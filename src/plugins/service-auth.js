@@ -4,6 +4,8 @@ import crypto from 'node:crypto'
 import { config } from '../config.js'
 import { getLogger } from '../common/helpers/logging/logger.js'
 
+import { LOCAL_SUBJECT } from '../utils/constants.js'
+
 const logger = getLogger()
 
 export const serviceAuth = {
@@ -48,18 +50,21 @@ export const serviceAuth = {
               throw Boom.unauthorized()
             }
 
-            return { isValid: true, credentials: { sub } }
+            return { isValid: true, credentials: { sub, serviceName } }
           }
         })
       }
+
+      addServiceAccessPreHandler(server)
 
       server.auth.scheme('service-custom', () => ({
         authenticate: async (request, h) => {
           const isLocalEnvironment = config.get('cdpEnvironment') === 'local'
 
           if (isLocalEnvironment) {
-            logger.info('Auth not required for local environment')
-            return h.authenticated({ credentials: { authenticated: true } })
+            return h.authenticated({
+              credentials: { authenticated: true, serviceName: LOCAL_SUBJECT }
+            })
           }
 
           const authorizationHeader = request.headers.authorization
@@ -69,8 +74,9 @@ export const serviceAuth = {
           }
 
           if (validLegacyToken(authorizationHeader)) {
+            const serviceName = config.get('auth.defaultSubject')
             return h.authenticated({
-              credentials: { authenticated: true, type: 'custom' }
+              credentials: { authenticated: true, type: 'custom', serviceName }
             })
           }
 
@@ -79,9 +85,9 @@ export const serviceAuth = {
             throw Boom.unauthorized()
           }
 
-          await server.auth.test('service-jwt', request)
+          const { credentials } = await server.auth.test('service-jwt', request)
           return h.authenticated({
-            credentials: { authenticated: true, type: 'jwt' }
+            credentials: { ...credentials, authenticated: true, type: 'jwt' }
           })
         }
       }))
@@ -136,4 +142,25 @@ function decryptLegacyToken(encryptedToken) {
     )
     return null
   }
+}
+
+const addServiceAccessPreHandler = (server) => {
+  server.ext('onPreHandler', (request, h) => {
+    const allowedSubjects =
+      request.route.settings.plugins?.['service-auth']?.allowedSubjects
+
+    if (allowedSubjects) {
+      allowedSubjects.push(LOCAL_SUBJECT) // Always allow local services for testing purposes
+      const { serviceName } = request.auth.credentials
+
+      if (!serviceName || !allowedSubjects.includes(serviceName)) {
+        logger.warn(
+          `Access denied for subject '${serviceName}' to restricted endpoint '${request.path}'`
+        )
+        throw Boom.forbidden()
+      }
+    }
+
+    return h.continue
+  })
 }
