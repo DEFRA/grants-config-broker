@@ -21,7 +21,10 @@ export const getFeatureControlDetailedByName = async (name, db) => {
 
 export const getFeatureControlByName = async (name, db) => {
   return db.collection(FEATURE_CONTROL_COLLECTION).findOne(
-    { name },
+    {
+      name,
+      status: 'active'
+    },
     {
       projection: {
         _id: 0,
@@ -50,6 +53,34 @@ export const updateFeatureControlValue = async (
       $push: {
         history: {
           value,
+          setBy: user,
+          dateTime: updateTime,
+          note,
+          changeToValue,
+          notificationEmitted
+        }
+      }
+    },
+    { returnDocument: 'after' }
+  )
+}
+
+export const updateFeatureControlStatus = async (
+  { name, user, status, note, changeToValue, notificationEmitted },
+  db
+) => {
+  const updateTime = new Date()
+  return db.collection(FEATURE_CONTROL_COLLECTION).findOneAndUpdate(
+    { name },
+    {
+      $set: {
+        status,
+        lastUpdated: updateTime,
+        lastUpdatedBy: user
+      },
+      $push: {
+        history: {
+          status,
           setBy: user,
           dateTime: updateTime,
           note,

@@ -2,12 +2,14 @@ import {
   getFeatureControlByNameSchema,
   getFeatureControlsSchema,
   postAddFeatureControlSchema,
+  putUpdateFeatureControlStatusSchema,
   putUpdateFeatureControlValueSchema
 } from './feature-control-schemas.js'
 import {
   getFeatureControlByNameHandler,
   getFeatureControlsHandler,
   postAddFeatureControlHandler,
+  putUpdateFeatureControlStatusHandler,
   putUpdateFeatureControlValueHandler
 } from './feature-control-handlers.js'
 import Boom from '@hapi/boom'
@@ -84,6 +86,21 @@ export const featureControlRoutes = [
         payload: putUpdateFeatureControlValueSchema,
         failAction(request, _h, err) {
           request.logger.error(err, 'Put feature control value update error')
+          throw Boom.badRequest(err.message)
+        }
+      }
+    }
+  },
+  {
+    method: 'PUT',
+    path: '/api/feature-control/status',
+    options: {
+      description: 'Update a feature control status',
+      handler: putUpdateFeatureControlStatusHandler,
+      validate: {
+        payload: putUpdateFeatureControlStatusSchema,
+        failAction(request, _h, err) {
+          request.logger.error(err, 'Put feature control status update error')
           throw Boom.badRequest(err.message)
         }
       }

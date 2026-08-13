@@ -2,6 +2,7 @@ import {
   getFeatureControlByNameSchema,
   getFeatureControlsSchema,
   postAddFeatureControlSchema,
+  putUpdateFeatureControlStatusSchema,
   putUpdateFeatureControlValueSchema
 } from './feature-control-schemas.js'
 
@@ -310,23 +311,17 @@ describe('feature-control-schemas', () => {
       expect(result.error).toBeUndefined()
     })
 
-    it('should validate successfully without a note', () => {
-      const payload = { ...validPayload }
-      delete payload.note
-      const result = putUpdateFeatureControlValueSchema.validate(payload)
-      expect(result.error).toBeUndefined()
-    })
-
-    it('should validate successfully with an empty note', () => {
+    it('should result in error when note just contains spaces', () => {
       const result = putUpdateFeatureControlValueSchema.validate({
         ...validPayload,
-        note: ''
+        note: '  '
       })
-      expect(result.error).toBeUndefined()
+      expect(result.error).toBeDefined()
+      expect(result.error.message).toMatch(`"note" is not allowed to be empty`)
     })
 
     it('should result in error for missing required fields', () => {
-      const requiredFields = ['name', 'value', 'user']
+      const requiredFields = ['name', 'value', 'user', 'note']
 
       requiredFields.forEach((field) => {
         const payload = { ...validPayload }
@@ -339,6 +334,50 @@ describe('feature-control-schemas', () => {
 
     it('should uppercase name', () => {
       const result = putUpdateFeatureControlValueSchema.validate({
+        ...validPayload,
+        name: 'lowercase_name'
+      })
+      expect(result.error).toBeUndefined()
+      expect(result.value.name).toBe('LOWERCASE_NAME')
+    })
+  })
+
+  describe('putUpdateFeatureControlStatusSchema', () => {
+    const validPayload = {
+      name: 'EXAMPLE_EXPIRED',
+      status: 'expired',
+      user: 'test-user',
+      note: 'Updating for testing'
+    }
+
+    it('should validate successfully for a valid payload', () => {
+      const result = putUpdateFeatureControlStatusSchema.validate(validPayload)
+      expect(result.error).toBeUndefined()
+    })
+
+    it('should result in error when note just contains spaces', () => {
+      const result = putUpdateFeatureControlStatusSchema.validate({
+        ...validPayload,
+        note: '  '
+      })
+      expect(result.error).toBeDefined()
+      expect(result.error.message).toMatch(`"note" is not allowed to be empty`)
+    })
+
+    it('should result in error for missing required fields', () => {
+      const requiredFields = ['name', 'status', 'user', 'note']
+
+      requiredFields.forEach((field) => {
+        const payload = { ...validPayload }
+        delete payload[field]
+        const result = putUpdateFeatureControlStatusSchema.validate(payload)
+        expect(result.error).toBeDefined()
+        expect(result.error.message).toMatch(`"${field}" is required`)
+      })
+    })
+
+    it('should uppercase name', () => {
+      const result = putUpdateFeatureControlStatusSchema.validate({
         ...validPayload,
         name: 'lowercase_name'
       })
