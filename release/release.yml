@@ -1,0 +1,15 @@
+---
+name: pigs-might-fly
+version: 3.11.1
+notes: Republish PMF with Agreement definition
+environments:
+  - name: dev
+    status: active
+  - name: test
+    status: active
+  - name: ext-test
+    status: draft
+  - name: perf-test
+    status: active
+  - name: prod
+    status: none
