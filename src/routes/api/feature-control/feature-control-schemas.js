@@ -71,7 +71,7 @@ export const postAddFeatureControlSchema = Joi.object({
     .required(),
   description: Joi.string().required(),
   owner: Joi.string().required(),
-  expiryDate: Joi.date().required(),
+  expiryDate: Joi.date().min('now').required(),
   createdBy: Joi.string().required(),
   roleRequired: Joi.object()
     .pattern(

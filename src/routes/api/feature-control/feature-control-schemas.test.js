@@ -111,6 +111,35 @@ describe('feature-control-schemas', () => {
       })
     })
 
+    it('should result in error if expiryDate is today or earlier', () => {
+      vi.useFakeTimers()
+
+      // Test date today but later time, expiryDate will be midnight, schedule will be later
+      vi.setSystemTime(new Date('2026-08-13T04:00:00.000Z'))
+      const resultEarlierToday = postAddFeatureControlSchema.validate({
+        ...validPayload,
+        expiryDate: new Date('2026-08-13T00:00:00.000Z')
+      })
+      expect(resultEarlierToday.error).toBeDefined()
+      expect(resultEarlierToday.error.message).toMatch(
+        '"expiryDate" must be greater than or equal to "now"'
+      )
+
+      // Test date in the past
+      vi.setSystemTime(new Date('2026-08-13T12:00:00Z'))
+      const pastDate = new Date('2026-08-12T12:00:00Z')
+      const resultPast = postAddFeatureControlSchema.validate({
+        ...validPayload,
+        expiryDate: pastDate
+      })
+      expect(resultPast.error).toBeDefined()
+      expect(resultPast.error.message).toMatch(
+        '"expiryDate" must be greater than or equal to "now"'
+      )
+
+      vi.useRealTimers()
+    })
+
     it('should result in error for invalid type', () => {
       const result = postAddFeatureControlSchema.validate({
         ...validPayload,
