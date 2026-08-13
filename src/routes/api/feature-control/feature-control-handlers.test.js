@@ -251,7 +251,8 @@ describe('feature-control-handlers', () => {
           ],
           status: 'success',
           details: {
-            value: payload.value
+            value: payload.value,
+            note: payload.note
           }
         },
         payload.user,
@@ -403,7 +404,8 @@ describe('feature-control-handlers', () => {
           ],
           status: 'success',
           details: {
-            status: payload.status
+            status: payload.status,
+            note: payload.note
           }
         },
         payload.user,
