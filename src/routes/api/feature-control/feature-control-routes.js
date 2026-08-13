@@ -13,6 +13,10 @@ import {
   putUpdateFeatureControlValueHandler
 } from './feature-control-handlers.js'
 import Boom from '@hapi/boom'
+import {
+  BROWSER_SUBJECT,
+  FEATURE_CONTROL_SUBJECT
+} from '../../../utils/constants.js'
 
 export const featureControlRoutes = [
   {
@@ -38,7 +42,7 @@ export const featureControlRoutes = [
       handler: (req, h) => getFeatureControlByNameHandler(req, h, true),
       plugins: {
         'service-auth': {
-          allowedSubjects: ['grants-config-browser']
+          allowedSubjects: [BROWSER_SUBJECT]
         }
       },
       validate: {
@@ -74,10 +78,7 @@ export const featureControlRoutes = [
       handler: postAddFeatureControlHandler,
       plugins: {
         'service-auth': {
-          allowedSubjects: [
-            'grants-config-browser',
-            'grants-config-feature-controls'
-          ]
+          allowedSubjects: [BROWSER_SUBJECT, FEATURE_CONTROL_SUBJECT]
         }
       },
       validate: {
@@ -97,7 +98,7 @@ export const featureControlRoutes = [
       handler: putUpdateFeatureControlValueHandler,
       plugins: {
         'service-auth': {
-          allowedSubjects: ['grants-config-browser']
+          allowedSubjects: [BROWSER_SUBJECT]
         }
       },
       validate: {
@@ -117,10 +118,7 @@ export const featureControlRoutes = [
       handler: putUpdateFeatureControlStatusHandler,
       plugins: {
         'service-auth': {
-          allowedSubjects: [
-            'grants-config-browser',
-            'grants-config-feature-controls'
-          ]
+          allowedSubjects: [BROWSER_SUBJECT, FEATURE_CONTROL_SUBJECT]
         }
       },
       validate: {

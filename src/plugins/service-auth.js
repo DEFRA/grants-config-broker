@@ -4,6 +4,8 @@ import crypto from 'node:crypto'
 import { config } from '../config.js'
 import { getLogger } from '../common/helpers/logging/logger.js'
 
+import { LOCAL_SUBJECT } from '../utils/constants.js'
+
 const logger = getLogger()
 
 export const serviceAuth = {
@@ -53,24 +55,7 @@ export const serviceAuth = {
         })
       }
 
-      server.ext('onPreHandler', (request, h) => {
-        const allowedSubjects =
-          request.route.settings.plugins?.['service-auth']?.allowedSubjects
-
-        if (allowedSubjects) {
-          allowedSubjects.push('local') // Always allow local services for testing purposes
-          const { serviceName } = request.auth.credentials
-
-          if (!serviceName || !allowedSubjects.includes(serviceName)) {
-            logger.warn(
-              `Access denied for subject '${serviceName}' to restricted endpoint '${request.path}'`
-            )
-            throw Boom.forbidden()
-          }
-        }
-
-        return h.continue
-      })
+      addServiceAccessPreHandler(server)
 
       server.auth.scheme('service-custom', () => ({
         authenticate: async (request, h) => {
@@ -78,7 +63,7 @@ export const serviceAuth = {
 
           if (isLocalEnvironment) {
             return h.authenticated({
-              credentials: { authenticated: true, serviceName: 'local' }
+              credentials: { authenticated: true, serviceName: LOCAL_SUBJECT }
             })
           }
 
@@ -157,4 +142,25 @@ function decryptLegacyToken(encryptedToken) {
     )
     return null
   }
+}
+
+const addServiceAccessPreHandler = (server) => {
+  server.ext('onPreHandler', (request, h) => {
+    const allowedSubjects =
+      request.route.settings.plugins?.['service-auth']?.allowedSubjects
+
+    if (allowedSubjects) {
+      allowedSubjects.push(LOCAL_SUBJECT) // Always allow local services for testing purposes
+      const { serviceName } = request.auth.credentials
+
+      if (!serviceName || !allowedSubjects.includes(serviceName)) {
+        logger.warn(
+          `Access denied for subject '${serviceName}' to restricted endpoint '${request.path}'`
+        )
+        throw Boom.forbidden()
+      }
+    }
+
+    return h.continue
+  })
 }

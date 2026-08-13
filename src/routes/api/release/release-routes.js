@@ -2,6 +2,8 @@ import { postReleaseConfigSchema } from './release-schemas.js'
 import { postReleaseConfigHandler } from './release-handlers.js'
 import Boom from '@hapi/boom'
 
+import { BROWSER_SUBJECT } from '../../../utils/constants.js'
+
 export const releaseRoutes = [
   {
     method: 'POST',
@@ -11,7 +13,7 @@ export const releaseRoutes = [
       handler: postReleaseConfigHandler,
       plugins: {
         'service-auth': {
-          allowedSubjects: ['grants-config-browser']
+          allowedSubjects: [BROWSER_SUBJECT]
         }
       },
       validate: {
