@@ -97,48 +97,6 @@ describe('feature-control-handlers', () => {
       expect(result).toBe(mockH)
     })
 
-    it('should return bad request if expiryDate is today or earlier', async () => {
-      vi.useFakeTimers()
-      vi.setSystemTime(new Date('2026-08-13'))
-
-      const today = new Date('2026-08-13')
-      const yesterday = new Date('2026-08-12')
-
-      const payloadWithToday = {
-        ...payload,
-        expiryDate: today
-      }
-      const mockRequestWithToday = {
-        payload: payloadWithToday,
-        logger: mockLogger,
-        db: mockDb
-      }
-
-      await postAddFeatureControlHandler(mockRequestWithToday, mockH)
-      expect(mockH.response).toHaveBeenCalledWith({
-        message: 'expiryDate must be in the future'
-      })
-      expect(mockH.code).toHaveBeenCalledWith(StatusCodes.BAD_REQUEST)
-
-      const payloadWithYesterday = {
-        ...payload,
-        expiryDate: yesterday
-      }
-      const mockRequestWithYesterday = {
-        payload: payloadWithYesterday,
-        logger: mockLogger,
-        db: mockDb
-      }
-
-      await postAddFeatureControlHandler(mockRequestWithYesterday, mockH)
-      expect(mockH.response).toHaveBeenCalledWith({
-        message: 'expiryDate must be in the future'
-      })
-      expect(mockH.code).toHaveBeenCalledWith(StatusCodes.BAD_REQUEST)
-
-      vi.useRealTimers()
-    })
-
     it('should handle undefined roleRequired in definition update and return status code form addOrUpdate function', async () => {
       addOrUpdateFeatureControlDefinition.mockResolvedValue(
         StatusCodes.ACCEPTED

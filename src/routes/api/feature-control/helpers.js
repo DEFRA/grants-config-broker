@@ -20,9 +20,3 @@ export const deriveChange = (newValue, oldValue, controlType) => {
   // otherwise is string, number or boolean
   return `${oldValue} ➜ ${newValue}`
 }
-
-export const isDateTodayOrEarlier = (date) => {
-  return (
-    new Date(date).setUTCHours(0, 0, 0, 0) <= new Date().setUTCHours(0, 0, 0, 0)
-  )
-}
