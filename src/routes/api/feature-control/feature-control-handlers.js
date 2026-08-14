@@ -86,7 +86,8 @@ export const putUpdateFeatureControlValueHandler = async (req, h) => {
     ],
     status: 'success',
     details: {
-      value
+      value,
+      note
     }
   }
 
@@ -101,12 +102,12 @@ export const putUpdateFeatureControlStatusHandler = async (req, h) => {
     logger
   } = req
 
-  let featureControl = await getFeatureControlByName(name, req.db)
+  const featureControl = await getFeatureControlByName(name, req.db)
   if (!featureControl) {
     return h.response().code(StatusCodes.NOT_FOUND)
   }
 
-  featureControl = await updateFeatureControlStatus(
+  await updateFeatureControlStatus(
     {
       name,
       user,
@@ -128,7 +129,8 @@ export const putUpdateFeatureControlStatusHandler = async (req, h) => {
     ],
     status: 'success',
     details: {
-      status: featureControl.status
+      status,
+      note
     }
   }
 
