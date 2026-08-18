@@ -113,7 +113,9 @@ export const putUpdateFeatureControlStatusHandler = async (req, h) => {
       featureControl.status
     )
   ) {
-    return h.response().code(StatusCodes.UNPROCESSABLE_ENTITY)
+    const message = `Cannot update status of a feature control that is already ${featureControl.status}`
+    logger.error(message)
+    return h.response({ message }).code(StatusCodes.UNPROCESSABLE_ENTITY)
   }
 
   await updateFeatureControlStatus(

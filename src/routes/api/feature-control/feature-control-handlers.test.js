@@ -447,6 +447,12 @@ describe('feature-control-handlers', () => {
       )
 
       expect(updateFeatureControlStatus).not.toHaveBeenCalled()
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        `Cannot update status of a feature control that is already ${FEATURE_CONTROLS_STATUS.EXPIRED}`
+      )
+      expect(mockH.response).toHaveBeenCalledWith({
+        message: `Cannot update status of a feature control that is already ${FEATURE_CONTROLS_STATUS.EXPIRED}`
+      })
       expect(mockH.code).toHaveBeenCalledWith(StatusCodes.UNPROCESSABLE_ENTITY)
       expect(result).toBe(mockH)
     })
@@ -464,6 +470,12 @@ describe('feature-control-handlers', () => {
       )
 
       expect(updateFeatureControlStatus).not.toHaveBeenCalled()
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        `Cannot update status of a feature control that is already ${FEATURE_CONTROLS_STATUS.REMOVED}`
+      )
+      expect(mockH.response).toHaveBeenCalledWith({
+        message: `Cannot update status of a feature control that is already ${FEATURE_CONTROLS_STATUS.REMOVED}`
+      })
       expect(mockH.code).toHaveBeenCalledWith(StatusCodes.UNPROCESSABLE_ENTITY)
       expect(result).toBe(mockH)
     })
