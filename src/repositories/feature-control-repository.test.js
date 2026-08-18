@@ -1,3 +1,4 @@
+import { FEATURE_CONTROLS_STATUS } from '../utils/constants.js'
 import {
   storeFeatureControl,
   getFeatureControlByName,
@@ -37,7 +38,7 @@ describe('feature-control-repository', () => {
         name: 'TEST_FEATURE',
         displayName: 'Test Feature',
         value: true,
-        status: 'active'
+        status: FEATURE_CONTROLS_STATUS.ACTIVE
       }
       mockCollection.insertOne.mockResolvedValue({ insertedId: '123' })
 
@@ -59,7 +60,7 @@ describe('feature-control-repository', () => {
 
       expect(mockDb.collection).toHaveBeenCalledWith('feature-controls')
       expect(mockCollection.findOne).toHaveBeenCalledWith(
-        { name, status: 'active' },
+        { name, status: FEATURE_CONTROLS_STATUS.ACTIVE },
         {
           projection: {
             _id: 0,
@@ -138,7 +139,7 @@ describe('feature-control-repository', () => {
       const params = {
         name: 'TEST_FEATURE',
         user: 'user1',
-        status: 'expired',
+        status: FEATURE_CONTROLS_STATUS.EXPIRED,
         note: 'test note',
         changeToValue: 'active ➜ expired',
         notificationEmitted: false
@@ -236,7 +237,7 @@ describe('feature-control-repository', () => {
         owner: 'test-owner',
         scope: 'grant.test',
         type: 'boolean',
-        status: 'active'
+        status: FEATURE_CONTROLS_STATUS.ACTIVE
       }
       const items = [
         { name: 'TEST_FEATURE', type: 'boolean', scopes: ['grant.test'] }
@@ -255,7 +256,7 @@ describe('feature-control-repository', () => {
         owner: { $regex: 'test\\-owner', $options: 'i' },
         scopes: 'grant.test',
         type: 'boolean',
-        status: 'active'
+        status: FEATURE_CONTROLS_STATUS.ACTIVE
       })
       expect(mockCollection.find).toHaveBeenCalledWith({
         name: { $regex: 'TEST', $options: 'i' },
@@ -263,7 +264,7 @@ describe('feature-control-repository', () => {
         owner: { $regex: 'test\\-owner', $options: 'i' },
         scopes: 'grant.test',
         type: 'boolean',
-        status: 'active'
+        status: FEATURE_CONTROLS_STATUS.ACTIVE
       })
       expect(mockCollection.sort).toHaveBeenCalledWith({ name: 1 })
       expect(mockCollection.skip).toHaveBeenCalledWith(5)

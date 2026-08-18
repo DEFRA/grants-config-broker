@@ -1,3 +1,5 @@
+import { StatusCodes } from 'http-status-codes'
+import { FEATURE_CONTROLS_STATUS } from '../../../utils/constants.js'
 import {
   getFeatureControlByNameHandler,
   getFeatureControlsHandler,
@@ -5,9 +7,9 @@ import {
   putUpdateFeatureControlStatusHandler,
   putUpdateFeatureControlValueHandler
 } from './feature-control-handlers.js'
-import { StatusCodes } from 'http-status-codes'
 import {
   getFeatureControlByName,
+  getFeatureControlDetailedByName,
   getFeatureControls,
   updateFeatureControlStatus,
   updateFeatureControlValue
@@ -18,6 +20,7 @@ import { publishEvent } from '../../../common/helpers/audit/event-publisher.js'
 
 vi.mock('../../../repositories/feature-control-repository.js', () => ({
   getFeatureControlByName: vi.fn(),
+  getFeatureControlDetailedByName: vi.fn(),
   getFeatureControls: vi.fn(),
   updateFeatureControlStatus: vi.fn(),
   updateFeatureControlValue: vi.fn()
@@ -355,7 +358,7 @@ describe('feature-control-handlers', () => {
   describe('putUpdateFeatureControlStatusHandler', () => {
     const payload = {
       name: 'ALLOW_LIST_WOODLANDS',
-      status: 'expired',
+      status: FEATURE_CONTROLS_STATUS.EXPIRED,
       user: 'user1',
       note: 'test note'
     }
@@ -368,9 +371,9 @@ describe('feature-control-handlers', () => {
     it('should update feature control status and return accepted', async () => {
       const existing = {
         name: payload.name,
-        status: 'active'
+        status: FEATURE_CONTROLS_STATUS.ACTIVE
       }
-      getFeatureControlByName.mockResolvedValue(existing)
+      getFeatureControlDetailedByName.mockResolvedValue(existing)
       updateFeatureControlStatus.mockResolvedValue({
         ...existing,
         status: payload.status
@@ -381,7 +384,10 @@ describe('feature-control-handlers', () => {
         mockH
       )
 
-      expect(getFeatureControlByName).toHaveBeenCalledWith(payload.name, mockDb)
+      expect(getFeatureControlDetailedByName).toHaveBeenCalledWith(
+        payload.name,
+        mockDb
+      )
       expect(updateFeatureControlStatus).toHaveBeenCalledWith(
         {
           name: payload.name,
@@ -416,7 +422,7 @@ describe('feature-control-handlers', () => {
     })
 
     it('should return not found if feature control does not exist', async () => {
-      getFeatureControlByName.mockResolvedValue(null)
+      getFeatureControlDetailedByName.mockResolvedValue(null)
 
       const result = await putUpdateFeatureControlStatusHandler(
         mockRequest,
@@ -425,6 +431,40 @@ describe('feature-control-handlers', () => {
 
       expect(updateFeatureControlStatus).not.toHaveBeenCalled()
       expect(mockH.code).toHaveBeenCalledWith(StatusCodes.NOT_FOUND)
+      expect(result).toBe(mockH)
+    })
+
+    it('should return unprocessable entity if feature control is already expired', async () => {
+      const existing = {
+        name: payload.name,
+        status: FEATURE_CONTROLS_STATUS.EXPIRED
+      }
+      getFeatureControlDetailedByName.mockResolvedValue(existing)
+
+      const result = await putUpdateFeatureControlStatusHandler(
+        mockRequest,
+        mockH
+      )
+
+      expect(updateFeatureControlStatus).not.toHaveBeenCalled()
+      expect(mockH.code).toHaveBeenCalledWith(StatusCodes.UNPROCESSABLE_ENTITY)
+      expect(result).toBe(mockH)
+    })
+
+    it('should return unprocessable entity if feature control is already removed', async () => {
+      const existing = {
+        name: payload.name,
+        status: FEATURE_CONTROLS_STATUS.REMOVED
+      }
+      getFeatureControlDetailedByName.mockResolvedValue(existing)
+
+      const result = await putUpdateFeatureControlStatusHandler(
+        mockRequest,
+        mockH
+      )
+
+      expect(updateFeatureControlStatus).not.toHaveBeenCalled()
+      expect(mockH.code).toHaveBeenCalledWith(StatusCodes.UNPROCESSABLE_ENTITY)
       expect(result).toBe(mockH)
     })
   })
@@ -489,7 +529,7 @@ describe('feature-control-handlers', () => {
         name: 'test',
         displayName: 'Test display name',
         owner: 'test-owner',
-        status: 'active'
+        status: FEATURE_CONTROLS_STATUS.ACTIVE
       }
       const mockRequest = { query, db: mockDb }
       const expectedResults = { items: [], total: 0 }

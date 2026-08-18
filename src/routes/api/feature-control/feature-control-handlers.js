@@ -1,4 +1,5 @@
 import { StatusCodes } from 'http-status-codes'
+import { FEATURE_CONTROLS_STATUS } from '../../../utils/constants.js'
 import {
   getFeatureControlByName,
   getFeatureControlDetailedByName,
@@ -102,9 +103,17 @@ export const putUpdateFeatureControlStatusHandler = async (req, h) => {
     logger
   } = req
 
-  const featureControl = await getFeatureControlByName(name, req.db)
+  const featureControl = await getFeatureControlDetailedByName(name, req.db)
   if (!featureControl) {
     return h.response().code(StatusCodes.NOT_FOUND)
+  }
+
+  if (
+    [FEATURE_CONTROLS_STATUS.EXPIRED, FEATURE_CONTROLS_STATUS.REMOVED].includes(
+      featureControl.status
+    )
+  ) {
+    return h.response().code(StatusCodes.UNPROCESSABLE_ENTITY)
   }
 
   await updateFeatureControlStatus(
@@ -113,7 +122,7 @@ export const putUpdateFeatureControlStatusHandler = async (req, h) => {
       user,
       status,
       note,
-      changeToValue: `Status: active ➜ ${status}`,
+      changeToValue: `Status: ${featureControl.status} ➜ ${status}`,
       notificationEmitted: false
     },
     req.db

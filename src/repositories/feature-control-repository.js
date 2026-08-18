@@ -1,11 +1,12 @@
 const FEATURE_CONTROL_COLLECTION = 'feature-controls'
 import { escapeRegex } from '../utils/regex-utils.js'
+import { FEATURE_CONTROLS_STATUS } from '../utils/constants.js'
 
 export const storeFeatureControl = async (data, db) => {
   // Hardcoded status for now, but will change in the near future
   return db
     .collection(FEATURE_CONTROL_COLLECTION)
-    .insertOne({ ...data, status: 'active' })
+    .insertOne({ ...data, status: FEATURE_CONTROLS_STATUS.ACTIVE })
 }
 
 export const getFeatureControlDetailedByName = async (name, db) => {
@@ -23,7 +24,7 @@ export const getFeatureControlByName = async (name, db) => {
   return db.collection(FEATURE_CONTROL_COLLECTION).findOne(
     {
       name,
-      status: 'active'
+      status: FEATURE_CONTROLS_STATUS.ACTIVE
     },
     {
       projection: {

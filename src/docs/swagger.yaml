@@ -509,7 +509,7 @@ paths:
           required: false
           schema:
             type: string
-            enum: [active, expired, withdrawn]
+            enum: [active, withdrawn, expired, removed]
           description: Exact status match.
       responses:
         '200':
@@ -546,7 +546,7 @@ components:
           properties:
             status:
               type: string
-              enum: [active, expired, withdrawn]
+              enum: [active, withdrawn, expired, removed]
             displayName:
               type: string
             description:
@@ -707,7 +707,7 @@ components:
           type: string
         status:
           type: string
-          enum: [ active, expired, withdrawn ]
+          enum: [active, withdrawn, expired, removed]
         user:
           type: string
         note:

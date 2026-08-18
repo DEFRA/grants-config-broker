@@ -1,3 +1,4 @@
+import { FEATURE_CONTROLS_STATUS } from '../../../utils/constants.js'
 import {
   getFeatureControlByNameSchema,
   getFeatureControlsSchema,
@@ -374,7 +375,7 @@ describe('feature-control-schemas', () => {
   describe('putUpdateFeatureControlStatusSchema', () => {
     const validPayload = {
       name: 'EXAMPLE_EXPIRED',
-      status: 'expired',
+      status: FEATURE_CONTROLS_STATUS.EXPIRED,
       user: 'test-user',
       note: 'Updating for testing'
     }
