@@ -10,7 +10,10 @@ import {
 import { config } from '../../../config.js'
 import { typeMap } from './feature-control-schemas.js'
 import { notifyFeatureControlUpdate } from '../../../messaging/outbound/notify-feature-control.js'
-import { deriveChange } from './helpers.js'
+import {
+  deriveChangeUpdatedValue,
+  deriveChangeUpdatedStatus
+} from './helpers.js'
 import { addOrUpdateFeatureControlDefinition } from '../../../service/feature-control-definition-processor.js'
 import { publishEvent } from '../../../common/helpers/audit/event-publisher.js'
 
@@ -56,16 +59,16 @@ export const putUpdateFeatureControlValueHandler = async (req, h) => {
     return h.response().code(StatusCodes.BAD_REQUEST)
   }
 
-  const changeToValue = deriveChange(
+  const changeToValue = deriveChangeUpdatedValue(
     value,
     featureControl.value,
     featureControl.type
   )
-
   featureControl = await updateFeatureControlValue(
     { name, user, value, note, changeToValue, notificationEmitted: true },
     req.db
   )
+
   await notifyFeatureControlUpdate(
     {
       name,
@@ -91,7 +94,6 @@ export const putUpdateFeatureControlValueHandler = async (req, h) => {
       note
     }
   }
-
   await publishEvent(audit, user, logger)
 
   return h.response().code(StatusCodes.ACCEPTED)
@@ -121,13 +123,14 @@ export const putUpdateFeatureControlStatusHandler = async (req, h) => {
   // only emit notification when reactivating a feature control
   const emitNotification = status === FEATURE_CONTROLS_STATUS.ACTIVE
 
+  const changeToValue = deriveChangeUpdatedStatus(status, featureControl.status)
   await updateFeatureControlStatus(
     {
       name,
       user,
       status,
       note,
-      changeToValue: `Status: ${featureControl.status} ➜ ${status}`,
+      changeToValue,
       notificationEmitted: emitNotification
     },
     req.db
@@ -160,7 +163,6 @@ export const putUpdateFeatureControlStatusHandler = async (req, h) => {
       note
     }
   }
-
   await publishEvent(audit, user, logger)
 
   return h.response().code(StatusCodes.ACCEPTED)

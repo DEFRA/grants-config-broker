@@ -228,7 +228,7 @@ describe('feature-control-handlers', () => {
           user: payload.user,
           value: payload.value,
           note: payload.note,
-          changeToValue: 'Removed: 4',
+          changeToValue: 'Value: removed: 4',
           notificationEmitted: true
         },
         mockDb
@@ -588,6 +588,29 @@ describe('feature-control-handlers', () => {
       const result = await getFeatureControlByNameHandler(mockRequest, mockH)
 
       expect(getFeatureControlByName).toHaveBeenCalledWith(
+        'TEST_FEATURE',
+        mockDb
+      )
+      expect(mockH.response).toHaveBeenCalledWith(existing)
+      expect(mockH.code).toHaveBeenCalledWith(StatusCodes.OK)
+      expect(result).toBe(mockH)
+    })
+
+    it('should return detailed feature control if requested', async () => {
+      const mockRequest = {
+        params: { name: 'TEST_FEATURE' },
+        db: mockDb
+      }
+      const existing = { name: 'TEST_FEATURE', value: true, history: [] }
+      getFeatureControlDetailedByName.mockResolvedValue(existing)
+
+      const result = await getFeatureControlByNameHandler(
+        mockRequest,
+        mockH,
+        true
+      )
+
+      expect(getFeatureControlDetailedByName).toHaveBeenCalledWith(
         'TEST_FEATURE',
         mockDb
       )
