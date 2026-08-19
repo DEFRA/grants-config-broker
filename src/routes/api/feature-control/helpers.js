@@ -12,20 +12,11 @@ export const deriveChangeUpdatedDefinition = (
   }
 
   if (propertiesChanged.includes('roles')) {
-    const oldRoles = new Set(oldDefinition.roleRequired || [])
-    const newRoles = new Set(newDefinition.roleRequired || [])
-
-    const added = [...newRoles].filter((x) => !oldRoles.has(x))
-    const removed = [...oldRoles].filter((x) => !newRoles.has(x))
-
-    const roleParts = []
-    if (added.length > 0) {
-      roleParts.push(`added: ${added.join(',')}`)
-    }
-    if (removed.length > 0) {
-      roleParts.push(`removed: ${removed.join(',')}`)
-    }
-    parts.push(`roles: ${roleParts.join(', ')}`)
+    const roleChanges = deriveAddedRemoved(
+      newDefinition.roleRequired,
+      oldDefinition.roleRequired
+    )
+    parts.push(`roles: ${roleChanges}`)
   }
 
   if (propertiesChanged.includes('displayName')) {
@@ -55,21 +46,7 @@ export const deriveChangeUpdatedDefinition = (
 
 export const deriveChangeUpdatedValue = (newValue, oldValue, controlType) => {
   if (controlType === 'list-string' || controlType === 'list-number') {
-    const oldSet = new Set(oldValue || [])
-    const newSet = new Set(newValue || [])
-
-    const added = [...newSet].filter((x) => !oldSet.has(x))
-    const removed = [...oldSet].filter((x) => !newSet.has(x))
-
-    const parts = []
-    if (added.length > 0) {
-      parts.push(`added: ${added.join(',')}`)
-    }
-    if (removed.length > 0) {
-      parts.push(`removed: ${removed.join(',')}`)
-    }
-
-    return `Value: ${parts.join(', ')}`
+    return `Value: ${deriveAddedRemoved(newValue, oldValue)}`
   }
 
   // otherwise is string, number or boolean
@@ -78,4 +55,22 @@ export const deriveChangeUpdatedValue = (newValue, oldValue, controlType) => {
 
 export const deriveChangeUpdatedStatus = (newStatus, oldStatus) => {
   return `Status: ${oldStatus} ➜ ${newStatus}`
+}
+
+const deriveAddedRemoved = (newItems, oldItems) => {
+  const oldSet = new Set(oldItems || [])
+  const newSet = new Set(newItems || [])
+
+  const added = [...newSet].filter((x) => !oldSet.has(x))
+  const removed = [...oldSet].filter((x) => !newSet.has(x))
+
+  const parts = []
+  if (added.length > 0) {
+    parts.push(`added: ${added.join(',')}`)
+  }
+  if (removed.length > 0) {
+    parts.push(`removed: ${removed.join(',')}`)
+  }
+
+  return parts.join(', ')
 }
