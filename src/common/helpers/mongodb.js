@@ -41,8 +41,20 @@ export const mongoDb = {
 async function createIndexes(db) {
   await db.collection('mongo-locks').createIndex({ id: 1 })
 
-  await db.collection('config-versions').createIndex({ grant: 1, version: 1 })
+  const CONFIG_VERSION_COLLECTION = 'config-versions'
   await db
-    .collection('config-versions')
+    .collection(CONFIG_VERSION_COLLECTION)
+    .createIndex({ grant: 1, version: 1 })
+  await db
+    .collection(CONFIG_VERSION_COLLECTION)
     .createIndex({ grant: 1, status: 1, versionMajor: 1, versionMinor: 1 })
+
+  const FEATURE_CONTROL_COLLECTION = 'feature-controls'
+  await db.collection(FEATURE_CONTROL_COLLECTION).createIndex({ name: 1 })
+  await db
+    .collection(FEATURE_CONTROL_COLLECTION)
+    .createIndex({ name: 1, status: 1 })
+  await db
+    .collection(FEATURE_CONTROL_COLLECTION)
+    .createIndex({ displayName: 1, status: 1 })
 }
