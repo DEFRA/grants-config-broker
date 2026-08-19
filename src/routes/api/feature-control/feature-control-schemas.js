@@ -1,4 +1,5 @@
 import Joi from 'joi'
+import { FEATURE_CONTROLS_STATUS } from '../../../utils/constants.js'
 
 export const typeMap = {
   'list-string': Joi.array().items(Joi.string()),
@@ -9,7 +10,7 @@ export const typeMap = {
   number: Joi.number().strict()
 }
 
-const statusList = ['active', 'expired', 'withdrawn']
+const statusList = Object.values(FEATURE_CONTROLS_STATUS)
 
 const mandatoryEnvironments = ['dev', 'test', 'perf-test', 'ext-test', 'prod']
 const allEnvironments = mandatoryEnvironments.concat(['local'])
