@@ -444,7 +444,7 @@ describe('feature-control-schemas', () => {
       expect(result.error).toBeUndefined()
       expect(result.value).toEqual({
         page: 1,
-        pageSize: 10
+        pageSize: 100
       })
     })
 
