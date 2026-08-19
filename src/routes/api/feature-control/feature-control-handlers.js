@@ -130,6 +130,20 @@ export const putUpdateFeatureControlStatusHandler = async (req, h) => {
     req.db
   )
 
+  // only emit notification when reactivating a feature control
+  if (status === FEATURE_CONTROLS_STATUS.ACTIVE) {
+    await notifyFeatureControlUpdate(
+      {
+        name,
+        scopes: featureControl.scopes,
+        value: featureControl.value,
+        valueType: featureControl.type,
+        updatedBy: user
+      },
+      req.logger
+    )
+  }
+
   const audit = {
     entities: [
       {

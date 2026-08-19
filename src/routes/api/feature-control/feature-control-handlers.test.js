@@ -421,6 +421,79 @@ describe('feature-control-handlers', () => {
       expect(result).toBe(mockH)
     })
 
+    it('should emit notification when reactivating a feature control (status set to ACTIVE)', async () => {
+      const activePayload = {
+        ...payload,
+        status: FEATURE_CONTROLS_STATUS.ACTIVE
+      }
+      const mockRequestActive = {
+        ...mockRequest,
+        payload: activePayload
+      }
+      const existing = {
+        name: payload.name,
+        status: FEATURE_CONTROLS_STATUS.WITHDRAWN,
+        scopes: ['grant.woodland'],
+        value: [123],
+        type: 'list-number'
+      }
+      getFeatureControlDetailedByName.mockResolvedValue(existing)
+      updateFeatureControlStatus.mockResolvedValue({
+        ...existing,
+        status: FEATURE_CONTROLS_STATUS.ACTIVE
+      })
+
+      const result = await putUpdateFeatureControlStatusHandler(
+        mockRequestActive,
+        mockH
+      )
+
+      expect(notifyFeatureControlUpdate).toHaveBeenCalledWith(
+        {
+          name: payload.name,
+          scopes: existing.scopes,
+          value: existing.value,
+          valueType: existing.type,
+          updatedBy: payload.user
+        },
+        mockLogger
+      )
+      expect(mockH.code).toHaveBeenCalledWith(StatusCodes.ACCEPTED)
+      expect(result).toBe(mockH)
+    })
+
+    it('should NOT emit notification when status is set to something other than ACTIVE', async () => {
+      const withdrawnPayload = {
+        ...payload,
+        status: FEATURE_CONTROLS_STATUS.WITHDRAWN
+      }
+      const mockRequestWithdrawn = {
+        ...mockRequest,
+        payload: withdrawnPayload
+      }
+      const existing = {
+        name: payload.name,
+        status: FEATURE_CONTROLS_STATUS.ACTIVE,
+        scopes: ['grant.woodland'],
+        value: [123],
+        type: 'list-number'
+      }
+      getFeatureControlDetailedByName.mockResolvedValue(existing)
+      updateFeatureControlStatus.mockResolvedValue({
+        ...existing,
+        status: FEATURE_CONTROLS_STATUS.WITHDRAWN
+      })
+
+      const result = await putUpdateFeatureControlStatusHandler(
+        mockRequestWithdrawn,
+        mockH
+      )
+
+      expect(notifyFeatureControlUpdate).not.toHaveBeenCalled()
+      expect(mockH.code).toHaveBeenCalledWith(StatusCodes.ACCEPTED)
+      expect(result).toBe(mockH)
+    })
+
     it('should return not found if feature control does not exist', async () => {
       getFeatureControlDetailedByName.mockResolvedValue(null)
 
