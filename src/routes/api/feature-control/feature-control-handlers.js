@@ -118,6 +118,9 @@ export const putUpdateFeatureControlStatusHandler = async (req, h) => {
     return h.response({ message }).code(StatusCodes.UNPROCESSABLE_ENTITY)
   }
 
+  // only emit notification when reactivating a feature control
+  const emitNotification = status === FEATURE_CONTROLS_STATUS.ACTIVE
+
   await updateFeatureControlStatus(
     {
       name,
@@ -125,13 +128,12 @@ export const putUpdateFeatureControlStatusHandler = async (req, h) => {
       status,
       note,
       changeToValue: `Status: ${featureControl.status} ➜ ${status}`,
-      notificationEmitted: false
+      notificationEmitted: emitNotification
     },
     req.db
   )
 
-  // only emit notification when reactivating a feature control
-  if (status === FEATURE_CONTROLS_STATUS.ACTIVE) {
+  if (emitNotification) {
     await notifyFeatureControlUpdate(
       {
         name,

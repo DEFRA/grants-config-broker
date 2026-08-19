@@ -448,6 +448,17 @@ describe('feature-control-handlers', () => {
         mockH
       )
 
+      expect(updateFeatureControlStatus).toHaveBeenCalledWith(
+        {
+          name: activePayload.name,
+          user: activePayload.user,
+          status: activePayload.status,
+          note: activePayload.note,
+          changeToValue: `Status: withdrawn ➜ ${activePayload.status}`,
+          notificationEmitted: true
+        },
+        mockDb
+      )
       expect(notifyFeatureControlUpdate).toHaveBeenCalledWith(
         {
           name: payload.name,
@@ -489,6 +500,17 @@ describe('feature-control-handlers', () => {
         mockH
       )
 
+      expect(updateFeatureControlStatus).toHaveBeenCalledWith(
+        {
+          name: withdrawnPayload.name,
+          user: withdrawnPayload.user,
+          status: withdrawnPayload.status,
+          note: withdrawnPayload.note,
+          changeToValue: `Status: active ➜ ${withdrawnPayload.status}`,
+          notificationEmitted: false
+        },
+        mockDb
+      )
       expect(notifyFeatureControlUpdate).not.toHaveBeenCalled()
       expect(mockH.code).toHaveBeenCalledWith(StatusCodes.ACCEPTED)
       expect(result).toBe(mockH)
