@@ -114,7 +114,7 @@ export const getFeatureControlByNameSchema = Joi.object({
 
 export const getFeatureControlsSchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
-  pageSize: Joi.number().integer().min(1).max(100).default(10),
+  pageSize: Joi.number().integer().min(1).max(100).default(100),
   name: Joi.string().optional(),
   displayName: Joi.string().optional(),
   owner: Joi.string().optional(),
