@@ -34,6 +34,7 @@ describe('Feature Control Definition Processor', () => {
     const payload = {
       name: 'ALLOW_LIST_WOODLANDS',
       type: 'list-number',
+      displayName: 'Allow list for woodland grant',
       initialValue: {
         default: [123],
         dev: [456]
@@ -147,8 +148,9 @@ describe('Feature Control Definition Processor', () => {
       const existing = {
         name: payload.name,
         type: payload.type,
+        displayName: payload.displayName,
         value: 'some-value',
-        scopes: ['old.scope'],
+        scopes: ['grant.old-scope'],
         description: 'old desc',
         owner: 'old owner',
         expiryDate: new Date('2027-01-01'),
@@ -190,11 +192,24 @@ describe('Feature Control Definition Processor', () => {
           createdBy: payload.createdBy,
           roleRequired: ['grant.view'],
           existingValue: existing.value,
-          note: `Definition updated: (description, expiryDate, owner, roles, scopes)`,
+          note: 'Definition updated',
           notificationEmitted: true
         }),
         mockDb
       )
+      const call = updateFeatureControlDefinition.mock.calls[0][0]
+      expect(call.changeToValue).toContain('Definition:')
+      expect(call.changeToValue).toContain(
+        'scopes: grant.old-scope ➜ grant.woodland'
+      )
+      expect(call.changeToValue).toContain(
+        'roles: added: grant.view, removed: old.role'
+      )
+      expect(call.changeToValue).toContain(
+        'description: old desc ➜ Allow list for woodland grant'
+      )
+      expect(call.changeToValue).toContain('owner: old owner ➜ Woodland team')
+      expect(call.changeToValue).toContain('expiryDate:')
       expect(notifyFeatureControlUpdate).toHaveBeenCalledWith(
         {
           name: payload.name,
@@ -231,17 +246,20 @@ describe('Feature Control Definition Processor', () => {
       const existing = {
         name: payload.name,
         type: payload.type,
+        displayName: payload.displayName,
         scopes: payload.scopes,
         description: 'old desc',
         owner: payload.owner,
         expiryDate: payload.expiryDate,
-        roleRequired: ['grant.view']
+        roleRequired: ['grant.view'],
+        history: []
       }
       getFeatureControlDetailedByName.mockResolvedValue(existing)
 
       const expectedUpdatedDefinition = {
         ...existing,
-        description: payload.description
+        description: payload.description,
+        lastUpdatedBy: payload.createdBy
       }
 
       updateFeatureControlDefinition.mockResolvedValue(
@@ -251,8 +269,8 @@ describe('Feature Control Definition Processor', () => {
       const result = await addOrUpdateFeatureControlDefinition(
         {
           ...payload,
-          currentEnv: 'dev',
-          possibleRoleRequired: ['grant.view']
+          possibleRoleRequired: ['grant.view'],
+          currentEnv: 'dev'
         },
         mockDb,
         mockLogger
@@ -271,18 +289,21 @@ describe('Feature Control Definition Processor', () => {
       const existing = {
         name: payload.name,
         type: payload.type,
+        displayName: payload.displayName,
         scopes: payload.scopes,
         description: payload.description,
         owner: payload.owner,
-        expiryDate: payload.expiryDate
+        expiryDate: payload.expiryDate,
+        roleRequired: ['grant.view'],
+        history: []
       }
       getFeatureControlDetailedByName.mockResolvedValue(existing)
 
       const result = await addOrUpdateFeatureControlDefinition(
         {
           ...payload,
-          currentEnv: 'dev',
-          possibleRoleRequired: null
+          possibleRoleRequired: ['grant.view'],
+          currentEnv: 'dev'
         },
         mockDb,
         mockLogger
@@ -297,18 +318,20 @@ describe('Feature Control Definition Processor', () => {
       const existing = {
         name: payload.name,
         type: 'different-type',
+        displayName: payload.displayName,
         scopes: payload.scopes,
         description: payload.description,
         owner: payload.owner,
-        expiryDate: payload.expiryDate
+        expiryDate: payload.expiryDate,
+        roleRequired: ['grant.view']
       }
       getFeatureControlDetailedByName.mockResolvedValue(existing)
 
       const result = await addOrUpdateFeatureControlDefinition(
         {
           ...payload,
-          currentEnv: 'dev',
-          possibleRoleRequired: null
+          possibleRoleRequired: ['grant.view'],
+          currentEnv: 'dev'
         },
         mockDb,
         mockLogger

@@ -5,6 +5,7 @@ import {
   updateFeatureControlDefinition
 } from '../repositories/feature-control-repository.js'
 import { notifyFeatureControlUpdate } from '../messaging/outbound/notify-feature-control.js'
+import { deriveChangeUpdatedDefinition } from '../routes/api/feature-control/helpers.js'
 import { publishEvent } from '../common/helpers/audit/event-publisher.js'
 
 export const addOrUpdateFeatureControlDefinition = async (data, db, logger) => {
@@ -38,16 +39,19 @@ const handleExistingFeatureControl = async (existing, data, db, logger) => {
     possibleRoleRequired
   } = data
 
+  const newDefinition = {
+    name,
+    displayName,
+    type,
+    scopes,
+    description,
+    owner,
+    expiryDate,
+    roleRequired: possibleRoleRequired
+  }
+
   const { changed, shouldEmit, immutableFieldChanged } =
-    definitionUpdatedLegally(existing, {
-      displayName,
-      type,
-      scopes,
-      description,
-      owner,
-      expiryDate,
-      roleRequired: possibleRoleRequired
-    })
+    definitionUpdatedLegally(existing, newDefinition)
 
   if (immutableFieldChanged) {
     logger.error(
@@ -63,18 +67,18 @@ const handleExistingFeatureControl = async (existing, data, db, logger) => {
     return StatusCodes.NO_CONTENT
   }
 
+  const changeToValue = deriveChangeUpdatedDefinition(
+    existing,
+    newDefinition,
+    changed
+  )
   const updatedFeatureControl = await updateFeatureControlDefinition(
     {
-      name,
-      displayName,
-      scopes,
-      description,
-      owner,
-      expiryDate,
+      ...newDefinition,
       createdBy,
-      roleRequired: possibleRoleRequired,
       existingValue: existing.value,
-      note: `Definition updated: (${changed.join(', ')})`,
+      note: 'Definition updated',
+      changeToValue,
       notificationEmitted: shouldEmit
     },
     db
@@ -129,7 +133,7 @@ const handleNewFeatureControl = async (data, db, logger) => {
         setBy: createdBy,
         dateTime: createdDate,
         note: 'Initial value set',
-        changeToValue: value,
+        changeToValue: `Value: ${value}`,
         notificationEmitted: true
       }
     ]

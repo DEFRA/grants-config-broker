@@ -106,6 +106,7 @@ export const updateFeatureControlDefinition = async (data, db) => {
     existingValue,
     roleRequired,
     note,
+    changeToValue,
     notificationEmitted
   } = data
   const updateTime = new Date()
@@ -128,6 +129,7 @@ export const updateFeatureControlDefinition = async (data, db) => {
           setBy: createdBy,
           dateTime: updateTime,
           note,
+          changeToValue,
           notificationEmitted
         }
       }

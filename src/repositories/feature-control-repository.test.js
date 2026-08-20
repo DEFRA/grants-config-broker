@@ -180,13 +180,14 @@ describe('feature-control-repository', () => {
         name: 'TEST_FEATURE',
         displayName: 'Test Feature',
         scopes: ['scope1'],
-        description: 'desc',
+        description: 'new desc',
         owner: 'owner',
         expiryDate: '2025-01-01',
         createdBy: 'user1',
         existingValue: true,
         roleRequired: ['admin'],
-        note: 'Definition updated (description)',
+        note: 'Definition updated',
+        changeToValue: 'Definition: description: old desc ➜ new desc',
         notificationEmitted: false
       }
       mockCollection.findOneAndUpdate.mockResolvedValue({
@@ -214,6 +215,7 @@ describe('feature-control-repository', () => {
               value: data.existingValue,
               setBy: data.createdBy,
               note: data.note,
+              changeToValue: data.changeToValue,
               notificationEmitted: data.notificationEmitted
             })
           }
