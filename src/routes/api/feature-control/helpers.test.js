@@ -39,7 +39,7 @@ describe('helpers', () => {
       )
 
       expect(result).toBe(
-        'Definition: scopes: old-scope ➜ new-scope | roles: added: role-added, removed: role-removed | displayName: old name ➜ new name | description: old desc ➜ new desc | owner: old owner ➜ new owner | expiryDate: 01/01/2027 ➜ 01/01/2030'
+        'Definition: scopes: old-scope ➜ new-scope | roles: added: role-added, removed: role-removed | displayName: old name ➜ new name | description: old desc ➜ new desc | owner: old owner ➜ new owner | expiryDate: 2027-01-01 ➜ 2030-01-01'
       )
     })
 

@@ -44,8 +44,8 @@ export const deriveChangeUpdatedDefinition = (
   }
 
   if (propertiesChanged.includes('expiryDate')) {
-    const oldDate = oldDefinition.expiryDate.toLocaleDateString('en-GB')
-    const newDate = newDefinition.expiryDate.toLocaleDateString('en-GB')
+    const oldDate = oldDefinition.expiryDate.toISOString().split('T')[0]
+    const newDate = newDefinition.expiryDate.toISOString().split('T')[0]
     parts.push(`expiryDate: ${oldDate} ➜ ${newDate}`)
   }
 
