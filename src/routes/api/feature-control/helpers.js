@@ -1,6 +1,14 @@
+/**
+ * Derives a string description of changes between two feature control definitions.
+ *
+ * @param {object} oldDefinition - The original feature control definition.
+ * @param {object} newDefinition - The updated feature control definition.
+ * @param {string[]} propertiesChanged - An array of property names that have changed.
+ * @returns {string} A formatted string describing the changes.
+ */
 export const deriveChangeUpdatedDefinition = (
-  newDefinition,
   oldDefinition,
+  newDefinition,
   propertiesChanged
 ) => {
   const parts = []
@@ -13,8 +21,8 @@ export const deriveChangeUpdatedDefinition = (
 
   if (propertiesChanged.includes('roles')) {
     const roleChanges = deriveAddedRemoved(
-      newDefinition.roleRequired,
-      oldDefinition.roleRequired
+      oldDefinition.roleRequired,
+      newDefinition.roleRequired
     )
     parts.push(`roles: ${roleChanges}`)
   }
@@ -44,20 +52,35 @@ export const deriveChangeUpdatedDefinition = (
   return `Definition: ${parts.join(' | ')}`
 }
 
-export const deriveChangeUpdatedValue = (newValue, oldValue, controlType) => {
+/**
+ * Derives a string description of changes between two feature control values.
+ *
+ * @param {*} oldValue - The original value.
+ * @param {*} newValue - The updated value.
+ * @param {string} controlType - The type of the feature control (e.g., 'list-string', 'list-number').
+ * @returns {string} A formatted string describing the change.
+ */
+export const deriveChangeUpdatedValue = (oldValue, newValue, controlType) => {
   if (controlType === 'list-string' || controlType === 'list-number') {
-    return `Value: ${deriveAddedRemoved(newValue, oldValue)}`
+    return `Value: ${deriveAddedRemoved(oldValue, newValue)}`
   }
 
   // otherwise is string, number or boolean
   return `Value: ${oldValue} ➜ ${newValue}`
 }
 
-export const deriveChangeUpdatedStatus = (newStatus, oldStatus) => {
+/**
+ * Derives a string description of a status change.
+ *
+ * @param {string} oldStatus - The original status.
+ * @param {string} newStatus - The updated status.
+ * @returns {string} A formatted string describing the status change.
+ */
+export const deriveChangeUpdatedStatus = (oldStatus, newStatus) => {
   return `Status: ${oldStatus} ➜ ${newStatus}`
 }
 
-const deriveAddedRemoved = (newItems, oldItems) => {
+const deriveAddedRemoved = (oldItems, newItems) => {
   const oldSet = new Set(oldItems || [])
   const newSet = new Set(newItems || [])
 

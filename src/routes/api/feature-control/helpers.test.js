@@ -33,8 +33,8 @@ describe('helpers', () => {
       ]
 
       const result = deriveChangeUpdatedDefinition(
-        newDefinition,
         oldDefinition,
+        newDefinition,
         propertiesChanged
       )
 
@@ -53,8 +53,8 @@ describe('helpers', () => {
       const propertiesChanged = ['displayName']
 
       const result = deriveChangeUpdatedDefinition(
-        newDefinition,
         oldDefinition,
+        newDefinition,
         propertiesChanged
       )
 
@@ -71,8 +71,8 @@ describe('helpers', () => {
       const propertiesChanged = ['roles']
 
       const result = deriveChangeUpdatedDefinition(
-        newDefinition,
         oldDefinition,
+        newDefinition,
         propertiesChanged
       )
 
@@ -83,8 +83,8 @@ describe('helpers', () => {
       const oldDefinition = { roleRequired: [] }
       const newDefinition = { roleRequired: ['role1'] }
       const result = deriveChangeUpdatedDefinition(
-        newDefinition,
         oldDefinition,
+        newDefinition,
         ['roles']
       )
       expect(result).toBe('Definition: roles: added: role1')
@@ -94,8 +94,8 @@ describe('helpers', () => {
       const oldDefinition = { roleRequired: ['role1'] }
       const newDefinition = { roleRequired: [] }
       const result = deriveChangeUpdatedDefinition(
-        newDefinition,
         oldDefinition,
+        newDefinition,
         ['roles']
       )
       expect(result).toBe('Definition: roles: removed: role1')
@@ -103,12 +103,12 @@ describe('helpers', () => {
 
     it('should handle undefined roles in old or new definition', () => {
       expect(
-        deriveChangeUpdatedDefinition({ roleRequired: ['role1'] }, {}, [
+        deriveChangeUpdatedDefinition({}, { roleRequired: ['role1'] }, [
           'roles'
         ])
       ).toBe('Definition: roles: added: role1')
       expect(
-        deriveChangeUpdatedDefinition({}, { roleRequired: ['role1'] }, [
+        deriveChangeUpdatedDefinition({ roleRequired: ['role1'] }, {}, [
           'roles'
         ])
       ).toBe('Definition: roles: removed: role1')
@@ -118,11 +118,11 @@ describe('helpers', () => {
   describe('deriveChangeUpdatedValue', () => {
     describe('string, number and boolean', () => {
       it('should return "Value: old ➜ new" when both exist', () => {
-        expect(deriveChangeUpdatedValue('new', 'old', 'string')).toBe(
+        expect(deriveChangeUpdatedValue('old', 'new', 'string')).toBe(
           'Value: old ➜ new'
         )
-        expect(deriveChangeUpdatedValue(2, 1, 'number')).toBe('Value: 1 ➜ 2')
-        expect(deriveChangeUpdatedValue(true, false, 'boolean')).toBe(
+        expect(deriveChangeUpdatedValue(1, 2, 'number')).toBe('Value: 1 ➜ 2')
+        expect(deriveChangeUpdatedValue(false, true, 'boolean')).toBe(
           'Value: false ➜ true'
         )
       })
@@ -132,37 +132,37 @@ describe('helpers', () => {
       it('should return Value: added/removed correctly', () => {
         const oldVal = ['a']
         const newVal = ['b']
-        expect(deriveChangeUpdatedValue(newVal, oldVal, 'list-string')).toBe(
+        expect(deriveChangeUpdatedValue(oldVal, newVal, 'list-string')).toBe(
           'Value: added: b, removed: a'
         )
       })
 
       it('should handle only added in list types', () => {
-        expect(deriveChangeUpdatedValue(['a'], [], 'list-string')).toBe(
+        expect(deriveChangeUpdatedValue([], ['a'], 'list-string')).toBe(
           'Value: added: a'
         )
       })
 
       it('should handle only removed in list types', () => {
-        expect(deriveChangeUpdatedValue([], ['a'], 'list-string')).toBe(
+        expect(deriveChangeUpdatedValue(['a'], [], 'list-string')).toBe(
           'Value: removed: a'
         )
       })
 
       it('should handle undefined/null oldValue in list types', () => {
-        expect(deriveChangeUpdatedValue(['a'], undefined, 'list-string')).toBe(
+        expect(deriveChangeUpdatedValue(undefined, ['a'], 'list-string')).toBe(
           'Value: added: a'
         )
-        expect(deriveChangeUpdatedValue(['a'], null, 'list-string')).toBe(
+        expect(deriveChangeUpdatedValue(null, ['a'], 'list-string')).toBe(
           'Value: added: a'
         )
       })
 
       it('should handle undefined/null newValue in list types', () => {
-        expect(deriveChangeUpdatedValue(undefined, ['a'], 'list-string')).toBe(
+        expect(deriveChangeUpdatedValue(['a'], undefined, 'list-string')).toBe(
           'Value: removed: a'
         )
-        expect(deriveChangeUpdatedValue(null, ['a'], 'list-string')).toBe(
+        expect(deriveChangeUpdatedValue(['a'], null, 'list-string')).toBe(
           'Value: removed: a'
         )
       })
@@ -171,7 +171,7 @@ describe('helpers', () => {
 
   describe('deriveChangeUpdatedStatus', () => {
     it('should return "Status: old ➜ new"', () => {
-      expect(deriveChangeUpdatedStatus('new', 'old')).toBe('Status: old ➜ new')
+      expect(deriveChangeUpdatedStatus('old', 'new')).toBe('Status: old ➜ new')
     })
   })
 })

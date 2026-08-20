@@ -68,8 +68,8 @@ const handleExistingFeatureControl = async (existing, data, db, logger) => {
   }
 
   const changeToValue = deriveChangeUpdatedDefinition(
-    newDefinition,
     existing,
+    newDefinition,
     changed
   )
   const updatedFeatureControl = await updateFeatureControlDefinition(

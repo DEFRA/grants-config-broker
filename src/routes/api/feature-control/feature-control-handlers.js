@@ -60,8 +60,8 @@ export const putUpdateFeatureControlValueHandler = async (req, h) => {
   }
 
   const changeToValue = deriveChangeUpdatedValue(
-    value,
     featureControl.value,
+    value,
     featureControl.type
   )
   featureControl = await updateFeatureControlValue(
@@ -123,7 +123,7 @@ export const putUpdateFeatureControlStatusHandler = async (req, h) => {
   // only emit notification when reactivating a feature control
   const emitNotification = status === FEATURE_CONTROLS_STATUS.ACTIVE
 
-  const changeToValue = deriveChangeUpdatedStatus(status, featureControl.status)
+  const changeToValue = deriveChangeUpdatedStatus(featureControl.status, status)
   await updateFeatureControlStatus(
     {
       name,
