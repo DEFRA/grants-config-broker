@@ -7,3 +7,7 @@ export const generateMetadataPayload = (releaseInfo, status) => {
     updatedInBrokerVersion: config.get('serviceVersion')
   })
 }
+
+export const getBucketName = () => {
+  return config.get('aws.s3.bucketName')
+}

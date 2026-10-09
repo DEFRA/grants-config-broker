@@ -12,10 +12,10 @@ import {
   getAllVersionsWithConstraints,
   getLatestVersionWithConstraints
 } from '../../../repositories/version-management-repository.js'
-import { getBucketName } from '@defra/grants-config-utils/s3-interactions'
+import { getBucketName } from '../../../utils/release-utils.js'
 
 vi.mock('../../../repositories/version-management-repository.js')
-vi.mock('@defra/grants-config-utils/s3-interactions')
+vi.mock('../../../utils/release-utils.js')
 
 describe('version-handlers', () => {
   const mockLogger = {
