@@ -1,0 +1,15 @@
+---
+name: woodland
+version: 1.45.0
+notes: FGP-1483 - gate woodland claim until Casework claim prep is done
+environments:
+  - name: dev
+    status: none
+  - name: test
+    status: active
+  - name: ext-test
+    status: none
+  - name: perf-test
+    status: none
+  - name: prod
+    status: none
