@@ -1,27 +1,38 @@
 import { MongoClient } from 'mongodb'
 import {
+  getAllGrantsAllVersions,
   getAllVersionsWithConstraints,
   getLatestVersionWithConstraints
 } from './version-management-repository.js'
 
 const COLLECTION = 'config-versions'
 const GRANT = 'integration-test-grant'
+const OTHER_GRANT = 'another-test-grant'
 
-const versionDoc = (version, status = 'active', lastUpdated = new Date()) => {
+const versionDoc = (
+  version,
+  status = 'active',
+  lastUpdated = new Date(),
+  grant = GRANT
+) => {
   const [versionMajor, versionMinor, versionPatch] = version
     .split('.')
     .map(Number)
   return {
-    grant: GRANT,
+    grant,
     version,
     versionMajor,
     versionMinor,
     versionPatch,
     status,
-    manifest: [`${GRANT}/${version}/config.json`],
+    manifest: [`${grant}/${version}/config.json`],
     lastUpdated
   }
 }
+
+// getAllGrantsAllVersions returns one entry per grant; the order of grants in
+// the array is not guaranteed, so look entries up by name.
+const grantEntry = (result, grant) => result.find((g) => g.grant === grant)
 
 // Seed helpers
 const seedFiveVersions = (db) =>
@@ -55,6 +66,16 @@ const seedPromotedVersion = (db) =>
     .insertMany([
       versionDoc('1.0.0', 'draft', new Date('2024-01-01')),
       versionDoc('1.0.0', 'active', new Date('2024-02-01'))
+    ])
+
+const seedTwoGrants = (db) =>
+  db
+    .collection(COLLECTION)
+    .insertMany([
+      versionDoc('1.0.0', 'active', new Date(), GRANT),
+      versionDoc('2.0.0', 'active', new Date(), GRANT),
+      versionDoc('1.5.0', 'active', new Date(), OTHER_GRANT),
+      versionDoc('3.0.0', 'draft', new Date(), OTHER_GRANT)
     ])
 
 describe('version-management-repository (integration)', () => {
@@ -483,6 +504,78 @@ describe('version-management-repository (integration)', () => {
         expect(result).toHaveLength(1)
         expect(result[0].version).toBe('1.0.0')
         expect(result[0].status).toBe('active')
+      })
+    })
+  })
+
+  describe('getAllGrantsAllVersions', () => {
+    // This query spans every grant, so clear the whole collection each time.
+    afterEach(async () => {
+      await db.collection(COLLECTION).deleteMany({})
+    })
+
+    describe('when there are no versions', () => {
+      it('returns an empty list', async () => {
+        const result = await getAllGrantsAllVersions(null, db)
+
+        expect(result).toEqual([])
+      })
+    })
+
+    describe('when there is a single grant', () => {
+      beforeEach(async () => {
+        await seedFiveVersions(db)
+      })
+
+      it('returns one entry with the versions highest-first', async () => {
+        const result = await getAllGrantsAllVersions('active', db)
+
+        expect(result).toHaveLength(1)
+        expect(grantEntry(result, GRANT).versions.map((v) => v.version)).toEqual(
+          ['2.1.3', '2.0.0', '1.2.0', '1.1.0', '1.0.0']
+        )
+      })
+    })
+
+    describe('when there are two different grants', () => {
+      beforeEach(async () => {
+        await seedTwoGrants(db)
+      })
+
+      it('returns an entry per grant, each with its own versions highest-first', async () => {
+        const result = await getAllGrantsAllVersions(null, db)
+
+        expect(result).toHaveLength(2)
+        expect(grantEntry(result, GRANT).versions.map((v) => v.version)).toEqual(
+          ['2.0.0', '1.0.0']
+        )
+        expect(
+          grantEntry(result, OTHER_GRANT).versions.map((v) => v.version)
+        ).toEqual(['3.0.0', '1.5.0'])
+      })
+
+      it('keeps the status filter per grant when asking for active', async () => {
+        const result = await getAllGrantsAllVersions('active', db)
+
+        // Both grants have active versions, so both are present...
+        expect(result).toHaveLength(2)
+        expect(grantEntry(result, GRANT).versions.map((v) => v.version)).toEqual(
+          ['2.0.0', '1.0.0']
+        )
+        // ...but OTHER_GRANT's draft 3.0.0 is excluded.
+        expect(
+          grantEntry(result, OTHER_GRANT).versions.map((v) => v.version)
+        ).toEqual(['1.5.0'])
+      })
+
+      it('only returns grants that have a draft when asking for drafts', async () => {
+        const result = await getAllGrantsAllVersions('draft', db)
+
+        expect(result).toHaveLength(1)
+        expect(grantEntry(result, GRANT)).toBeUndefined()
+        expect(
+          grantEntry(result, OTHER_GRANT).versions.map((v) => v.version)
+        ).toEqual(['3.0.0'])
       })
     })
   })
