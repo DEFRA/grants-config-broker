@@ -9,12 +9,12 @@ const COLLECTION = 'config-versions'
 const GRANT = 'integration-test-grant'
 const OTHER_GRANT = 'another-test-grant'
 
-const versionDoc = (
+const versionDoc = ({
   version,
   status = 'active',
   lastUpdated = new Date(),
   grant = GRANT
-) => {
+}) => {
   const [versionMajor, versionMinor, versionPatch] = version
     .split('.')
     .map(Number)
@@ -39,23 +39,23 @@ const seedFiveVersions = (db) =>
   db
     .collection(COLLECTION)
     .insertMany([
-      versionDoc('1.0.0'),
-      versionDoc('1.1.0'),
-      versionDoc('1.2.0'),
-      versionDoc('2.0.0'),
-      versionDoc('2.1.3')
+      versionDoc({ version: '1.0.0' }),
+      versionDoc({ version: '1.1.0' }),
+      versionDoc({ version: '1.2.0' }),
+      versionDoc({ version: '2.0.0' }),
+      versionDoc({ version: '2.1.3' })
     ])
 
 const seedSingleVersion = (db) =>
-  db.collection(COLLECTION).insertMany([versionDoc('1.0.0')])
+  db.collection(COLLECTION).insertMany([versionDoc({ version: '1.0.0' })])
 
 const seedActiveAndDraft = (db) =>
   db
     .collection(COLLECTION)
     .insertMany([
-      versionDoc('1.0.0', 'active'),
-      versionDoc('2.0.0', 'active'),
-      versionDoc('2.1.0', 'draft')
+      versionDoc({ version: '1.0.0', status: 'active' }),
+      versionDoc({ version: '2.0.0', status: 'active' }),
+      versionDoc({ version: '2.1.0', status: 'draft' })
     ])
 
 // The same version released first as draft then promoted to active. Rows are
@@ -64,18 +64,26 @@ const seedPromotedVersion = (db) =>
   db
     .collection(COLLECTION)
     .insertMany([
-      versionDoc('1.0.0', 'draft', new Date('2024-01-01')),
-      versionDoc('1.0.0', 'active', new Date('2024-02-01'))
+      versionDoc({
+        version: '1.0.0',
+        status: 'draft',
+        lastUpdated: new Date('2024-01-01')
+      }),
+      versionDoc({
+        version: '1.0.0',
+        status: 'active',
+        lastUpdated: new Date('2024-02-01')
+      })
     ])
 
 const seedTwoGrants = (db) =>
   db
     .collection(COLLECTION)
     .insertMany([
-      versionDoc('1.0.0', 'active', new Date(), GRANT),
-      versionDoc('2.0.0', 'active', new Date(), GRANT),
-      versionDoc('1.5.0', 'active', new Date(), OTHER_GRANT),
-      versionDoc('3.0.0', 'draft', new Date(), OTHER_GRANT)
+      versionDoc({ version: '1.0.0', grant: GRANT }),
+      versionDoc({ version: '2.0.0', grant: GRANT }),
+      versionDoc({ version: '1.5.0', grant: OTHER_GRANT }),
+      versionDoc({ version: '3.0.0', status: 'draft', grant: OTHER_GRANT })
     ])
 
 describe('version-management-repository (integration)', () => {
