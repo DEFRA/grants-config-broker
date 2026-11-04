@@ -3,7 +3,7 @@ vi.mock('../../../plugins/service-auth.js')
 const COLLECTION = 'config-versions'
 const GRANT = 'e2e-grant'
 
-const versionDoc = ({ version, status = 'active', grant }) => {
+const versionDoc = ({ version, status = 'active', grant, archived = null }) => {
   const [versionMajor, versionMinor, versionPatch] = version
     .split('.')
     .map(Number)
@@ -15,7 +15,8 @@ const versionDoc = ({ version, status = 'active', grant }) => {
     versionPatch,
     status,
     manifest: [`${grant}/${version}/config.json`],
-    lastUpdated: new Date()
+    lastUpdated: new Date(),
+    ...(archived === true && { archived })
   }
 }
 
@@ -54,6 +55,40 @@ describe('version routes (e2e)', () => {
       expect(res.statusCode).toBe(200)
       expect(res.result.grant).toBe(GRANT)
       expect(res.result.version).toBe('1.2.0')
+    })
+
+    it('applies the archived constraint when not present', async () => {
+      await seed([
+        versionDoc({ version: '1.0.0', grant: GRANT }),
+        versionDoc({ version: '1.2.0', grant: GRANT }),
+        versionDoc({ version: '2.0.0', grant: GRANT, archived: true })
+      ])
+
+      const res = await server.inject({
+        method: 'GET',
+        url: `/api/latestVersion?grant=${GRANT}`
+      })
+
+      expect(res.statusCode).toBe(200)
+      expect(res.result.grant).toBe(GRANT)
+      expect(res.result.version).toBe('1.2.0')
+    })
+
+    it('returns archived versions when archived is included', async () => {
+      await seed([
+        versionDoc({ version: '1.0.0', grant: GRANT }),
+        versionDoc({ version: '1.2.0', grant: GRANT }),
+        versionDoc({ version: '2.0.0', grant: GRANT, archived: true })
+      ])
+
+      const res = await server.inject({
+        method: 'GET',
+        url: `/api/latestVersion?grant=${GRANT}&archived=included`
+      })
+
+      expect(res.statusCode).toBe(200)
+      expect(res.result.grant).toBe(GRANT)
+      expect(res.result.version).toBe('2.0.0')
     })
   })
 

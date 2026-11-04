@@ -26,8 +26,11 @@ const getStatusOption = (draft) => {
   }
 }
 
+const getArchivedOption = (archived) =>
+  archived === 'included' ? true : undefined
+
 export const getLatestVersionHandler = async (req, h) => {
-  const { grant, draft, constrainMajor, constrainMinor } = req.query
+  const { grant, draft, archived, constrainMajor, constrainMinor } = req.query
 
   //Fetch the latest version from the database
   const status = getStatusOption(draft)
@@ -36,6 +39,7 @@ export const getLatestVersionHandler = async (req, h) => {
     status,
     major: constrainMajor,
     minor: constrainMinor,
+    archived: getArchivedOption(archived),
     db: req.db
   })
   if (latestVersion?.length) {

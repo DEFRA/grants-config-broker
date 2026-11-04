@@ -5,6 +5,7 @@ const VERSION_OR_COMPONENTS = 'Specify either version or major, minor and patch'
 export const getLatestVersionSchema = Joi.object({
   grant: Joi.string().required(),
   draft: Joi.string().lowercase().valid('include', 'only').optional(),
+  archived: Joi.string().lowercase().valid('included').optional(),
   constrainMajor: Joi.alternatives().conditional('constrainMinor', {
     is: Joi.exist(),
     then: Joi.number().min(0).required(),
