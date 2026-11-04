@@ -107,6 +107,36 @@ describe('version routes (e2e)', () => {
       expect(res.statusCode).toBe(200)
       expect(res.result.map((v) => v.version)).toEqual(['2.0.0'])
     })
+
+    it('applies the archived constraint when not present', async () => {
+      await seed([
+        versionDoc({ version: '1.0.0', grant: GRANT }),
+        versionDoc({ version: '2.0.0', grant: GRANT, archived: true })
+      ])
+
+      const res = await server.inject({
+        method: 'GET',
+        url: `/api/allVersions?grant=${GRANT}`
+      })
+
+      expect(res.statusCode).toBe(200)
+      expect(res.result.map((v) => v.version)).toEqual(['1.0.0'])
+    })
+
+    it('returns archived versions when archived is included', async () => {
+      await seed([
+        versionDoc({ version: '1.0.0', grant: GRANT }),
+        versionDoc({ version: '2.0.0', grant: GRANT, archived: true })
+      ])
+
+      const res = await server.inject({
+        method: 'GET',
+        url: `/api/allVersions?grant=${GRANT}&archived=included`
+      })
+
+      expect(res.statusCode).toBe(200)
+      expect(res.result.map((v) => v.version)).toEqual(['2.0.0', '1.0.0'])
+    })
   })
 
   describe('GET /api/allGrants', () => {
@@ -119,6 +149,39 @@ describe('version routes (e2e)', () => {
       const res = await server.inject({
         method: 'GET',
         url: '/api/allGrants'
+      })
+
+      expect(res.statusCode).toBe(200)
+      expect(res.result.map((g) => g.grant).sort()).toEqual([
+        'grant-a',
+        'grant-b'
+      ])
+    })
+
+    it('excludes grants with only archived versions when archived is not present', async () => {
+      await seed([
+        versionDoc({ version: '1.0.0', grant: 'grant-a' }),
+        versionDoc({ version: '1.0.0', grant: 'grant-b', archived: true })
+      ])
+
+      const res = await server.inject({
+        method: 'GET',
+        url: '/api/allGrants'
+      })
+
+      expect(res.statusCode).toBe(200)
+      expect(res.result.map((g) => g.grant).sort()).toEqual(['grant-a'])
+    })
+
+    it('returns grants with archived versions when archived is included', async () => {
+      await seed([
+        versionDoc({ version: '1.0.0', grant: 'grant-a' }),
+        versionDoc({ version: '1.0.0', grant: 'grant-b', archived: true })
+      ])
+
+      const res = await server.inject({
+        method: 'GET',
+        url: '/api/allGrants?archived=included'
       })
 
       expect(res.statusCode).toBe(200)

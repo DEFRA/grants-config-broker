@@ -17,6 +17,7 @@ export const getLatestVersionSchema = Joi.object({
 export const getAllVersionsSchema = Joi.object({
   grant: Joi.string().required(),
   draft: Joi.string().lowercase().valid('include', 'only').optional(),
+  archived: Joi.string().lowercase().valid('included').optional(),
   constrainMajor: Joi.alternatives().conditional('constrainMinor', {
     is: Joi.exist(),
     then: Joi.number().min(0).required(),
@@ -26,7 +27,8 @@ export const getAllVersionsSchema = Joi.object({
 })
 
 export const getAllGrantsSchema = Joi.object({
-  draft: Joi.string().lowercase().valid('include', 'only').optional()
+  draft: Joi.string().lowercase().valid('include', 'only').optional(),
+  archived: Joi.string().lowercase().valid('included').optional()
 })
 
 export const getSpecificVersionSchema = Joi.object({

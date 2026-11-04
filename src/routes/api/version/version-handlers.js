@@ -82,22 +82,27 @@ export const getSpecificVersionHandler = async (req, h) => {
 }
 
 export const getAllVersionsHandler = async (req, h) => {
-  const { grant, draft, constrainMajor, constrainMinor } = req.query
+  const { grant, draft, archived, constrainMajor, constrainMinor } = req.query
   const status = getStatusOption(draft)
   const allVersions = await getAllVersionsWithConstraints({
     grant,
     status,
     major: constrainMajor,
     minor: constrainMinor,
+    archived: getArchivedOption(archived),
     db: req.db
   })
   return h.response(allVersions).code(StatusCodes.OK)
 }
 
 export const getAllGrantsHandler = async (req, h) => {
-  const { draft } = req.query
+  const { draft, archived } = req.query
   const status = getStatusOption(draft)
-  const allVersions = await getAllGrantsAllVersions({ status, db: req.db })
+  const allVersions = await getAllGrantsAllVersions({
+    status,
+    archived: getArchivedOption(archived),
+    db: req.db
+  })
 
   return h.response(allVersions).code(StatusCodes.OK)
 }
