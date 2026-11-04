@@ -53,8 +53,6 @@ describe('version routes (e2e)', () => {
 
       expect(res.statusCode).toBe(200)
       expect(res.result.grant).toBe(GRANT)
-      // 2.0.0 is higher overall, so returning 1.2.0 proves constrainMajor=1
-      // reached the DB query.
       expect(res.result.version).toBe('1.2.0')
     })
   })

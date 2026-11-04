@@ -58,23 +58,19 @@ const seedActiveAndDraft = (db) =>
       versionDoc({ version: '2.1.0', status: 'draft' })
     ])
 
-// The same version released first as draft then promoted to active. Rows are
-// append-only, so both rows coexist; the active one has the newer lastUpdated.
 const seedPromotedVersion = (db) =>
-  db
-    .collection(COLLECTION)
-    .insertMany([
-      versionDoc({
-        version: '1.0.0',
-        status: 'draft',
-        lastUpdated: new Date('2024-01-01')
-      }),
-      versionDoc({
-        version: '1.0.0',
-        status: 'active',
-        lastUpdated: new Date('2024-02-01')
-      })
-    ])
+  db.collection(COLLECTION).insertMany([
+    versionDoc({
+      version: '1.0.0',
+      status: 'draft',
+      lastUpdated: new Date('2024-01-01')
+    }),
+    versionDoc({
+      version: '1.0.0',
+      status: 'active',
+      lastUpdated: new Date('2024-02-01')
+    })
+  ])
 
 const seedTwoGrants = (db) =>
   db
@@ -91,7 +87,6 @@ describe('version-management-repository (integration)', () => {
   let db
 
   beforeAll(async () => {
-    // MONGO_URI is set by the mongo-memory-server setup file (dbSetup)
     client = await MongoClient.connect(process.env.MONGO_URI)
     db = client.db('grants-config-broker')
   })
@@ -101,7 +96,6 @@ describe('version-management-repository (integration)', () => {
   })
 
   describe('getLatestVersionWithConstraints', () => {
-    // Shared cleanup: every case removes whatever it seeded for this grant.
     afterEach(async () => {
       await db.collection(COLLECTION).deleteMany({ grant: GRANT })
     })
@@ -234,8 +228,6 @@ describe('version-management-repository (integration)', () => {
     })
 
     describe('when a grant has both active and draft versions', () => {
-      // The draft (2.1.0) is higher than the newest active (2.0.0), so the
-      // status filter has to actually exclude it to return the right version.
       beforeEach(async () => {
         await seedActiveAndDraft(db)
       })
@@ -282,7 +274,6 @@ describe('version-management-repository (integration)', () => {
   })
 
   describe('getAllVersionsWithConstraints', () => {
-    // Shared cleanup: every case removes whatever it seeded for this grant.
     afterEach(async () => {
       await db.collection(COLLECTION).deleteMany({ grant: GRANT })
     })
@@ -539,9 +530,9 @@ describe('version-management-repository (integration)', () => {
         const result = await getAllGrantsAllVersions('active', db)
 
         expect(result).toHaveLength(1)
-        expect(grantEntry(result, GRANT).versions.map((v) => v.version)).toEqual(
-          ['2.1.3', '2.0.0', '1.2.0', '1.1.0', '1.0.0']
-        )
+        expect(
+          grantEntry(result, GRANT).versions.map((v) => v.version)
+        ).toEqual(['2.1.3', '2.0.0', '1.2.0', '1.1.0', '1.0.0'])
       })
     })
 
@@ -554,9 +545,9 @@ describe('version-management-repository (integration)', () => {
         const result = await getAllGrantsAllVersions(null, db)
 
         expect(result).toHaveLength(2)
-        expect(grantEntry(result, GRANT).versions.map((v) => v.version)).toEqual(
-          ['2.0.0', '1.0.0']
-        )
+        expect(
+          grantEntry(result, GRANT).versions.map((v) => v.version)
+        ).toEqual(['2.0.0', '1.0.0'])
         expect(
           grantEntry(result, OTHER_GRANT).versions.map((v) => v.version)
         ).toEqual(['3.0.0', '1.5.0'])
@@ -567,9 +558,9 @@ describe('version-management-repository (integration)', () => {
 
         // Both grants have active versions, so both are present...
         expect(result).toHaveLength(2)
-        expect(grantEntry(result, GRANT).versions.map((v) => v.version)).toEqual(
-          ['2.0.0', '1.0.0']
-        )
+        expect(
+          grantEntry(result, GRANT).versions.map((v) => v.version)
+        ).toEqual(['2.0.0', '1.0.0'])
         // ...but OTHER_GRANT's draft 3.0.0 is excluded.
         expect(
           grantEntry(result, OTHER_GRANT).versions.map((v) => v.version)
