@@ -123,13 +123,13 @@ describe('version-management-repository', () => {
       const status = 'active'
       const major = 1
       const minor = 1
-      const result = await getLatestVersionWithConstraints(
+      const result = await getLatestVersionWithConstraints({
         grant,
         status,
         major,
         minor,
         db
-      )
+      })
       expect(result).toEqual([{ version: '1.1.0' }])
       expect(db.collection).toHaveBeenCalledWith('config-versions')
       expect(find).toHaveBeenCalledWith({
@@ -155,13 +155,10 @@ describe('version-management-repository', () => {
       }
 
       const grant = 'test-grant'
-      const result = await getLatestVersionWithConstraints(
+      const result = await getLatestVersionWithConstraints({
         grant,
-        null,
-        null,
-        null,
         db
-      )
+      })
       expect(result).toEqual([{ version: '1.1.0' }])
       expect(db.collection).toHaveBeenCalledWith('config-versions')
       expect(find).toHaveBeenCalledWith({
@@ -193,13 +190,13 @@ describe('version-management-repository', () => {
       const status = 'active'
       const major = 1
       const minor = 1
-      const result = await getAllVersionsWithConstraints(
+      const result = await getAllVersionsWithConstraints({
         grant,
         status,
         major,
         minor,
         db
-      )
+      })
       expect(result).toEqual([{ version: '1.1.0' }])
       expect(db.collection).toHaveBeenCalledWith('config-versions')
       expect(aggregate).toHaveBeenCalledWith([
@@ -229,13 +226,10 @@ describe('version-management-repository', () => {
       }
 
       const grant = 'test-grant'
-      const result = await getAllVersionsWithConstraints(
+      const result = await getAllVersionsWithConstraints({
         grant,
-        null,
-        null,
-        null,
         db
-      )
+      })
       expect(result).toEqual([{ version: '1.1.0' }])
       expect(db.collection).toHaveBeenCalledWith('config-versions')
       expect(aggregate).toHaveBeenCalledWith([
@@ -272,7 +266,7 @@ describe('version-management-repository', () => {
       }
 
       const status = 'active'
-      const result = await getAllGrantsAllVersions(status, db)
+      const result = await getAllGrantsAllVersions({ status, db })
       expect(result).toEqual([
         { grant: 'some-grant', versions: [{ version: '1.1.0' }] }
       ])
@@ -302,7 +296,7 @@ describe('version-management-repository', () => {
         })
       }
 
-      const result = await getAllGrantsAllVersions(null, db)
+      const result = await getAllGrantsAllVersions({ db })
       expect(result).toEqual([
         { grant: 'some-grant', versions: [{ version: '1.1.0' }] }
       ])

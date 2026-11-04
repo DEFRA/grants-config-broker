@@ -31,13 +31,13 @@ export const getLatestVersionHandler = async (req, h) => {
 
   //Fetch the latest version from the database
   const status = getStatusOption(draft)
-  const latestVersion = await getLatestVersionWithConstraints(
+  const latestVersion = await getLatestVersionWithConstraints({
     grant,
     status,
-    constrainMajor,
-    constrainMinor,
-    req.db
-  )
+    major: constrainMajor,
+    minor: constrainMinor,
+    db: req.db
+  })
   if (latestVersion?.length) {
     const formattedResponse = {
       grant: latestVersion[0].grant,
@@ -80,20 +80,20 @@ export const getSpecificVersionHandler = async (req, h) => {
 export const getAllVersionsHandler = async (req, h) => {
   const { grant, draft, constrainMajor, constrainMinor } = req.query
   const status = getStatusOption(draft)
-  const allVersions = await getAllVersionsWithConstraints(
+  const allVersions = await getAllVersionsWithConstraints({
     grant,
     status,
-    constrainMajor,
-    constrainMinor,
-    req.db
-  )
+    major: constrainMajor,
+    minor: constrainMinor,
+    db: req.db
+  })
   return h.response(allVersions).code(StatusCodes.OK)
 }
 
 export const getAllGrantsHandler = async (req, h) => {
   const { draft } = req.query
   const status = getStatusOption(draft)
-  const allVersions = await getAllGrantsAllVersions(status, req.db)
+  const allVersions = await getAllGrantsAllVersions({ status, db: req.db })
 
   return h.response(allVersions).code(StatusCodes.OK)
 }

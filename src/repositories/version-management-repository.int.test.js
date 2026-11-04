@@ -106,52 +106,47 @@ describe('version-management-repository (integration)', () => {
       })
 
       it('returns the highest version when no constraints are given', async () => {
-        const result = await getLatestVersionWithConstraints(
-          GRANT,
-          'active',
-          null,
-          null,
+        const result = await getLatestVersionWithConstraints({
+          grant: GRANT,
+          status: 'active',
           db
-        )
+        })
 
         expect(result).toHaveLength(1)
         expect(result[0].version).toBe('2.1.3')
       })
 
       it('returns the highest version within a major constraint', async () => {
-        const result = await getLatestVersionWithConstraints(
-          GRANT,
-          'active',
-          1,
-          null,
+        const result = await getLatestVersionWithConstraints({
+          grant: GRANT,
+          status: 'active',
+          major: 1,
           db
-        )
+        })
 
         expect(result).toHaveLength(1)
         expect(result[0].version).toBe('1.2.0')
       })
 
       it('returns the highest patch within a major and minor constraint', async () => {
-        const result = await getLatestVersionWithConstraints(
-          GRANT,
-          'active',
-          1,
-          1,
+        const result = await getLatestVersionWithConstraints({
+          grant: GRANT,
+          status: 'active',
+          major: 1,
+          minor: 1,
           db
-        )
+        })
 
         expect(result).toHaveLength(1)
         expect(result[0].version).toBe('1.1.0')
       })
 
       it('returns empty when the grant asked for is not present', async () => {
-        const result = await getLatestVersionWithConstraints(
-          'a-different-grant',
-          'active',
-          null,
-          null,
+        const result = await getLatestVersionWithConstraints({
+          grant: 'a-different-grant',
+          status: 'active',
           db
-        )
+        })
 
         expect(result).toEqual([])
       })
@@ -163,39 +158,36 @@ describe('version-management-repository (integration)', () => {
       })
 
       it('returns that version when no constraints are given', async () => {
-        const result = await getLatestVersionWithConstraints(
-          GRANT,
-          'active',
-          null,
-          null,
+        const result = await getLatestVersionWithConstraints({
+          grant: GRANT,
+          status: 'active',
           db
-        )
+        })
 
         expect(result).toHaveLength(1)
         expect(result[0].version).toBe('1.0.0')
       })
 
       it('returns that version when the constraint matches', async () => {
-        const result = await getLatestVersionWithConstraints(
-          GRANT,
-          'active',
-          1,
-          0,
+        const result = await getLatestVersionWithConstraints({
+          grant: GRANT,
+          status: 'active',
+          major: 1,
+          minor: 0,
           db
-        )
+        })
 
         expect(result).toHaveLength(1)
         expect(result[0].version).toBe('1.0.0')
       })
 
       it('returns empty when the constraint does not match', async () => {
-        const result = await getLatestVersionWithConstraints(
-          GRANT,
-          'active',
-          2,
-          null,
+        const result = await getLatestVersionWithConstraints({
+          grant: GRANT,
+          status: 'active',
+          major: 2,
           db
-        )
+        })
 
         expect(result).toEqual([])
       })
@@ -203,25 +195,22 @@ describe('version-management-repository (integration)', () => {
 
     describe('when there are 0 versions of a grant', () => {
       it('returns empty when no constraints are given', async () => {
-        const result = await getLatestVersionWithConstraints(
-          GRANT,
-          'active',
-          null,
-          null,
+        const result = await getLatestVersionWithConstraints({
+          grant: GRANT,
+          status: 'active',
           db
-        )
+        })
 
         expect(result).toEqual([])
       })
 
       it('returns empty when a constraint is given', async () => {
-        const result = await getLatestVersionWithConstraints(
-          GRANT,
-          'active',
-          1,
-          null,
+        const result = await getLatestVersionWithConstraints({
+          grant: GRANT,
+          status: 'active',
+          major: 1,
           db
-        )
+        })
 
         expect(result).toEqual([])
       })
@@ -233,39 +222,32 @@ describe('version-management-repository (integration)', () => {
       })
 
       it('returns the highest active version, ignoring newer drafts', async () => {
-        const result = await getLatestVersionWithConstraints(
-          GRANT,
-          'active',
-          null,
-          null,
+        const result = await getLatestVersionWithConstraints({
+          grant: GRANT,
+          status: 'active',
           db
-        )
+        })
 
         expect(result).toHaveLength(1)
         expect(result[0].version).toBe('2.0.0')
       })
 
       it('returns the highest draft version when asking for drafts', async () => {
-        const result = await getLatestVersionWithConstraints(
-          GRANT,
-          'draft',
-          null,
-          null,
+        const result = await getLatestVersionWithConstraints({
+          grant: GRANT,
+          status: 'draft',
           db
-        )
+        })
 
         expect(result).toHaveLength(1)
         expect(result[0].version).toBe('2.1.0')
       })
 
       it('returns the highest version across all statuses when no status is given', async () => {
-        const result = await getLatestVersionWithConstraints(
-          GRANT,
-          null,
-          null,
-          null,
+        const result = await getLatestVersionWithConstraints({
+          grant: GRANT,
           db
-        )
+        })
 
         expect(result).toHaveLength(1)
         expect(result[0].version).toBe('2.1.0')
@@ -284,13 +266,11 @@ describe('version-management-repository (integration)', () => {
       })
 
       it('returns all versions highest-first when no constraints are given', async () => {
-        const result = await getAllVersionsWithConstraints(
-          GRANT,
-          'active',
-          null,
-          null,
+        const result = await getAllVersionsWithConstraints({
+          grant: GRANT,
+          status: 'active',
           db
-        )
+        })
 
         expect(result.map((v) => v.version)).toEqual([
           '2.1.3',
@@ -302,13 +282,12 @@ describe('version-management-repository (integration)', () => {
       })
 
       it('returns only versions within a major constraint', async () => {
-        const result = await getAllVersionsWithConstraints(
-          GRANT,
-          'active',
-          1,
-          null,
+        const result = await getAllVersionsWithConstraints({
+          grant: GRANT,
+          status: 'active',
+          major: 1,
           db
-        )
+        })
 
         expect(result.map((v) => v.version)).toEqual([
           '1.2.0',
@@ -318,25 +297,23 @@ describe('version-management-repository (integration)', () => {
       })
 
       it('returns only versions within a major and minor constraint', async () => {
-        const result = await getAllVersionsWithConstraints(
-          GRANT,
-          'active',
-          1,
-          1,
+        const result = await getAllVersionsWithConstraints({
+          grant: GRANT,
+          status: 'active',
+          major: 1,
+          minor: 1,
           db
-        )
+        })
 
         expect(result.map((v) => v.version)).toEqual(['1.1.0'])
       })
 
       it('returns empty when the grant asked for is not present', async () => {
-        const result = await getAllVersionsWithConstraints(
-          'a-different-grant',
-          'active',
-          null,
-          null,
+        const result = await getAllVersionsWithConstraints({
+          grant: 'a-different-grant',
+          status: 'active',
           db
-        )
+        })
 
         expect(result).toEqual([])
       })
@@ -348,37 +325,34 @@ describe('version-management-repository (integration)', () => {
       })
 
       it('returns that version when no constraints are given', async () => {
-        const result = await getAllVersionsWithConstraints(
-          GRANT,
-          'active',
-          null,
-          null,
+        const result = await getAllVersionsWithConstraints({
+          grant: GRANT,
+          status: 'active',
           db
-        )
+        })
 
         expect(result.map((v) => v.version)).toEqual(['1.0.0'])
       })
 
       it('returns that version when the constraint matches', async () => {
-        const result = await getAllVersionsWithConstraints(
-          GRANT,
-          'active',
-          1,
-          0,
+        const result = await getAllVersionsWithConstraints({
+          grant: GRANT,
+          status: 'active',
+          major: 1,
+          minor: 0,
           db
-        )
+        })
 
         expect(result.map((v) => v.version)).toEqual(['1.0.0'])
       })
 
       it('returns empty when the constraint does not match', async () => {
-        const result = await getAllVersionsWithConstraints(
-          GRANT,
-          'active',
-          2,
-          null,
+        const result = await getAllVersionsWithConstraints({
+          grant: GRANT,
+          status: 'active',
+          major: 2,
           db
-        )
+        })
 
         expect(result).toEqual([])
       })
@@ -386,25 +360,22 @@ describe('version-management-repository (integration)', () => {
 
     describe('when there are 0 versions of a grant', () => {
       it('returns empty when no constraints are given', async () => {
-        const result = await getAllVersionsWithConstraints(
-          GRANT,
-          'active',
-          null,
-          null,
+        const result = await getAllVersionsWithConstraints({
+          grant: GRANT,
+          status: 'active',
           db
-        )
+        })
 
         expect(result).toEqual([])
       })
 
       it('returns empty when a constraint is given', async () => {
-        const result = await getAllVersionsWithConstraints(
-          GRANT,
-          'active',
-          1,
-          null,
+        const result = await getAllVersionsWithConstraints({
+          grant: GRANT,
+          status: 'active',
+          major: 1,
           db
-        )
+        })
 
         expect(result).toEqual([])
       })
@@ -418,37 +389,30 @@ describe('version-management-repository (integration)', () => {
       })
 
       it('returns only active versions, ignoring drafts', async () => {
-        const result = await getAllVersionsWithConstraints(
-          GRANT,
-          'active',
-          null,
-          null,
+        const result = await getAllVersionsWithConstraints({
+          grant: GRANT,
+          status: 'active',
           db
-        )
+        })
 
         expect(result.map((v) => v.version)).toEqual(['2.0.0', '1.0.0'])
       })
 
       it('returns only draft versions when asking for drafts', async () => {
-        const result = await getAllVersionsWithConstraints(
-          GRANT,
-          'draft',
-          null,
-          null,
+        const result = await getAllVersionsWithConstraints({
+          grant: GRANT,
+          status: 'draft',
           db
-        )
+        })
 
         expect(result.map((v) => v.version)).toEqual(['2.1.0'])
       })
 
       it('returns versions of every status when no status is given', async () => {
-        const result = await getAllVersionsWithConstraints(
-          GRANT,
-          null,
-          null,
-          null,
+        const result = await getAllVersionsWithConstraints({
+          grant: GRANT,
           db
-        )
+        })
 
         expect(result.map((v) => v.version)).toEqual([
           '2.1.0',
@@ -464,13 +428,10 @@ describe('version-management-repository (integration)', () => {
       })
 
       it('dedupes to a single row of the newest (active) status when no status is given', async () => {
-        const result = await getAllVersionsWithConstraints(
-          GRANT,
-          null,
-          null,
-          null,
+        const result = await getAllVersionsWithConstraints({
+          grant: GRANT,
           db
-        )
+        })
 
         expect(result).toHaveLength(1)
         expect(result[0].version).toBe('1.0.0')
@@ -478,13 +439,11 @@ describe('version-management-repository (integration)', () => {
       })
 
       it('still returns the lingering draft row when asking for drafts', async () => {
-        const result = await getAllVersionsWithConstraints(
-          GRANT,
-          'draft',
-          null,
-          null,
+        const result = await getAllVersionsWithConstraints({
+          grant: GRANT,
+          status: 'draft',
           db
-        )
+        })
 
         expect(result).toHaveLength(1)
         expect(result[0].version).toBe('1.0.0')
@@ -492,13 +451,11 @@ describe('version-management-repository (integration)', () => {
       })
 
       it('returns the active row when asking for active', async () => {
-        const result = await getAllVersionsWithConstraints(
-          GRANT,
-          'active',
-          null,
-          null,
+        const result = await getAllVersionsWithConstraints({
+          grant: GRANT,
+          status: 'active',
           db
-        )
+        })
 
         expect(result).toHaveLength(1)
         expect(result[0].version).toBe('1.0.0')
@@ -515,7 +472,7 @@ describe('version-management-repository (integration)', () => {
 
     describe('when there are no versions', () => {
       it('returns an empty list', async () => {
-        const result = await getAllGrantsAllVersions(null, db)
+        const result = await getAllGrantsAllVersions({ db })
 
         expect(result).toEqual([])
       })
@@ -527,7 +484,7 @@ describe('version-management-repository (integration)', () => {
       })
 
       it('returns one entry with the versions highest-first', async () => {
-        const result = await getAllGrantsAllVersions('active', db)
+        const result = await getAllGrantsAllVersions({ status: 'active', db })
 
         expect(result).toHaveLength(1)
         expect(
@@ -542,7 +499,7 @@ describe('version-management-repository (integration)', () => {
       })
 
       it('returns an entry per grant, each with its own versions highest-first', async () => {
-        const result = await getAllGrantsAllVersions(null, db)
+        const result = await getAllGrantsAllVersions({ db })
 
         expect(result).toHaveLength(2)
         expect(
@@ -554,7 +511,7 @@ describe('version-management-repository (integration)', () => {
       })
 
       it('keeps the status filter per grant when asking for active', async () => {
-        const result = await getAllGrantsAllVersions('active', db)
+        const result = await getAllGrantsAllVersions({ status: 'active', db })
 
         // Both grants have active versions, so both are present...
         expect(result).toHaveLength(2)
@@ -568,7 +525,7 @@ describe('version-management-repository (integration)', () => {
       })
 
       it('only returns grants that have a draft when asking for drafts', async () => {
-        const result = await getAllGrantsAllVersions('draft', db)
+        const result = await getAllGrantsAllVersions({ status: 'draft', db })
 
         expect(result).toHaveLength(1)
         expect(grantEntry(result, GRANT)).toBeUndefined()

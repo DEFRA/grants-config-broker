@@ -54,16 +54,16 @@ export const storeVersion = async (data, db) => {
 }
 
 export const getLatestVersion = async (grant, status, db) => {
-  return getLatestVersionWithConstraints(grant, status, null, null, db)
+  return getLatestVersionWithConstraints({ grant, status, db })
 }
 
-export const getLatestVersionWithConstraints = async (
+export const getLatestVersionWithConstraints = async ({
   grant,
   status,
   major,
   minor,
   db
-) => {
+}) => {
   const versionMajor = Number.isInteger(major) ? { $eq: major } : { $gte: 0 }
   const versionMinor = Number.isInteger(minor) ? { $eq: minor } : { $gte: 0 }
 
@@ -80,13 +80,13 @@ export const getLatestVersionWithConstraints = async (
     .toArray()
 }
 
-export const getAllVersionsWithConstraints = async (
+export const getAllVersionsWithConstraints = async ({
   grant,
   status,
   major,
   minor,
   db
-) => {
+}) => {
   const versionMajor = Number.isInteger(major) ? { $eq: major } : { $gte: 0 }
   const versionMinor = Number.isInteger(minor) ? { $eq: minor } : { $gte: 0 }
 
@@ -138,7 +138,7 @@ export const getAllVersionsWithConstraints = async (
     .toArray()
 }
 
-export const getAllGrantsAllVersions = async (status, db) => {
+export const getAllGrantsAllVersions = async ({ status, db }) => {
   return db
     .collection(CONFIG_VERSION_COLLECTION)
     .aggregate([

@@ -63,13 +63,13 @@ describe('version-handlers', () => {
         db: mockDb
       }
       await getLatestVersionHandler(mockRequest, mockH)
-      expect(getLatestVersionWithConstraints).toHaveBeenCalledWith(
-        'some-grant',
-        null,
-        1,
-        0,
-        mockDb
-      )
+      expect(getLatestVersionWithConstraints).toHaveBeenCalledWith({
+        grant: 'some-grant',
+        status: null,
+        major: 1,
+        minor: 0,
+        db: mockDb
+      })
       expect(mockH.response).toHaveBeenCalledWith({
         grant: 'some-grant',
         version: '1.0.0',
@@ -91,13 +91,11 @@ describe('version-handlers', () => {
         db: mockDb
       }
       await getLatestVersionHandler(mockRequest, mockH)
-      expect(getLatestVersionWithConstraints).toHaveBeenCalledWith(
-        'some-grant',
-        'draft',
-        undefined,
-        undefined,
-        mockDb
-      )
+      expect(getLatestVersionWithConstraints).toHaveBeenCalledWith({
+        grant: 'some-grant',
+        status: 'draft',
+        db: mockDb
+      })
     })
 
     it('should pass through status indicator of active when draft option not selected', async () => {
@@ -109,13 +107,11 @@ describe('version-handlers', () => {
         db: mockDb
       }
       await getLatestVersionHandler(mockRequest, mockH)
-      expect(getLatestVersionWithConstraints).toHaveBeenCalledWith(
-        'some-grant',
-        'active',
-        undefined,
-        undefined,
-        mockDb
-      )
+      expect(getLatestVersionWithConstraints).toHaveBeenCalledWith({
+        grant: 'some-grant',
+        status: 'active',
+        db: mockDb
+      })
     })
 
     it('should return not found response if no version present for constraints specified', async () => {
@@ -130,13 +126,12 @@ describe('version-handlers', () => {
         db: mockDb
       }
       await getLatestVersionHandler(mockRequest, mockH)
-      expect(getLatestVersionWithConstraints).toHaveBeenCalledWith(
-        'some-grant',
-        'active',
-        1,
-        undefined,
-        mockDb
-      )
+      expect(getLatestVersionWithConstraints).toHaveBeenCalledWith({
+        grant: 'some-grant',
+        status: 'active',
+        major: 1,
+        db: mockDb
+      })
       expect(mockH.response).toHaveBeenCalledWith({
         error: 'Grant some-grant with version constraints not found'
       })
@@ -249,13 +244,11 @@ describe('version-handlers', () => {
         db: mockDb
       }
       await getAllVersionsHandler(mockRequest, mockH)
-      expect(getAllVersionsWithConstraints).toHaveBeenCalledWith(
-        'some-grant',
-        'active',
-        undefined,
-        undefined,
-        mockDb
-      )
+      expect(getAllVersionsWithConstraints).toHaveBeenCalledWith({
+        grant: 'some-grant',
+        status: 'active',
+        db: mockDb
+      })
       expect(mockH.response).toHaveBeenCalledWith([
         {
           grant: 'some-grant',
@@ -287,13 +280,13 @@ describe('version-handlers', () => {
         db: mockDb
       }
       await getAllVersionsHandler(mockRequest, mockH)
-      expect(getAllVersionsWithConstraints).toHaveBeenCalledWith(
-        'some-grant',
-        'draft',
-        1,
-        0,
-        mockDb
-      )
+      expect(getAllVersionsWithConstraints).toHaveBeenCalledWith({
+        grant: 'some-grant',
+        status: 'draft',
+        major: 1,
+        minor: 0,
+        db: mockDb
+      })
     })
 
     it('should pass through optional draft included constraint', async () => {
@@ -308,13 +301,13 @@ describe('version-handlers', () => {
         db: mockDb
       }
       await getAllVersionsHandler(mockRequest, mockH)
-      expect(getAllVersionsWithConstraints).toHaveBeenCalledWith(
-        'some-grant',
-        null,
-        1,
-        0,
-        mockDb
-      )
+      expect(getAllVersionsWithConstraints).toHaveBeenCalledWith({
+        grant: 'some-grant',
+        status: null,
+        major: 1,
+        minor: 0,
+        db: mockDb
+      })
     })
 
     it('should return empty array if nothing found', async () => {
@@ -374,7 +367,10 @@ describe('version-handlers', () => {
         db: mockDb
       }
       await getAllGrantsHandler(mockRequest, mockH)
-      expect(getAllGrantsAllVersions).toHaveBeenCalledWith('active', mockDb)
+      expect(getAllGrantsAllVersions).toHaveBeenCalledWith({
+        status: 'active',
+        db: mockDb
+      })
       expect(mockH.response).toHaveBeenCalledWith([
         {
           grant: 'some-grant',
@@ -414,7 +410,10 @@ describe('version-handlers', () => {
         db: mockDb
       }
       await getAllGrantsHandler(mockRequest, mockH)
-      expect(getAllGrantsAllVersions).toHaveBeenCalledWith('draft', mockDb)
+      expect(getAllGrantsAllVersions).toHaveBeenCalledWith({
+        status: 'draft',
+        db: mockDb
+      })
     })
 
     it('should pass through optional draft included constraint', async () => {
@@ -426,7 +425,10 @@ describe('version-handlers', () => {
         db: mockDb
       }
       await getAllGrantsHandler(mockRequest, mockH)
-      expect(getAllGrantsAllVersions).toHaveBeenCalledWith(null, mockDb)
+      expect(getAllGrantsAllVersions).toHaveBeenCalledWith({
+        status: null,
+        db: mockDb
+      })
     })
   })
 
