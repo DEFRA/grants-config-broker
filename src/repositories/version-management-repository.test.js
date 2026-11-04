@@ -94,6 +94,7 @@ describe('version-management-repository', () => {
       expect(find).toHaveBeenCalledWith({
         grant,
         status,
+        archived: { $ne: true },
         versionMajor: { $gte: 0 },
         versionMinor: { $gte: 0 }
       })
@@ -135,6 +136,7 @@ describe('version-management-repository', () => {
       expect(find).toHaveBeenCalledWith({
         grant,
         status,
+        archived: { $ne: true },
         versionMajor: { $eq: 1 },
         versionMinor: { $eq: 1 }
       })
@@ -163,6 +165,7 @@ describe('version-management-repository', () => {
       expect(db.collection).toHaveBeenCalledWith('config-versions')
       expect(find).toHaveBeenCalledWith({
         grant,
+        archived: { $ne: true },
         versionMajor: { $gte: 0 },
         versionMinor: { $gte: 0 }
       })
@@ -173,6 +176,28 @@ describe('version-management-repository', () => {
       })
       expect(limit).toHaveBeenCalledWith(1)
       expect(toArray).toHaveBeenCalled()
+    })
+
+    it('should not constrain on archived when archived is requested', async () => {
+      const db = {
+        collection: vi.fn().mockReturnValue({
+          find
+        })
+      }
+
+      const grant = 'test-grant'
+      const result = await getLatestVersionWithConstraints({
+        grant,
+        archived: true,
+        db
+      })
+      expect(result).toEqual([{ version: '1.1.0' }])
+      expect(db.collection).toHaveBeenCalledWith('config-versions')
+      expect(find).toHaveBeenCalledWith({
+        grant,
+        versionMajor: { $gte: 0 },
+        versionMinor: { $gte: 0 }
+      })
     })
   })
 

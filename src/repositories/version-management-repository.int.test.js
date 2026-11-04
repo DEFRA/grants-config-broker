@@ -13,7 +13,8 @@ const versionDoc = ({
   version,
   status = 'active',
   lastUpdated = new Date(),
-  grant = GRANT
+  grant = GRANT,
+  archived = null
 }) => {
   const [versionMajor, versionMinor, versionPatch] = version
     .split('.')
@@ -26,7 +27,8 @@ const versionDoc = ({
     versionPatch,
     status,
     manifest: [`${grant}/${version}/config.json`],
-    lastUpdated
+    lastUpdated,
+    ...(archived === true && { archived })
   }
 }
 
@@ -46,8 +48,35 @@ const seedFiveVersions = (db) =>
       versionDoc({ version: '2.1.3' })
     ])
 
+const seedFiveVersionsAllArchived = (db) =>
+  db
+    .collection(COLLECTION)
+    .insertMany([
+      versionDoc({ version: '1.0.0', archived: true }),
+      versionDoc({ version: '1.1.0', archived: true }),
+      versionDoc({ version: '1.2.0', archived: true }),
+      versionDoc({ version: '2.0.0', archived: true }),
+      versionDoc({ version: '2.1.3', archived: true })
+    ])
+
+const seedFiveVersionsPartiallyArchived = (db) =>
+  db
+    .collection(COLLECTION)
+    .insertMany([
+      versionDoc({ version: '1.0.0', archived: false }),
+      versionDoc({ version: '1.1.0', archived: false }),
+      versionDoc({ version: '1.2.0', archived: true }),
+      versionDoc({ version: '2.0.0', archived: true }),
+      versionDoc({ version: '2.1.3', archived: false })
+    ])
+
 const seedSingleVersion = (db) =>
   db.collection(COLLECTION).insertMany([versionDoc({ version: '1.0.0' })])
+
+const seedSingleArchivedVersion = (db) =>
+  db
+    .collection(COLLECTION)
+    .insertMany([versionDoc({ version: '1.0.0', archived: true })])
 
 const seedActiveAndDraft = (db) =>
   db
@@ -100,157 +129,507 @@ describe('version-management-repository (integration)', () => {
       await db.collection(COLLECTION).deleteMany({ grant: GRANT })
     })
 
-    describe('when there are 5 versions of a grant', () => {
-      beforeEach(async () => {
-        await seedFiveVersions(db)
+    it('returns empty when the grant asked for is not present', async () => {
+      await seedFiveVersions(db)
+
+      const result = await getLatestVersionWithConstraints({
+        grant: 'a-different-grant',
+        status: 'active',
+        db
       })
 
-      it('returns the highest version when no constraints are given', async () => {
-        const result = await getLatestVersionWithConstraints({
-          grant: GRANT,
-          status: 'active',
-          db
-        })
+      expect(result).toEqual([])
+    })
 
-        expect(result).toHaveLength(1)
-        expect(result[0].version).toBe('2.1.3')
+    it('returns empty when there are no versions and no constraints are given', async () => {
+      const result = await getLatestVersionWithConstraints({
+        grant: GRANT,
+        status: 'active',
+        db
       })
 
-      it('returns the highest version within a major constraint', async () => {
-        const result = await getLatestVersionWithConstraints({
-          grant: GRANT,
-          status: 'active',
-          major: 1,
-          db
-        })
+      expect(result).toEqual([])
+    })
 
-        expect(result).toHaveLength(1)
-        expect(result[0].version).toBe('1.2.0')
+    it('returns empty when there are no versions and a constraint is given', async () => {
+      const result = await getLatestVersionWithConstraints({
+        grant: GRANT,
+        status: 'active',
+        major: 1,
+        db
       })
 
-      it('returns the highest patch within a major and minor constraint', async () => {
-        const result = await getLatestVersionWithConstraints({
-          grant: GRANT,
-          status: 'active',
-          major: 1,
-          minor: 1,
-          db
+      expect(result).toEqual([])
+    })
+
+    describe('when archive is included', () => {
+      describe('when there are 5 non-archived versions of a grant', () => {
+        beforeEach(async () => {
+          await seedFiveVersions(db)
         })
 
-        expect(result).toHaveLength(1)
-        expect(result[0].version).toBe('1.1.0')
+        it('returns the highest version when no constraints are given', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            archived: 'true',
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('2.1.3')
+        })
+
+        it('returns the highest version within a major constraint', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            major: 1,
+            archived: 'true',
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('1.2.0')
+        })
+
+        it('returns the highest patch within a major and minor constraint', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            major: 1,
+            minor: 1,
+            archived: 'true',
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('1.1.0')
+        })
       })
 
-      it('returns empty when the grant asked for is not present', async () => {
-        const result = await getLatestVersionWithConstraints({
-          grant: 'a-different-grant',
-          status: 'active',
-          db
+      describe('when there are 5 archived versions of a grant', () => {
+        beforeEach(async () => {
+          await seedFiveVersionsAllArchived(db)
         })
 
-        expect(result).toEqual([])
+        it('returns the highest version when no constraints are given', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            archived: 'true',
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('2.1.3')
+        })
+
+        it('returns the highest version within a major constraint', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            major: 1,
+            archived: 'true',
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('1.2.0')
+        })
+
+        it('returns the highest patch within a major and minor constraint', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            major: 1,
+            minor: 1,
+            archived: 'true',
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('1.1.0')
+        })
+      })
+
+      describe('when there are 5 partially-archived versions of a grant', () => {
+        beforeEach(async () => {
+          await seedFiveVersionsPartiallyArchived(db)
+        })
+
+        it('returns the highest version when no constraints are given', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            archived: 'true',
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('2.1.3')
+        })
+
+        it('returns the highest version within a major constraint', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            major: 1,
+            archived: 'true',
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('1.2.0')
+        })
+
+        it('returns the highest patch within a major and minor constraint', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            major: 1,
+            minor: 1,
+            archived: 'true',
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('1.1.0')
+        })
+      })
+
+      describe('when there is 1 non-archived version of a grant', () => {
+        beforeEach(async () => {
+          await seedSingleVersion(db)
+        })
+
+        it('returns that version when no constraints are given', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            archived: 'true',
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('1.0.0')
+        })
+
+        it('returns that version when the constraint matches', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            major: 1,
+            minor: 0,
+            archived: 'true',
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('1.0.0')
+        })
+
+        it('returns empty when the constraint does not match', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            major: 2,
+            archived: 'true',
+            db
+          })
+
+          expect(result).toEqual([])
+        })
+      })
+
+      describe('when there is 1 archived version of a grant', () => {
+        beforeEach(async () => {
+          await seedSingleArchivedVersion(db)
+        })
+
+        it('returns that version when no constraints are given', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            archived: 'true',
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('1.0.0')
+        })
+      })
+
+      describe('when a grant has both active and draft versions', () => {
+        beforeEach(async () => {
+          await seedActiveAndDraft(db)
+        })
+
+        it('returns the highest active version, ignoring newer drafts', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            archived: 'true',
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('2.0.0')
+        })
+
+        it('returns the highest draft version when asking for drafts', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'draft',
+            archived: 'true',
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('2.1.0')
+        })
+
+        it('returns the highest version across all statuses when no status is given', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            archived: 'true',
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('2.1.0')
+        })
       })
     })
 
-    describe('when there is 1 version of a grant', () => {
-      beforeEach(async () => {
-        await seedSingleVersion(db)
-      })
-
-      it('returns that version when no constraints are given', async () => {
-        const result = await getLatestVersionWithConstraints({
-          grant: GRANT,
-          status: 'active',
-          db
+    describe('when archive is NOT included', () => {
+      describe('when there are 5 non-archived versions of a grant', () => {
+        beforeEach(async () => {
+          await seedFiveVersions(db)
         })
 
-        expect(result).toHaveLength(1)
-        expect(result[0].version).toBe('1.0.0')
-      })
+        it('returns the highest version when no constraints are given', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            db
+          })
 
-      it('returns that version when the constraint matches', async () => {
-        const result = await getLatestVersionWithConstraints({
-          grant: GRANT,
-          status: 'active',
-          major: 1,
-          minor: 0,
-          db
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('2.1.3')
         })
 
-        expect(result).toHaveLength(1)
-        expect(result[0].version).toBe('1.0.0')
-      })
+        it('returns the highest version within a major constraint', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            major: 1,
+            db
+          })
 
-      it('returns empty when the constraint does not match', async () => {
-        const result = await getLatestVersionWithConstraints({
-          grant: GRANT,
-          status: 'active',
-          major: 2,
-          db
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('1.2.0')
         })
 
-        expect(result).toEqual([])
-      })
-    })
+        it('returns the highest patch within a major and minor constraint', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            major: 1,
+            minor: 1,
+            db
+          })
 
-    describe('when there are 0 versions of a grant', () => {
-      it('returns empty when no constraints are given', async () => {
-        const result = await getLatestVersionWithConstraints({
-          grant: GRANT,
-          status: 'active',
-          db
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('1.1.0')
+        })
+      })
+
+      describe('when there are 5 archived versions of a grant', () => {
+        beforeEach(async () => {
+          await seedFiveVersionsAllArchived(db)
         })
 
-        expect(result).toEqual([])
-      })
+        it('returns empty when no constraints are given', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            db
+          })
 
-      it('returns empty when a constraint is given', async () => {
-        const result = await getLatestVersionWithConstraints({
-          grant: GRANT,
-          status: 'active',
-          major: 1,
-          db
+          expect(result).toEqual([])
         })
 
-        expect(result).toEqual([])
-      })
-    })
+        it('returns the highest version within a major constraint', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            major: 1,
+            db
+          })
 
-    describe('when a grant has both active and draft versions', () => {
-      beforeEach(async () => {
-        await seedActiveAndDraft(db)
-      })
-
-      it('returns the highest active version, ignoring newer drafts', async () => {
-        const result = await getLatestVersionWithConstraints({
-          grant: GRANT,
-          status: 'active',
-          db
+          expect(result).toEqual([])
         })
 
-        expect(result).toHaveLength(1)
-        expect(result[0].version).toBe('2.0.0')
+        it('returns the highest patch within a major and minor constraint', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            major: 1,
+            minor: 1,
+            db
+          })
+
+          expect(result).toEqual([])
+        })
       })
 
-      it('returns the highest draft version when asking for drafts', async () => {
-        const result = await getLatestVersionWithConstraints({
-          grant: GRANT,
-          status: 'draft',
-          db
+      describe('when there are 5 partially-archived versions of a grant', () => {
+        beforeEach(async () => {
+          await seedFiveVersionsPartiallyArchived(db)
         })
 
-        expect(result).toHaveLength(1)
-        expect(result[0].version).toBe('2.1.0')
+        it('returns the highest version when no constraints are given', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('2.1.3')
+        })
+
+        it('returns the highest version within a major constraint skipping the archived one', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            major: 1,
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('1.1.0')
+        })
+
+        it('returns the highest patch within a major and minor constraint', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            major: 1,
+            minor: 1,
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('1.1.0')
+        })
+
+        it('returns empty when a major and minor constraint are for an archived version', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            major: 1,
+            minor: 2,
+            db
+          })
+
+          expect(result).toEqual([])
+        })
       })
 
-      it('returns the highest version across all statuses when no status is given', async () => {
-        const result = await getLatestVersionWithConstraints({
-          grant: GRANT,
-          db
+      describe('when there is 1 archived version of a grant', () => {
+        beforeEach(async () => {
+          await seedSingleArchivedVersion(db)
         })
 
-        expect(result).toHaveLength(1)
-        expect(result[0].version).toBe('2.1.0')
+        it('returns empty when no constraints are given', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            db
+          })
+
+          expect(result).toEqual([])
+        })
+
+        it('returns empty  when the constraint matches', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            major: 1,
+            minor: 0,
+            db
+          })
+
+          expect(result).toEqual([])
+        })
+
+        it('returns empty when the constraint does not match', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            major: 2,
+            db
+          })
+
+          expect(result).toEqual([])
+        })
+      })
+
+      describe('when there is 1 non-archived version of a grant', () => {
+        beforeEach(async () => {
+          await seedSingleVersion(db)
+        })
+
+        it('returns that version when no constraints are given', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('1.0.0')
+        })
+      })
+
+      describe('when a grant has both active and draft versions', () => {
+        beforeEach(async () => {
+          await seedActiveAndDraft(db)
+        })
+
+        it('returns the highest active version, ignoring newer drafts', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('2.0.0')
+        })
+
+        it('returns the highest draft version when asking for drafts', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            status: 'draft',
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('2.1.0')
+        })
+
+        it('returns the highest version across all statuses when no status is given', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('2.1.0')
+        })
       })
     })
   })
