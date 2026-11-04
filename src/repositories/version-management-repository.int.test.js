@@ -639,206 +639,459 @@ describe('version-management-repository (integration)', () => {
       await db.collection(COLLECTION).deleteMany({ grant: GRANT })
     })
 
-    describe('when there are 5 versions of a grant', () => {
-      beforeEach(async () => {
-        await seedFiveVersions(db)
+    it('returns empty when the grant asked for is not present', async () => {
+      await seedFiveVersions(db)
+
+      const result = await getAllVersionsWithConstraints({
+        grant: 'a-different-grant',
+        status: 'active',
+        db
       })
 
-      it('returns all versions highest-first when no constraints are given', async () => {
-        const result = await getAllVersionsWithConstraints({
-          grant: GRANT,
-          status: 'active',
-          db
-        })
+      expect(result).toEqual([])
+    })
 
-        expect(result.map((v) => v.version)).toEqual([
-          '2.1.3',
-          '2.0.0',
-          '1.2.0',
-          '1.1.0',
-          '1.0.0'
-        ])
+    it('returns empty when there are no versions and no constraints are given', async () => {
+      const result = await getAllVersionsWithConstraints({
+        grant: GRANT,
+        status: 'active',
+        db
       })
 
-      it('returns only versions within a major constraint', async () => {
-        const result = await getAllVersionsWithConstraints({
-          grant: GRANT,
-          status: 'active',
-          major: 1,
-          db
-        })
+      expect(result).toEqual([])
+    })
 
-        expect(result.map((v) => v.version)).toEqual([
-          '1.2.0',
-          '1.1.0',
-          '1.0.0'
-        ])
+    it('returns empty when there are no versions and a constraint is given', async () => {
+      const result = await getAllVersionsWithConstraints({
+        grant: GRANT,
+        status: 'active',
+        major: 1,
+        db
       })
 
-      it('returns only versions within a major and minor constraint', async () => {
-        const result = await getAllVersionsWithConstraints({
-          grant: GRANT,
-          status: 'active',
-          major: 1,
-          minor: 1,
-          db
+      expect(result).toEqual([])
+    })
+
+    describe('when archive is included', () => {
+      describe('when there are 5 non-archived versions of a grant', () => {
+        beforeEach(async () => {
+          await seedFiveVersions(db)
         })
 
-        expect(result.map((v) => v.version)).toEqual(['1.1.0'])
+        it('returns all versions highest-first when no constraints are given', async () => {
+          const result = await getAllVersionsWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            archived: 'true',
+            db
+          })
+
+          expect(result.map((v) => v.version)).toEqual([
+            '2.1.3',
+            '2.0.0',
+            '1.2.0',
+            '1.1.0',
+            '1.0.0'
+          ])
+        })
+
+        it('returns only versions within a major constraint', async () => {
+          const result = await getAllVersionsWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            major: 1,
+            archived: 'true',
+            db
+          })
+
+          expect(result.map((v) => v.version)).toEqual([
+            '1.2.0',
+            '1.1.0',
+            '1.0.0'
+          ])
+        })
+
+        it('returns only versions within a major and minor constraint', async () => {
+          const result = await getAllVersionsWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            major: 1,
+            minor: 1,
+            archived: 'true',
+            db
+          })
+
+          expect(result.map((v) => v.version)).toEqual(['1.1.0'])
+        })
       })
 
-      it('returns empty when the grant asked for is not present', async () => {
-        const result = await getAllVersionsWithConstraints({
-          grant: 'a-different-grant',
-          status: 'active',
-          db
+      describe('when there are 5 partially-archived versions of a grant', () => {
+        beforeEach(async () => {
+          await seedFiveVersionsPartiallyArchived(db)
         })
 
-        expect(result).toEqual([])
+        it('returns all versions, including the archived ones', async () => {
+          const result = await getAllVersionsWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            archived: 'true',
+            db
+          })
+
+          expect(result.map((v) => v.version)).toEqual([
+            '2.1.3',
+            '2.0.0',
+            '1.2.0',
+            '1.1.0',
+            '1.0.0'
+          ])
+        })
+      })
+
+      describe('when there are 5 archived versions of a grant', () => {
+        beforeEach(async () => {
+          await seedFiveVersionsAllArchived(db)
+        })
+
+        it('returns all versions when no constraints are given', async () => {
+          const result = await getAllVersionsWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            archived: 'true',
+            db
+          })
+
+          expect(result.map((v) => v.version)).toEqual([
+            '2.1.3',
+            '2.0.0',
+            '1.2.0',
+            '1.1.0',
+            '1.0.0'
+          ])
+        })
+      })
+
+      describe('when there is 1 non-archived version of a grant', () => {
+        beforeEach(async () => {
+          await seedSingleVersion(db)
+        })
+
+        it('returns that version when no constraints are given', async () => {
+          const result = await getAllVersionsWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            archived: 'true',
+            db
+          })
+
+          expect(result.map((v) => v.version)).toEqual(['1.0.0'])
+        })
+      })
+
+      describe('when there is 1 archived version of a grant', () => {
+        beforeEach(async () => {
+          await seedSingleArchivedVersion(db)
+        })
+
+        it('returns that version when no constraints are given', async () => {
+          const result = await getAllVersionsWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            archived: 'true',
+            db
+          })
+
+          expect(result.map((v) => v.version)).toEqual(['1.0.0'])
+        })
+      })
+
+      describe('when a grant has both active and draft versions', () => {
+        // The draft (2.1.0) is higher than the newest active (2.0.0), so the
+        // status filter has to actually exclude it from the returned list.
+        beforeEach(async () => {
+          await seedActiveAndDraft(db)
+        })
+
+        it('returns only active versions, ignoring drafts', async () => {
+          const result = await getAllVersionsWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            archived: 'true',
+            db
+          })
+
+          expect(result.map((v) => v.version)).toEqual(['2.0.0', '1.0.0'])
+        })
+
+        it('returns only draft versions when asking for drafts', async () => {
+          const result = await getAllVersionsWithConstraints({
+            grant: GRANT,
+            status: 'draft',
+            archived: 'true',
+            db
+          })
+
+          expect(result.map((v) => v.version)).toEqual(['2.1.0'])
+        })
+
+        it('returns versions of every status when no status is given', async () => {
+          const result = await getAllVersionsWithConstraints({
+            grant: GRANT,
+            archived: 'true',
+            db
+          })
+
+          expect(result.map((v) => v.version)).toEqual([
+            '2.1.0',
+            '2.0.0',
+            '1.0.0'
+          ])
+        })
+      })
+
+      describe('when a version has been promoted from draft to active', () => {
+        beforeEach(async () => {
+          await seedPromotedVersion(db)
+        })
+
+        it('dedupes to a single row of the newest (active) status when no status is given', async () => {
+          const result = await getAllVersionsWithConstraints({
+            grant: GRANT,
+            archived: 'true',
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('1.0.0')
+          expect(result[0].status).toBe('active')
+        })
+
+        it('still returns the lingering draft row when asking for drafts', async () => {
+          const result = await getAllVersionsWithConstraints({
+            grant: GRANT,
+            status: 'draft',
+            archived: 'true',
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('1.0.0')
+          expect(result[0].status).toBe('draft')
+        })
+
+        it('returns the active row when asking for active', async () => {
+          const result = await getAllVersionsWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            archived: 'true',
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('1.0.0')
+          expect(result[0].status).toBe('active')
+        })
       })
     })
 
-    describe('when there is 1 version of a grant', () => {
-      beforeEach(async () => {
-        await seedSingleVersion(db)
-      })
-
-      it('returns that version when no constraints are given', async () => {
-        const result = await getAllVersionsWithConstraints({
-          grant: GRANT,
-          status: 'active',
-          db
+    describe('when archive is NOT included', () => {
+      describe('when there are 5 non-archived versions of a grant', () => {
+        beforeEach(async () => {
+          await seedFiveVersions(db)
         })
 
-        expect(result.map((v) => v.version)).toEqual(['1.0.0'])
-      })
+        it('returns all versions highest-first when no constraints are given', async () => {
+          const result = await getAllVersionsWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            db
+          })
 
-      it('returns that version when the constraint matches', async () => {
-        const result = await getAllVersionsWithConstraints({
-          grant: GRANT,
-          status: 'active',
-          major: 1,
-          minor: 0,
-          db
+          expect(result.map((v) => v.version)).toEqual([
+            '2.1.3',
+            '2.0.0',
+            '1.2.0',
+            '1.1.0',
+            '1.0.0'
+          ])
         })
 
-        expect(result.map((v) => v.version)).toEqual(['1.0.0'])
-      })
+        it('returns only versions within a major constraint', async () => {
+          const result = await getAllVersionsWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            major: 1,
+            db
+          })
 
-      it('returns empty when the constraint does not match', async () => {
-        const result = await getAllVersionsWithConstraints({
-          grant: GRANT,
-          status: 'active',
-          major: 2,
-          db
+          expect(result.map((v) => v.version)).toEqual([
+            '1.2.0',
+            '1.1.0',
+            '1.0.0'
+          ])
         })
 
-        expect(result).toEqual([])
-      })
-    })
+        it('returns only versions within a major and minor constraint', async () => {
+          const result = await getAllVersionsWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            major: 1,
+            minor: 1,
+            db
+          })
 
-    describe('when there are 0 versions of a grant', () => {
-      it('returns empty when no constraints are given', async () => {
-        const result = await getAllVersionsWithConstraints({
-          grant: GRANT,
-          status: 'active',
-          db
+          expect(result.map((v) => v.version)).toEqual(['1.1.0'])
+        })
+      })
+
+      describe('when there are 5 partially-archived versions of a grant', () => {
+        beforeEach(async () => {
+          await seedFiveVersionsPartiallyArchived(db)
         })
 
-        expect(result).toEqual([])
+        it('returns only the non-archived versions', async () => {
+          const result = await getAllVersionsWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            db
+          })
+
+          expect(result.map((v) => v.version)).toEqual([
+            '2.1.3',
+            '1.1.0',
+            '1.0.0'
+          ])
+        })
       })
 
-      it('returns empty when a constraint is given', async () => {
-        const result = await getAllVersionsWithConstraints({
-          grant: GRANT,
-          status: 'active',
-          major: 1,
-          db
+      describe('when there are 5 archived versions of a grant', () => {
+        beforeEach(async () => {
+          await seedFiveVersionsAllArchived(db)
         })
 
-        expect(result).toEqual([])
-      })
-    })
+        it('returns empty when no constraints are given', async () => {
+          const result = await getAllVersionsWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            db
+          })
 
-    describe('when a grant has both active and draft versions', () => {
-      // The draft (2.1.0) is higher than the newest active (2.0.0), so the
-      // status filter has to actually exclude it from the returned list.
-      beforeEach(async () => {
-        await seedActiveAndDraft(db)
+          expect(result).toEqual([])
+        })
       })
 
-      it('returns only active versions, ignoring drafts', async () => {
-        const result = await getAllVersionsWithConstraints({
-          grant: GRANT,
-          status: 'active',
-          db
+      describe('when there is 1 non-archived version of a grant', () => {
+        beforeEach(async () => {
+          await seedSingleVersion(db)
         })
 
-        expect(result.map((v) => v.version)).toEqual(['2.0.0', '1.0.0'])
+        it('returns that version when no constraints are given', async () => {
+          const result = await getAllVersionsWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            db
+          })
+
+          expect(result.map((v) => v.version)).toEqual(['1.0.0'])
+        })
       })
 
-      it('returns only draft versions when asking for drafts', async () => {
-        const result = await getAllVersionsWithConstraints({
-          grant: GRANT,
-          status: 'draft',
-          db
+      describe('when there is 1 archived version of a grant', () => {
+        beforeEach(async () => {
+          await seedSingleArchivedVersion(db)
         })
 
-        expect(result.map((v) => v.version)).toEqual(['2.1.0'])
+        it('returns empty when no constraints are given', async () => {
+          const result = await getAllVersionsWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            db
+          })
+
+          expect(result).toEqual([])
+        })
       })
 
-      it('returns versions of every status when no status is given', async () => {
-        const result = await getAllVersionsWithConstraints({
-          grant: GRANT,
-          db
+      describe('when a grant has both active and draft versions', () => {
+        // The draft (2.1.0) is higher than the newest active (2.0.0), so the
+        // status filter has to actually exclude it from the returned list.
+        beforeEach(async () => {
+          await seedActiveAndDraft(db)
         })
 
-        expect(result.map((v) => v.version)).toEqual([
-          '2.1.0',
-          '2.0.0',
-          '1.0.0'
-        ])
-      })
-    })
+        it('returns only active versions, ignoring drafts', async () => {
+          const result = await getAllVersionsWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            db
+          })
 
-    describe('when a version has been promoted from draft to active', () => {
-      beforeEach(async () => {
-        await seedPromotedVersion(db)
-      })
-
-      it('dedupes to a single row of the newest (active) status when no status is given', async () => {
-        const result = await getAllVersionsWithConstraints({
-          grant: GRANT,
-          db
+          expect(result.map((v) => v.version)).toEqual(['2.0.0', '1.0.0'])
         })
 
-        expect(result).toHaveLength(1)
-        expect(result[0].version).toBe('1.0.0')
-        expect(result[0].status).toBe('active')
-      })
+        it('returns only draft versions when asking for drafts', async () => {
+          const result = await getAllVersionsWithConstraints({
+            grant: GRANT,
+            status: 'draft',
+            db
+          })
 
-      it('still returns the lingering draft row when asking for drafts', async () => {
-        const result = await getAllVersionsWithConstraints({
-          grant: GRANT,
-          status: 'draft',
-          db
+          expect(result.map((v) => v.version)).toEqual(['2.1.0'])
         })
 
-        expect(result).toHaveLength(1)
-        expect(result[0].version).toBe('1.0.0')
-        expect(result[0].status).toBe('draft')
+        it('returns versions of every status when no status is given', async () => {
+          const result = await getAllVersionsWithConstraints({
+            grant: GRANT,
+            db
+          })
+
+          expect(result.map((v) => v.version)).toEqual([
+            '2.1.0',
+            '2.0.0',
+            '1.0.0'
+          ])
+        })
       })
 
-      it('returns the active row when asking for active', async () => {
-        const result = await getAllVersionsWithConstraints({
-          grant: GRANT,
-          status: 'active',
-          db
+      describe('when a version has been promoted from draft to active', () => {
+        beforeEach(async () => {
+          await seedPromotedVersion(db)
         })
 
-        expect(result).toHaveLength(1)
-        expect(result[0].version).toBe('1.0.0')
-        expect(result[0].status).toBe('active')
+        it('dedupes to a single row of the newest (active) status when no status is given', async () => {
+          const result = await getAllVersionsWithConstraints({
+            grant: GRANT,
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('1.0.0')
+          expect(result[0].status).toBe('active')
+        })
+
+        it('still returns the lingering draft row when asking for drafts', async () => {
+          const result = await getAllVersionsWithConstraints({
+            grant: GRANT,
+            status: 'draft',
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('1.0.0')
+          expect(result[0].status).toBe('draft')
+        })
+
+        it('returns the active row when asking for active', async () => {
+          const result = await getAllVersionsWithConstraints({
+            grant: GRANT,
+            status: 'active',
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('1.0.0')
+          expect(result[0].status).toBe('active')
+        })
       })
     })
   })

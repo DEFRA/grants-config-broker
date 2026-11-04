@@ -229,6 +229,7 @@ describe('version-management-repository', () => {
           $match: {
             grant,
             status,
+            archived: { $ne: true },
             versionMajor: { $eq: 1 },
             versionMinor: { $eq: 1 }
           }
@@ -261,6 +262,7 @@ describe('version-management-repository', () => {
         {
           $match: {
             grant,
+            archived: { $ne: true },
             versionMajor: { $gte: 0 },
             versionMinor: { $gte: 0 }
           }

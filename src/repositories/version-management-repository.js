@@ -87,6 +87,7 @@ export const getAllVersionsWithConstraints = async ({
   status,
   major,
   minor,
+  archived,
   db
 }) => {
   const versionMajor = Number.isInteger(major) ? { $eq: major } : { $gte: 0 }
@@ -99,6 +100,7 @@ export const getAllVersionsWithConstraints = async ({
         $match: {
           grant,
           ...(status && { status }),
+          ...(!archived && { archived: { $ne: true } }),
           versionMajor,
           versionMinor
         }
