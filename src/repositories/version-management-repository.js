@@ -142,13 +142,14 @@ export const getAllVersionsWithConstraints = async ({
     .toArray()
 }
 
-export const getAllGrantsAllVersions = async ({ status, db }) => {
+export const getAllGrantsAllVersions = async ({ status, archived, db }) => {
   return db
     .collection(CONFIG_VERSION_COLLECTION)
     .aggregate([
       {
         $match: {
-          ...(status && { status })
+          ...(status && { status }),
+          ...(!archived && { archived: { $ne: true } })
         }
       },
       {

@@ -301,7 +301,8 @@ describe('version-management-repository', () => {
       expect(aggregate).toHaveBeenCalledWith([
         {
           $match: {
-            status
+            status,
+            archived: { $ne: true }
           }
         },
         expect.anything(),
@@ -330,7 +331,9 @@ describe('version-management-repository', () => {
       expect(db.collection).toHaveBeenCalledWith('config-versions')
       expect(aggregate).toHaveBeenCalledWith([
         {
-          $match: {}
+          $match: {
+            archived: { $ne: true }
+          }
         },
         expect.anything(),
         expect.anything(),
