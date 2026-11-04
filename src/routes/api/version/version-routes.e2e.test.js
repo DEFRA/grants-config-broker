@@ -1,0 +1,120 @@
+vi.mock('../../../plugins/service-auth.js')
+
+const COLLECTION = 'config-versions'
+const GRANT = 'e2e-grant'
+
+const versionDoc = ({ version, status = 'active', grant }) => {
+  const [versionMajor, versionMinor, versionPatch] = version
+    .split('.')
+    .map(Number)
+  return {
+    grant,
+    version,
+    versionMajor,
+    versionMinor,
+    versionPatch,
+    status,
+    manifest: [`${grant}/${version}/config.json`],
+    lastUpdated: new Date()
+  }
+}
+
+describe('version routes (e2e)', () => {
+  let server
+
+  beforeAll(async () => {
+    const { createServer } = await import('../../../server.js')
+    server = await createServer()
+    await server.initialize()
+  })
+
+  afterAll(async () => {
+    await server.stop({ timeout: 0 })
+  })
+
+  afterEach(async () => {
+    await server.db.collection(COLLECTION).deleteMany({})
+  })
+
+  const seed = (docs) => server.db.collection(COLLECTION).insertMany(docs)
+
+  describe('GET /api/latestVersion', () => {
+    it('applies the constrainMajor query parameter when querying the DB', async () => {
+      await seed([
+        versionDoc({ version: '1.0.0', grant: GRANT }),
+        versionDoc({ version: '1.2.0', grant: GRANT }),
+        versionDoc({ version: '2.0.0', grant: GRANT })
+      ])
+
+      const res = await server.inject({
+        method: 'GET',
+        url: `/api/latestVersion?grant=${GRANT}&constrainMajor=1`
+      })
+
+      expect(res.statusCode).toBe(200)
+      expect(res.result.grant).toBe(GRANT)
+      // 2.0.0 is higher overall, so returning 1.2.0 proves constrainMajor=1
+      // reached the DB query.
+      expect(res.result.version).toBe('1.2.0')
+    })
+  })
+
+  describe('GET /api/allVersions', () => {
+    it('applies the draft query parameter when querying the DB', async () => {
+      await seed([
+        versionDoc({ version: '1.0.0', status: 'active', grant: GRANT }),
+        versionDoc({ version: '2.0.0', status: 'draft', grant: GRANT })
+      ])
+
+      const res = await server.inject({
+        method: 'GET',
+        url: `/api/allVersions?grant=${GRANT}&draft=only`
+      })
+
+      expect(res.statusCode).toBe(200)
+      expect(res.result.map((v) => v.version)).toEqual(['2.0.0'])
+    })
+  })
+
+  describe('GET /api/allGrants', () => {
+    it('returns an entry for every grant in the DB', async () => {
+      await seed([
+        versionDoc({ version: '1.0.0', grant: 'grant-a' }),
+        versionDoc({ version: '1.0.0', grant: 'grant-b' })
+      ])
+
+      const res = await server.inject({
+        method: 'GET',
+        url: '/api/allGrants'
+      })
+
+      expect(res.statusCode).toBe(200)
+      expect(res.result.map((g) => g.grant).sort()).toEqual([
+        'grant-a',
+        'grant-b'
+      ])
+    })
+  })
+
+  describe('query validation', () => {
+    it('responds 400 when a required parameter is missing', async () => {
+      const res = await server.inject({
+        method: 'GET',
+        url: '/api/latestVersion'
+      })
+
+      expect(res.statusCode).toBe(400)
+      expect(JSON.parse(res.payload).error).toBe('Bad Request')
+    })
+
+    it('responds 400 when a parameter has an invalid value', async () => {
+      const res = await server.inject({
+        method: 'GET',
+        url: `/api/allVersions?grant=${GRANT}&draft=sometimes`
+      })
+
+      expect(res.statusCode).toBe(400)
+      expect(JSON.parse(res.payload).error).toBe('Bad Request')
+    })
+  })
+})
