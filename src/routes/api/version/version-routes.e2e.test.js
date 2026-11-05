@@ -217,7 +217,9 @@ describe('version routes (e2e)', () => {
 
   describe('POST /api/version/unarchive', () => {
     it('unarchives an archived version', async () => {
-      await seed([versionDoc({ version: '1.0.0', grant: GRANT, archived: true })])
+      await seed([
+        versionDoc({ version: '1.0.0', grant: GRANT, archived: true })
+      ])
 
       const res = await server.inject({
         method: 'POST',

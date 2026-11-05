@@ -38,7 +38,9 @@ const seedRepo = (rows = []) => {
   })
 
   getLatestVersionWithConstraints.mockImplementation(({ major }) => {
-    const inMajor = rows.filter((r) => Number(r.version.split('.')[0]) === major)
+    const inMajor = rows.filter(
+      (r) => Number(r.version.split('.')[0]) === major
+    )
     const latest = inMajor[inMajor.length - 1]
     return latest ? [latest] : []
   })
