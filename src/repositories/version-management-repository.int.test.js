@@ -1,8 +1,10 @@
 import { MongoClient } from 'mongodb'
 import {
+  findVersion,
   getAllGrantsAllVersions,
   getAllVersionsWithConstraints,
-  getLatestVersionWithConstraints
+  getLatestVersionWithConstraints,
+  storeVersion
 } from './version-management-repository.js'
 
 const COLLECTION = 'config-versions'
@@ -1452,6 +1454,47 @@ describe('version-management-repository (integration)', () => {
           ).toEqual(['3.0.0'])
         })
       })
+    })
+  })
+
+  describe('findVersion', () => {
+    afterEach(async () => {
+      await db.collection(COLLECTION).deleteMany({ grant: GRANT })
+    })
+
+    it('returns the version when it exists', async () => {
+      await seedSingleVersion(db)
+
+      const result = await findVersion('1.0.0', GRANT, db)
+
+      expect(result.version).toBe('1.0.0')
+      expect(result.grant).toBe(GRANT)
+    })
+
+    it('returns undefined when the version does not exist', async () => {
+      await seedSingleVersion(db)
+
+      const result = await findVersion('9.9.9', GRANT, db)
+
+      expect(result).toBeUndefined()
+    })
+  })
+
+  describe('storeVersion', () => {
+    afterEach(async () => {
+      await db.collection(COLLECTION).deleteMany({ grant: GRANT })
+    })
+
+    it('adds the record to the collection', async () => {
+      await storeVersion(versionDoc({ version: '1.0.0' }), db)
+
+      const stored = await db
+        .collection(COLLECTION)
+        .findOne({ grant: GRANT, version: '1.0.0' })
+
+      expect(stored).not.toBeNull()
+      expect(stored.version).toBe('1.0.0')
+      expect(stored.status).toBe('active')
     })
   })
 })
