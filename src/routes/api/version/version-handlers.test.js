@@ -3,19 +3,56 @@ import {
   getAllVersionsHandler,
   getLatestVersionHandler,
   getSpecificVersionHandler,
-  getVersionHistoryHandler
+  getVersionHistoryHandler,
+  postArchiveVersionHandler,
+  postUnarchiveVersionHandler
 } from './version-handlers.js'
 import {
   findVersion,
   findVersionHistory,
   getAllGrantsAllVersions,
   getAllVersionsWithConstraints,
-  getLatestVersionWithConstraints
+  getLatestVersionWithConstraints,
+  storeVersion
 } from '../../../repositories/version-management-repository.js'
+import { metricsCounter } from '../../../common/helpers/metrics.js'
 import { getBucketName } from '../../../utils/release-utils.js'
+import { StatusCodes } from 'http-status-codes'
+import { publishEvent } from '../../../common/helpers/audit/event-publisher.js'
 
 vi.mock('../../../repositories/version-management-repository.js')
 vi.mock('../../../utils/release-utils.js')
+vi.mock('../../../common/helpers/metrics.js')
+vi.mock('../../../common/helpers/audit/event-publisher.js')
+
+const seedRepo = (rows = []) => {
+  findVersion.mockImplementation((version, grant) =>
+    rows.find((r) => r.version === version && r.grant === grant)
+  )
+
+  storeVersion.mockImplementation((doc) => {
+    rows.push({ ...doc })
+    return { acknowledged: true, insertedId: 'test-id' }
+  })
+  return rows
+}
+
+const responseFake = () => ({
+  response(source) {
+    return {
+      source, // Hapi calls the payload `source`
+      statusCode: undefined,
+      code(statusCode) {
+        this.statusCode = statusCode
+        return this
+      },
+      takeover() {
+        this.takenOver = true
+        return this
+      }
+    }
+  }
+})
 
 describe('version-handlers', () => {
   const mockLogger = {
@@ -522,6 +559,177 @@ describe('version-handlers', () => {
         error: 'Grant nonexisting-grant version 1.0.0 not found'
       })
       expect(mockH.code).toHaveBeenCalledWith(404)
+    })
+  })
+
+  describe('postArchiveVersionHandler', () => {
+    describe('When the version exists', () => {
+      describe('when the version is archived', () => {
+        let rows
+        let response
+        beforeEach(async () => {
+          rows = seedRepo([
+            {
+              grant: 'a grant',
+              version: '1.0.0',
+              archived: true
+            }
+          ])
+          const mockRequest = {
+            body: {
+              grant: 'a grant',
+              version: '1.0.0'
+            },
+            logger: mockLogger,
+            db: mockDb
+          }
+          response = await postArchiveVersionHandler(
+            mockRequest,
+            responseFake()
+          )
+        })
+
+        it('returns a status of OK', async () => {
+          expect(response.statusCode).toBe(StatusCodes.OK)
+        })
+
+        it('returns the archived result', () => {
+          expect(response.source).toEqual({ result: 'archived' })
+        })
+
+        it('should not have created a new entry', () => {
+          expect(rows).toHaveLength(1)
+        })
+
+        it('does not increment the archived metric', () => {
+          expect(metricsCounter).not.toHaveBeenCalled()
+        })
+
+        it('does not publish an audit event', () => {
+          expect(publishEvent).not.toHaveBeenCalled()
+        })
+      })
+
+      describe('when the version is unarchived', () => {
+        let rows
+        let response
+        beforeEach(async () => {
+          rows = seedRepo([
+            {
+              grant: 'a grant',
+              version: '1.0.0'
+            }
+          ])
+          const mockRequest = {
+            body: {
+              grant: 'a grant',
+              version: '1.0.0',
+              user: 'someone'
+            },
+            logger: mockLogger,
+            db: mockDb
+          }
+          response = await postArchiveVersionHandler(
+            mockRequest,
+            responseFake()
+          )
+        })
+
+        it('returns a status of OK', () => {
+          expect(response.statusCode).toBe(StatusCodes.OK)
+        })
+
+        it('returns the archived result', () => {
+          expect(response.source).toEqual({ result: 'archived' })
+        })
+
+        it('increments the archived metric', () => {
+          expect(metricsCounter).toHaveBeenCalledWith('version-archived')
+        })
+
+        it('publishes an archived audit event', () => {
+          expect(publishEvent).toHaveBeenCalledWith(
+            expect.objectContaining({
+              entities: [
+                expect.objectContaining({
+                  action: 'archived',
+                  entityid: 'a grant:1.0.0'
+                })
+              ],
+              status: 'success'
+            }),
+            'someone',
+            mockLogger
+          )
+        })
+
+        it('creates a new db entry with the archived field', () => {
+          expect(rows).toHaveLength(2)
+          expect(rows[1].archived).toBe(true)
+        })
+      })
+    })
+
+    describe('When the version does not exists', () => {
+      let rows
+      let response
+      beforeEach(async () => {
+        rows = seedRepo([
+          {
+            grant: 'a grant',
+            version: '1.0.0'
+          }
+        ])
+        const mockRequest = {
+          body: {
+            grant: 'a grant',
+            version: '2.0.0',
+            user: 'someone'
+          },
+          logger: mockLogger,
+          db: mockDb
+        }
+        response = await postArchiveVersionHandler(mockRequest, responseFake())
+      })
+
+      it('returns a status of not found', () => {
+        expect(response.statusCode).toBe(StatusCodes.NOT_FOUND)
+      })
+
+      it('should not have created a new entry', () => {
+        expect(rows).toHaveLength(1)
+      })
+
+      it('does not increment the archived metric', () => {
+        expect(metricsCounter).not.toHaveBeenCalled()
+      })
+
+      it('does not publish an audit event', () => {
+        expect(publishEvent).not.toHaveBeenCalled()
+      })
+    })
+  })
+
+  describe('postUnarchiveVersionHandler', () => {
+    describe('When the version exists', () => {
+      describe('when the version is unarchived', () => {
+        it('returns a status of OK', async () => {
+          await postUnarchiveVersionHandler(mockRequest, mockH)
+        })
+        it('returns the archived result', () => {})
+        it('should not have created a new entry', () => {})
+      })
+      describe('when the version is archived', () => {
+        it('returns a status of OK', () => {})
+        it('returns the archived result', () => {})
+        it('creates a metric counter', () => {})
+        it('publishes an event', () => {})
+        it('creates a new db entry with the archived field', () => {})
+      })
+    })
+
+    describe('When the version does not exists', () => {
+      it('returns a status of not found', () => {})
     })
   })
 })

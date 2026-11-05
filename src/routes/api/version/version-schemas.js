@@ -59,3 +59,33 @@ export const getSpecificVersionSchema = Joi.object({
     otherwise: Joi.forbidden().error(new Error(VERSION_OR_COMPONENTS))
   })
 })
+
+export const postArchivingVersionSchema = Joi.object({
+  grant: Joi.string().required(),
+  version: Joi.string().optional(),
+  major: Joi.alternatives().conditional('version', {
+    not: Joi.exist(),
+    then: Joi.number()
+      .min(0)
+      .required()
+      .error(new Error(VERSION_OR_COMPONENTS)),
+    otherwise: Joi.forbidden().error(new Error(VERSION_OR_COMPONENTS))
+  }),
+  minor: Joi.alternatives().conditional('version', {
+    not: Joi.exist(),
+    then: Joi.number()
+      .min(0)
+      .required()
+      .error(new Error(VERSION_OR_COMPONENTS)),
+    otherwise: Joi.forbidden().error(new Error(VERSION_OR_COMPONENTS))
+  }),
+  patch: Joi.alternatives().conditional('version', {
+    not: Joi.exist(),
+    then: Joi.number()
+      .min(0)
+      .required()
+      .error(new Error(VERSION_OR_COMPONENTS)),
+    otherwise: Joi.forbidden().error(new Error(VERSION_OR_COMPONENTS))
+  }),
+  user: Joi.string().required()
+})
