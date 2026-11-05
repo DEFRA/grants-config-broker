@@ -11,7 +11,7 @@ import { ACTIVE_STATUS, DRAFT_STATUS } from '../../../utils/constants.js'
 import { getBucketName } from '../../../utils/release-utils.js'
 import { metricsCounter } from '../../../common/helpers/metrics.js'
 import { publishEvent } from '../../../common/helpers/audit/event-publisher.js'
-import { isLatestVersion } from '../../../service/latest-version.js'
+import { isLatestVersionInMajor } from '../../../service/latest-version.js'
 
 const generateNotFoundResponse = (params) => {
   const { grant, constrainMajor } = params
@@ -97,7 +97,16 @@ export const postArchiveVersionHandler = async (req, h) => {
   }
 
   if (!existingRecord.archived) {
-    if (await isLatestVersion(grant, versionAsString, null, req.db)) {
+    const [versionMajor] = versionAsString.split('.').map(Number)
+    if (
+      await isLatestVersionInMajor(
+        grant,
+        versionAsString,
+        versionMajor,
+        null,
+        req.db
+      )
+    ) {
       return h
         .response({ error: 'Cannot archive the latest version' })
         .code(StatusCodes.BAD_REQUEST)

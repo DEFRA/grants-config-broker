@@ -12,7 +12,6 @@ import {
   findVersionHistory,
   getAllGrantsAllVersions,
   getAllVersionsWithConstraints,
-  getLatestVersion,
   getLatestVersionWithConstraints,
   storeVersion
 } from '../../../repositories/version-management-repository.js'
@@ -26,7 +25,8 @@ vi.mock('../../../utils/release-utils.js')
 vi.mock('../../../common/helpers/metrics.js')
 vi.mock('../../../common/helpers/audit/event-publisher.js')
 
-// We need to seed rows oldest-first, so the latest version is simply the last one. We also assume there is a single grant, and that we don't care about status for the getLatestVersion fake.
+// We need to seed rows oldest-first, so the latest version of a major is the
+// last one with that major. We also assume a single grant and ignore status.
 const seedRepo = (rows = []) => {
   findVersion.mockImplementation((version, grant) =>
     rows.find((r) => r.version === version && r.grant === grant)
@@ -37,8 +37,9 @@ const seedRepo = (rows = []) => {
     return { acknowledged: true, insertedId: 'test-id' }
   })
 
-  getLatestVersion.mockImplementation(() => {
-    const latest = rows[rows.length - 1]
+  getLatestVersionWithConstraints.mockImplementation(({ major }) => {
+    const inMajor = rows.filter((r) => Number(r.version.split('.')[0]) === major)
+    const latest = inMajor[inMajor.length - 1]
     return latest ? [latest] : []
   })
 
@@ -710,6 +711,50 @@ describe('version-handlers', () => {
 
       it('should not have created a new entry', () => {
         expect(rows).toHaveLength(1)
+      })
+
+      it('returns the error message', () => {
+        expect(response.source).toEqual({
+          error: 'Cannot archive the latest version'
+        })
+      })
+
+      it('does not increment the archived metric', () => {
+        expect(metricsCounter).not.toHaveBeenCalled()
+      })
+
+      it('does not publish an audit event', () => {
+        expect(publishEvent).not.toHaveBeenCalled()
+      })
+    })
+
+    describe('When is the latest version of an older major', () => {
+      let rows
+      let response
+      beforeEach(async () => {
+        rows = seedRepo([
+          { grant: 'a grant', version: '1.0.0' },
+          { grant: 'a grant', version: '1.1.0' },
+          { grant: 'a grant', version: '2.0.0' }
+        ])
+        const mockRequest = {
+          body: {
+            grant: 'a grant',
+            version: '1.1.0',
+            user: 'someone'
+          },
+          logger: mockLogger,
+          db: mockDb
+        }
+        response = await postArchiveVersionHandler(mockRequest, responseFake())
+      })
+
+      it('returns a status of bad request', () => {
+        expect(response.statusCode).toBe(StatusCodes.BAD_REQUEST)
+      })
+
+      it('should not have created a new entry', () => {
+        expect(rows).toHaveLength(3)
       })
 
       it('returns the error message', () => {
