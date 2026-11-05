@@ -713,23 +713,149 @@ describe('version-handlers', () => {
   describe('postUnarchiveVersionHandler', () => {
     describe('When the version exists', () => {
       describe('when the version is unarchived', () => {
-        it('returns a status of OK', async () => {
-          await postUnarchiveVersionHandler(mockRequest, mockH)
+        let rows
+        let response
+        beforeEach(async () => {
+          rows = seedRepo([
+            {
+              grant: 'a grant',
+              version: '1.0.0'
+            }
+          ])
+          const mockRequest = {
+            body: {
+              grant: 'a grant',
+              version: '1.0.0'
+            },
+            logger: mockLogger,
+            db: mockDb
+          }
+          response = await postUnarchiveVersionHandler(
+            mockRequest,
+            responseFake()
+          )
         })
-        it('returns the archived result', () => {})
-        it('should not have created a new entry', () => {})
+
+        it('returns a status of OK', () => {
+          expect(response.statusCode).toBe(StatusCodes.OK)
+        })
+
+        it('returns the unarchived result', () => {
+          expect(response.source).toEqual({ result: 'unarchived' })
+        })
+
+        it('should not have created a new entry', () => {
+          expect(rows).toHaveLength(1)
+        })
+
+        it('does not increment the unarchived metric', () => {
+          expect(metricsCounter).not.toHaveBeenCalled()
+        })
+
+        it('does not publish an audit event', () => {
+          expect(publishEvent).not.toHaveBeenCalled()
+        })
       })
+
       describe('when the version is archived', () => {
-        it('returns a status of OK', () => {})
-        it('returns the archived result', () => {})
-        it('creates a metric counter', () => {})
-        it('publishes an event', () => {})
-        it('creates a new db entry with the archived field', () => {})
+        let rows
+        let response
+        beforeEach(async () => {
+          rows = seedRepo([
+            {
+              grant: 'a grant',
+              version: '1.0.0',
+              archived: true
+            }
+          ])
+          const mockRequest = {
+            body: {
+              grant: 'a grant',
+              version: '1.0.0',
+              user: 'someone'
+            },
+            logger: mockLogger,
+            db: mockDb
+          }
+          response = await postUnarchiveVersionHandler(
+            mockRequest,
+            responseFake()
+          )
+        })
+
+        it('returns a status of OK', () => {
+          expect(response.statusCode).toBe(StatusCodes.OK)
+        })
+
+        it('returns the unarchived result', () => {
+          expect(response.source).toEqual({ result: 'unarchived' })
+        })
+
+        it('increments the unarchived metric', () => {
+          expect(metricsCounter).toHaveBeenCalledWith('version-unarchived')
+        })
+
+        it('publishes an unarchived audit event', () => {
+          expect(publishEvent).toHaveBeenCalledWith(
+            expect.objectContaining({
+              entities: [
+                expect.objectContaining({
+                  action: 'unarchived',
+                  entityid: 'a grant:1.0.0'
+                })
+              ],
+              status: 'success'
+            }),
+            'someone',
+            mockLogger
+          )
+        })
+
+        it('creates a new db entry with the archived field set to false', () => {
+          expect(rows).toHaveLength(2)
+          expect(rows[1].archived).toBe(false)
+        })
       })
     })
 
     describe('When the version does not exists', () => {
-      it('returns a status of not found', () => {})
+      let rows
+      let response
+      beforeEach(async () => {
+        rows = seedRepo([
+          {
+            grant: 'a grant',
+            version: '1.0.0',
+            archived: true
+          }
+        ])
+        const mockRequest = {
+          body: {
+            grant: 'a grant',
+            version: '2.0.0',
+            user: 'someone'
+          },
+          logger: mockLogger,
+          db: mockDb
+        }
+        response = await postUnarchiveVersionHandler(mockRequest, responseFake())
+      })
+
+      it('returns a status of not found', () => {
+        expect(response.statusCode).toBe(StatusCodes.NOT_FOUND)
+      })
+
+      it('should not have created a new entry', () => {
+        expect(rows).toHaveLength(1)
+      })
+
+      it('does not increment the unarchived metric', () => {
+        expect(metricsCounter).not.toHaveBeenCalled()
+      })
+
+      it('does not publish an audit event', () => {
+        expect(publishEvent).not.toHaveBeenCalled()
+      })
     })
   })
 })

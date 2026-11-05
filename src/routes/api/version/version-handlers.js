@@ -122,7 +122,42 @@ export const postArchiveVersionHandler = async (req, h) => {
   return h.response({ result: 'archived' }).code(StatusCodes.OK).takeover()
 }
 
-export const postUnarchiveVersionHandler = async (req, h) => {}
+export const postUnarchiveVersionHandler = async (req, h) => {
+  const { grant, version, major, minor, patch } = req.body
+  //Fetch the specific version from the database
+  const versionAsString = version ?? `${major}.${minor}.${patch}`
+  const existingRecord = await findVersion(versionAsString, grant, req.db)
+
+  if (!existingRecord) {
+    return h.response().code(StatusCodes.NOT_FOUND).takeover()
+  }
+
+  if (existingRecord.archived) {
+    existingRecord.archived = false
+    existingRecord.lastUpdated = new Date()
+    await storeVersion(existingRecord, req.db)
+    await metricsCounter('version-unarchived')
+    const audit = {
+      entities: [
+        {
+          entity: 'configuration',
+          action: 'unarchived',
+          entityid: `${existingRecord.grant}:${existingRecord.version}`
+        }
+      ],
+      status: 'success',
+      details: {
+        grant: existingRecord.grant,
+        configVersion: existingRecord.version,
+        configArchived: existingRecord.archived
+      }
+    }
+    const { user } = req.body
+    await publishEvent(audit, user, req.logger)
+  }
+
+  return h.response({ result: 'unarchived' }).code(StatusCodes.OK).takeover()
+}
 
 export const getAllVersionsHandler = async (req, h) => {
   const { grant, draft, archived, constrainMajor, constrainMinor } = req.query

@@ -12,7 +12,8 @@ import {
   getAllGrantsSchema,
   getAllVersionsSchema,
   getLatestVersionSchema,
-  getSpecificVersionSchema
+  getSpecificVersionSchema,
+  postArchivingVersionSchema
 } from './version-schemas.js'
 
 export const versionRoutes = [
@@ -53,7 +54,7 @@ export const versionRoutes = [
       description: 'Unarchive a specific version of config for a given grant',
       handler: postUnarchiveVersionHandler,
       validate: {
-        body: getSpecificVersionSchema,
+        body: postArchivingVersionSchema,
         failAction(request, _h, err) {
           request.logger.error(err, 'Post unarchive version validation error')
           throw Boom.badRequest(err.message)
@@ -68,7 +69,7 @@ export const versionRoutes = [
       description: 'Archive a  specific version of config for a given grant',
       handler: postArchiveVersionHandler,
       validate: {
-        body: getSpecificVersionSchema,
+        body: postArchivingVersionSchema,
         failAction(request, _h, err) {
           request.logger.error(err, 'Post archive version validation error')
           throw Boom.badRequest(err.message)
