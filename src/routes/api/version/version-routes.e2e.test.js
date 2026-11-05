@@ -192,6 +192,49 @@ describe('version routes (e2e)', () => {
     })
   })
 
+  describe('POST /api/version/archive', () => {
+    it('archives a version that is not the latest of its major', async () => {
+      await seed([
+        versionDoc({ version: '1.0.0', grant: GRANT }),
+        versionDoc({ version: '1.1.0', grant: GRANT })
+      ])
+
+      const res = await server.inject({
+        method: 'POST',
+        url: '/api/version/archive',
+        payload: { grant: GRANT, version: '1.0.0', user: 'someone' }
+      })
+
+      expect(res.statusCode).toBe(200)
+      expect(res.result).toEqual({ result: 'archived' })
+
+      const archived = await server.db
+        .collection(COLLECTION)
+        .findOne({ grant: GRANT, version: '1.0.0', archived: true })
+      expect(archived).not.toBeNull()
+    })
+  })
+
+  describe('POST /api/version/unarchive', () => {
+    it('unarchives an archived version', async () => {
+      await seed([versionDoc({ version: '1.0.0', grant: GRANT, archived: true })])
+
+      const res = await server.inject({
+        method: 'POST',
+        url: '/api/version/unarchive',
+        payload: { grant: GRANT, version: '1.0.0', user: 'someone' }
+      })
+
+      expect(res.statusCode).toBe(200)
+      expect(res.result).toEqual({ result: 'unarchived' })
+
+      const unarchived = await server.db
+        .collection(COLLECTION)
+        .findOne({ grant: GRANT, version: '1.0.0', archived: false })
+      expect(unarchived).not.toBeNull()
+    })
+  })
+
   describe('query validation', () => {
     it('responds 400 when a required parameter is missing', async () => {
       const res = await server.inject({

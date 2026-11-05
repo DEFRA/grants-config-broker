@@ -585,7 +585,7 @@ describe('version-handlers', () => {
             }
           ])
           const mockRequest = {
-            body: {
+            payload: {
               grant: 'a grant',
               version: '1.0.0'
             },
@@ -634,7 +634,7 @@ describe('version-handlers', () => {
             }
           ])
           const mockRequest = {
-            body: {
+            payload: {
               grant: 'a grant',
               version: '1.0.0',
               user: 'someone'
@@ -694,7 +694,7 @@ describe('version-handlers', () => {
           }
         ])
         const mockRequest = {
-          body: {
+          payload: {
             grant: 'a grant',
             version: '1.0.0',
             user: 'someone'
@@ -738,7 +738,7 @@ describe('version-handlers', () => {
           { grant: 'a grant', version: '2.0.0' }
         ])
         const mockRequest = {
-          body: {
+          payload: {
             grant: 'a grant',
             version: '1.1.0',
             user: 'someone'
@@ -783,7 +783,7 @@ describe('version-handlers', () => {
           }
         ])
         const mockRequest = {
-          body: {
+          payload: {
             grant: 'a grant',
             version: '2.0.0',
             user: 'someone'
@@ -825,7 +825,7 @@ describe('version-handlers', () => {
             }
           ])
           const mockRequest = {
-            body: {
+            payload: {
               grant: 'a grant',
               version: '1.0.0'
             },
@@ -871,7 +871,7 @@ describe('version-handlers', () => {
             }
           ])
           const mockRequest = {
-            body: {
+            payload: {
               grant: 'a grant',
               version: '1.0.0',
               user: 'someone'
@@ -932,7 +932,7 @@ describe('version-handlers', () => {
           }
         ])
         const mockRequest = {
-          body: {
+          payload: {
             grant: 'a grant',
             version: '2.0.0',
             user: 'someone'

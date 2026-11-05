@@ -87,7 +87,7 @@ export const getSpecificVersionHandler = async (req, h) => {
 }
 
 export const postArchiveVersionHandler = async (req, h) => {
-  const { grant, version, major, minor, patch } = req.body
+  const { grant, version, major, minor, patch } = req.payload
   //Fetch the specific version from the database
   const versionAsString = version ?? `${major}.${minor}.${patch}`
   const existingRecord = await findVersion(versionAsString, grant, req.db)
@@ -131,7 +131,7 @@ export const postArchiveVersionHandler = async (req, h) => {
         configArchived: existingRecord.archived
       }
     }
-    const { user } = req.body
+    const { user } = req.payload
     await publishEvent(audit, user, req.logger)
   }
 
@@ -139,7 +139,7 @@ export const postArchiveVersionHandler = async (req, h) => {
 }
 
 export const postUnarchiveVersionHandler = async (req, h) => {
-  const { grant, version, major, minor, patch } = req.body
+  const { grant, version, major, minor, patch } = req.payload
   //Fetch the specific version from the database
   const versionAsString = version ?? `${major}.${minor}.${patch}`
   const existingRecord = await findVersion(versionAsString, grant, req.db)
@@ -168,7 +168,7 @@ export const postUnarchiveVersionHandler = async (req, h) => {
         configArchived: existingRecord.archived
       }
     }
-    const { user } = req.body
+    const { user } = req.payload
     await publishEvent(audit, user, req.logger)
   }
 
