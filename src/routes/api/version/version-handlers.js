@@ -4,10 +4,14 @@ import {
   findVersionHistory,
   getAllGrantsAllVersions,
   getAllVersionsWithConstraints,
-  getLatestVersionWithConstraints
+  getLatestVersionWithConstraints,
+  storeVersion
 } from '../../../repositories/version-management-repository.js'
 import { ACTIVE_STATUS, DRAFT_STATUS } from '../../../utils/constants.js'
 import { getBucketName } from '../../../utils/release-utils.js'
+import { metricsCounter } from '../../../common/helpers/metrics.js'
+import { publishEvent } from '../../../common/helpers/audit/event-publisher.js'
+import { isLatestVersionInMajor } from '../../../service/latest-version.js'
 
 const generateNotFoundResponse = (params) => {
   const { grant, constrainMajor } = params
@@ -26,18 +30,22 @@ const getStatusOption = (draft) => {
   }
 }
 
+const getArchivedOption = (archived) =>
+  archived === 'included' ? true : undefined
+
 export const getLatestVersionHandler = async (req, h) => {
-  const { grant, draft, constrainMajor, constrainMinor } = req.query
+  const { grant, draft, archived, constrainMajor, constrainMinor } = req.query
 
   //Fetch the latest version from the database
   const status = getStatusOption(draft)
-  const latestVersion = await getLatestVersionWithConstraints(
+  const latestVersion = await getLatestVersionWithConstraints({
     grant,
     status,
-    constrainMajor,
-    constrainMinor,
-    req.db
-  )
+    major: constrainMajor,
+    minor: constrainMinor,
+    archived: getArchivedOption(archived),
+    db: req.db
+  })
   if (latestVersion?.length) {
     const formattedResponse = {
       grant: latestVersion[0].grant,
@@ -55,11 +63,21 @@ export const getLatestVersionHandler = async (req, h) => {
     .takeover()
 }
 
-export const getSpecificVersionHandler = async (req, h) => {
-  const { grant, version, major, minor, patch } = req.query
+const retrieveRecord = async (parameters, db) => {
+  const { grant, version, major, minor, patch } = parameters
   //Fetch the specific version from the database
   const versionAsString = version ?? `${major}.${minor}.${patch}`
-  const versionDetails = await findVersion(versionAsString, grant, req.db)
+  const existingRecord = await findVersion(versionAsString, grant, db)
+  return { existingRecord, grant, versionAsString }
+}
+
+export const getSpecificVersionHandler = async (req, h) => {
+  const {
+    existingRecord: versionDetails,
+    grant,
+    versionAsString
+  } = await retrieveRecord(req.query, req.db)
+
   if (versionDetails) {
     const formattedResponse = {
       grant: versionDetails.grant,
@@ -77,23 +95,102 @@ export const getSpecificVersionHandler = async (req, h) => {
     .takeover()
 }
 
-export const getAllVersionsHandler = async (req, h) => {
-  const { grant, draft, constrainMajor, constrainMinor } = req.query
-  const status = getStatusOption(draft)
-  const allVersions = await getAllVersionsWithConstraints(
-    grant,
-    status,
-    constrainMajor,
-    constrainMinor,
+const auditArchivingChanges = async (archiveAction, existingRecord, req) => {
+  await metricsCounter(`version-${archiveAction}`)
+  const audit = {
+    entities: [
+      {
+        entity: 'configuration',
+        action: archiveAction,
+        entityid: `${existingRecord.grant}:${existingRecord.version}`
+      }
+    ],
+    status: 'success',
+    details: {
+      grant: existingRecord.grant,
+      configVersion: existingRecord.version,
+      configArchived: existingRecord.archived
+    }
+  }
+  const { user } = req.payload
+  await publishEvent(audit, user, req.logger)
+}
+
+const updateRecord = async (archivingAction, existingRecord, req) => {
+  existingRecord.archived = archivingAction === 'archived'
+  existingRecord.lastUpdated = new Date()
+  await storeVersion(existingRecord, req.db)
+  await auditArchivingChanges(archivingAction, existingRecord, req)
+}
+
+export const postArchiveVersionHandler = async (req, h) => {
+  const { existingRecord, grant, versionAsString } = await retrieveRecord(
+    req.payload,
     req.db
   )
+
+  if (!existingRecord) {
+    return h.response().code(StatusCodes.NOT_FOUND).takeover()
+  }
+
+  if (!existingRecord.archived) {
+    const [versionMajor] = versionAsString.split('.').map(Number)
+    if (
+      await isLatestVersionInMajor(
+        grant,
+        versionAsString,
+        versionMajor,
+        null,
+        req.db
+      )
+    ) {
+      return h
+        .response({ error: 'Cannot archive the latest version' })
+        .code(StatusCodes.BAD_REQUEST)
+        .takeover()
+    }
+    await updateRecord('archived', existingRecord, req)
+  }
+
+  return h.response({ result: 'archived' }).code(StatusCodes.OK).takeover()
+}
+
+export const postUnarchiveVersionHandler = async (req, h) => {
+  const { existingRecord } = await retrieveRecord(req.payload, req.db)
+
+  if (!existingRecord) {
+    return h.response().code(StatusCodes.NOT_FOUND).takeover()
+  }
+
+  if (existingRecord.archived) {
+    await updateRecord('unarchived', existingRecord, req)
+  }
+
+  return h.response({ result: 'unarchived' }).code(StatusCodes.OK).takeover()
+}
+
+export const getAllVersionsHandler = async (req, h) => {
+  const { grant, draft, archived, constrainMajor, constrainMinor } = req.query
+  const status = getStatusOption(draft)
+  const allVersions = await getAllVersionsWithConstraints({
+    grant,
+    status,
+    major: constrainMajor,
+    minor: constrainMinor,
+    archived: getArchivedOption(archived),
+    db: req.db
+  })
   return h.response(allVersions).code(StatusCodes.OK)
 }
 
 export const getAllGrantsHandler = async (req, h) => {
-  const { draft } = req.query
+  const { draft, archived } = req.query
   const status = getStatusOption(draft)
-  const allVersions = await getAllGrantsAllVersions(status, req.db)
+  const allVersions = await getAllGrantsAllVersions({
+    status,
+    archived: getArchivedOption(archived),
+    db: req.db
+  })
 
   return h.response(allVersions).code(StatusCodes.OK)
 }

@@ -56,6 +56,26 @@ describe('version-schemas', () => {
       )
     })
 
+    it('should validate successfully when archived is included', () => {
+      const result = getLatestVersionSchema.validate({
+        grant: 'grant',
+        archived: 'included'
+      })
+
+      expect(result.error).toBeUndefined()
+    })
+
+    it('should result in error for unknown archived option', () => {
+      const result = getLatestVersionSchema.validate({
+        grant: 'grant',
+        archived: 'true'
+      })
+
+      expect(result.error.stack).to.eql(
+        'ValidationError: "archived" must be [included]'
+      )
+    })
+
     it('should result in error for missing mandatory option', () => {
       const result = getLatestVersionSchema.validate({})
 
@@ -113,6 +133,26 @@ describe('version-schemas', () => {
       )
     })
 
+    it('should validate successfully when archived is included', () => {
+      const result = getAllVersionsSchema.validate({
+        grant: 'grant',
+        archived: 'included'
+      })
+
+      expect(result.error).toBeUndefined()
+    })
+
+    it('should result in error for unknown archived option', () => {
+      const result = getAllVersionsSchema.validate({
+        grant: 'grant',
+        archived: 'true'
+      })
+
+      expect(result.error.stack).to.eql(
+        'ValidationError: "archived" must be [included]'
+      )
+    })
+
     it('should result in error for missing mandatory option', () => {
       const result = getAllVersionsSchema.validate({})
 
@@ -137,6 +177,20 @@ describe('version-schemas', () => {
       const result = getAllGrantsSchema.validate({})
 
       expect(result.error).toBeUndefined()
+    })
+
+    it('should validate successfully when archived is included', () => {
+      const result = getAllGrantsSchema.validate({ archived: 'included' })
+
+      expect(result.error).toBeUndefined()
+    })
+
+    it('should result in error for unknown archived option', () => {
+      const result = getAllGrantsSchema.validate({ archived: 'true' })
+
+      expect(result.error.stack).to.eql(
+        'ValidationError: "archived" must be [included]'
+      )
     })
 
     it('should result in error for unknown option', () => {

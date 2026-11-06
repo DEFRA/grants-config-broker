@@ -3,14 +3,17 @@ import {
   getAllVersionsHandler,
   getLatestVersionHandler,
   getSpecificVersionHandler,
-  getVersionHistoryHandler
+  getVersionHistoryHandler,
+  postArchiveVersionHandler,
+  postUnarchiveVersionHandler
 } from './version-handlers.js'
 import Boom from '@hapi/boom'
 import {
   getAllGrantsSchema,
   getAllVersionsSchema,
   getLatestVersionSchema,
-  getSpecificVersionSchema
+  getSpecificVersionSchema,
+  postArchivingVersionSchema
 } from './version-schemas.js'
 
 export const versionRoutes = [
@@ -39,6 +42,36 @@ export const versionRoutes = [
         query: getSpecificVersionSchema,
         failAction(request, _h, err) {
           request.logger.error(err, 'Get latest version validation error')
+          throw Boom.badRequest(err.message)
+        }
+      }
+    }
+  },
+  {
+    method: 'POST',
+    path: '/api/version/unarchive',
+    options: {
+      description: 'Unarchive a specific version of config for a given grant',
+      handler: postUnarchiveVersionHandler,
+      validate: {
+        payload: postArchivingVersionSchema,
+        failAction(request, _h, err) {
+          request.logger.error(err, 'Post unarchive version validation error')
+          throw Boom.badRequest(err.message)
+        }
+      }
+    }
+  },
+  {
+    method: 'POST',
+    path: '/api/version/archive',
+    options: {
+      description: 'Archive a  specific version of config for a given grant',
+      handler: postArchiveVersionHandler,
+      validate: {
+        payload: postArchivingVersionSchema,
+        failAction(request, _h, err) {
+          request.logger.error(err, 'Post archive version validation error')
           throw Boom.badRequest(err.message)
         }
       }

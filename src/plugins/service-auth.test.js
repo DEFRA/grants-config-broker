@@ -35,13 +35,17 @@ describe('serviceAuth plugin', () => {
     serviceVersion: '1.0.0'
   }
 
-  const encrypt = (text, key) => {
+  // Derive the key once: scrypt is a deliberately slow KDF, so running it per
+  // encrypt() call dominated this file's runtime. The key is constant here.
+  const derivedKey = crypto.scryptSync(
+    defaultConfigValues['auth.encryptionKey'],
+    'salt',
+    32
+  )
+
+  const encrypt = (text) => {
     const iv = crypto.randomBytes(12)
-    const cipher = crypto.createCipheriv(
-      'aes-256-gcm',
-      crypto.scryptSync(key, 'salt', 32),
-      iv
-    )
+    const cipher = crypto.createCipheriv('aes-256-gcm', derivedKey, iv)
     let encrypted = cipher.update(text, 'utf8', 'base64')
     encrypted += cipher.final('base64')
     return `${iv.toString('base64')}:${cipher.getAuthTag().toString('base64')}:${encrypted}`
@@ -95,9 +99,8 @@ describe('serviceAuth plugin', () => {
     })
 
     it('should authenticate with a valid legacy token', async () => {
-      const encryptionKey = defaultConfigValues['auth.encryptionKey']
       const token = defaultConfigValues['auth.token']
-      const authHeader = `Bearer ${Buffer.from(encrypt(token, encryptionKey)).toString('base64')}`
+      const authHeader = `Bearer ${Buffer.from(encrypt(token)).toString('base64')}`
 
       const res = await server.inject({
         method: 'GET',
@@ -168,7 +171,7 @@ describe('serviceAuth plugin', () => {
         return defaultConfigValues[key] ?? null
       })
 
-      const invalidLegacyHeader = `Bearer ${Buffer.from(encrypt('not-the-token', defaultConfigValues['auth.encryptionKey'])).toString('base64')}`
+      const invalidLegacyHeader = `Bearer ${Buffer.from(encrypt('not-the-token')).toString('base64')}`
 
       const res = await server.inject({
         method: 'GET',
@@ -180,9 +183,8 @@ describe('serviceAuth plugin', () => {
     })
 
     it('should fail with encryption key missing', async () => {
-      const encryptionKey = defaultConfigValues['auth.encryptionKey']
       const token = defaultConfigValues['auth.token']
-      const authHeader = `Bearer ${Buffer.from(encrypt(token, encryptionKey)).toString('base64')}`
+      const authHeader = `Bearer ${Buffer.from(encrypt(token)).toString('base64')}`
       config.get.mockImplementation((key) => {
         if (key === 'auth.encryptionKey') return ''
         if (key === 'serviceAuth.enabled') return false
@@ -270,9 +272,8 @@ describe('serviceAuth plugin', () => {
         }
       })
 
-      const encryptionKey = defaultConfigValues['auth.encryptionKey']
       const token = defaultConfigValues['auth.token']
-      const authHeader = `Bearer ${Buffer.from(encrypt(token, encryptionKey)).toString('base64')}`
+      const authHeader = `Bearer ${Buffer.from(encrypt(token)).toString('base64')}`
 
       config.get.mockImplementation((key) => {
         if (key === 'auth.defaultSubject') return 'grants-config-browser'
@@ -303,9 +304,8 @@ describe('serviceAuth plugin', () => {
         }
       })
 
-      const encryptionKey = defaultConfigValues['auth.encryptionKey']
       const token = defaultConfigValues['auth.token']
-      const authHeader = `Bearer ${Buffer.from(encrypt(token, encryptionKey)).toString('base64')}`
+      const authHeader = `Bearer ${Buffer.from(encrypt(token)).toString('base64')}`
 
       config.get.mockImplementation((key) => {
         if (key === 'auth.defaultSubject') return 'wrong-service'

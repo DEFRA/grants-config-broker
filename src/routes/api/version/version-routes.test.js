@@ -76,4 +76,36 @@ describe('versionRoutes', () => {
       )
     })
   })
+
+  describe('POST /api/version/archive', () => {
+    it('should return 400 and log the error when validation fails', () => {
+      expect(() =>
+        getRoute('POST', '/api/version/archive').options.validate.failAction(
+          mockRequest,
+          null,
+          mockError
+        )
+      ).toThrow(Boom.badRequest(mockError))
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        mockError,
+        'Post archive version validation error'
+      )
+    })
+  })
+
+  describe('POST /api/version/unarchive', () => {
+    it('should return 400 and log the error when validation fails', () => {
+      expect(() =>
+        getRoute('POST', '/api/version/unarchive').options.validate.failAction(
+          mockRequest,
+          null,
+          mockError
+        )
+      ).toThrow(Boom.badRequest(mockError))
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        mockError,
+        'Post unarchive version validation error'
+      )
+    })
+  })
 })
