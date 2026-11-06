@@ -1,11 +1,15 @@
-import neostandard from 'neostandard'
+import neostandard, { resolveIgnoresFromGitignore } from 'neostandard'
 
-export default neostandard({
-  env: ['node', 'vitest'],
-  ignores: [
-    ...neostandard.resolveIgnoresFromGitignore(),
-    'src/routes/asyncapidocs/*'
-  ],
-  noJsx: true,
-  noStyle: true
-})
+export default [
+  {
+    ignores: [
+      ...resolveIgnoresFromGitignore(),
+      'src/routes/asyncapidocs/**'
+    ]
+  },
+  ...neostandard({
+    env: ['node', 'vitest'],
+    noJsx: true,
+    noStyle: true
+  })
+]
