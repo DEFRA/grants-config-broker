@@ -63,11 +63,20 @@ export const getLatestVersionHandler = async (req, h) => {
     .takeover()
 }
 
-export const getSpecificVersionHandler = async (req, h) => {
-  const { grant, version, major, minor, patch } = req.query
+const retrieveRecord = async (parameters, db) => {
+  const { grant, version, major, minor, patch } = parameters
   //Fetch the specific version from the database
   const versionAsString = version ?? `${major}.${minor}.${patch}`
-  const versionDetails = await findVersion(versionAsString, grant, req.db)
+  const existingRecord = await findVersion(versionAsString, grant, db)
+  return { existingRecord, grant, versionAsString }
+}
+
+export const getSpecificVersionHandler = async (req, h) => {
+  const {
+    existingRecord: versionDetails,
+    grant,
+    versionAsString
+  } = await retrieveRecord(req.query, req.db)
 
   if (versionDetails) {
     const formattedResponse = {
@@ -86,11 +95,39 @@ export const getSpecificVersionHandler = async (req, h) => {
     .takeover()
 }
 
+const auditArchivingChanges = async (archiveAction, existingRecord, req) => {
+  await metricsCounter(`version-${archiveAction}`)
+  const audit = {
+    entities: [
+      {
+        entity: 'configuration',
+        action: archiveAction,
+        entityid: `${existingRecord.grant}:${existingRecord.version}`
+      }
+    ],
+    status: 'success',
+    details: {
+      grant: existingRecord.grant,
+      configVersion: existingRecord.version,
+      configArchived: existingRecord.archived
+    }
+  }
+  const { user } = req.payload
+  await publishEvent(audit, user, req.logger)
+}
+
+const updateRecord = async (archivingAction, existingRecord, req) => {
+  existingRecord.archived = archivingAction === 'archived'
+  existingRecord.lastUpdated = new Date()
+  await storeVersion(existingRecord, req.db)
+  await auditArchivingChanges(archivingAction, existingRecord, req)
+}
+
 export const postArchiveVersionHandler = async (req, h) => {
-  const { grant, version, major, minor, patch } = req.payload
-  //Fetch the specific version from the database
-  const versionAsString = version ?? `${major}.${minor}.${patch}`
-  const existingRecord = await findVersion(versionAsString, grant, req.db)
+  const { existingRecord, grant, versionAsString } = await retrieveRecord(
+    req.payload,
+    req.db
+  )
 
   if (!existingRecord) {
     return h.response().code(StatusCodes.NOT_FOUND).takeover()
@@ -112,64 +149,21 @@ export const postArchiveVersionHandler = async (req, h) => {
         .code(StatusCodes.BAD_REQUEST)
         .takeover()
     }
-    existingRecord.archived = true
-    existingRecord.lastUpdated = new Date()
-    await storeVersion(existingRecord, req.db)
-    await metricsCounter('version-archived')
-    const audit = {
-      entities: [
-        {
-          entity: 'configuration',
-          action: 'archived',
-          entityid: `${existingRecord.grant}:${existingRecord.version}`
-        }
-      ],
-      status: 'success',
-      details: {
-        grant: existingRecord.grant,
-        configVersion: existingRecord.version,
-        configArchived: existingRecord.archived
-      }
-    }
-    const { user } = req.payload
-    await publishEvent(audit, user, req.logger)
+    await updateRecord('archived', existingRecord, req)
   }
 
   return h.response({ result: 'archived' }).code(StatusCodes.OK).takeover()
 }
 
 export const postUnarchiveVersionHandler = async (req, h) => {
-  const { grant, version, major, minor, patch } = req.payload
-  //Fetch the specific version from the database
-  const versionAsString = version ?? `${major}.${minor}.${patch}`
-  const existingRecord = await findVersion(versionAsString, grant, req.db)
+  const { existingRecord } = await retrieveRecord(req.payload, req.db)
 
   if (!existingRecord) {
     return h.response().code(StatusCodes.NOT_FOUND).takeover()
   }
 
   if (existingRecord.archived) {
-    existingRecord.archived = false
-    existingRecord.lastUpdated = new Date()
-    await storeVersion(existingRecord, req.db)
-    await metricsCounter('version-unarchived')
-    const audit = {
-      entities: [
-        {
-          entity: 'configuration',
-          action: 'unarchived',
-          entityid: `${existingRecord.grant}:${existingRecord.version}`
-        }
-      ],
-      status: 'success',
-      details: {
-        grant: existingRecord.grant,
-        configVersion: existingRecord.version,
-        configArchived: existingRecord.archived
-      }
-    }
-    const { user } = req.payload
-    await publishEvent(audit, user, req.logger)
+    await updateRecord('unarchived', existingRecord, req)
   }
 
   return h.response({ result: 'unarchived' }).code(StatusCodes.OK).takeover()
