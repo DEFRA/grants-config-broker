@@ -76,9 +76,13 @@ const seedSingleVersion = (db) =>
   db.collection(COLLECTION).insertMany([versionDoc({ version: '1.0.0' })])
 
 const seedSingleArchivedVersion = (db) =>
-  db
-    .collection(COLLECTION)
-    .insertMany([versionDoc({ version: '1.0.0', archived: true })])
+  db.collection(COLLECTION).insertMany([
+    versionDoc({
+      version: '1.0.0',
+      archived: true,
+      lastUpdated: new Date('2024-01-01')
+    })
+  ])
 
 const seedActiveAndDraft = (db) =>
   db
@@ -389,20 +393,38 @@ describe('version-management-repository (integration)', () => {
       })
 
       describe('when there is 1 archived version of a grant', () => {
+        let result
         beforeEach(async () => {
           await seedSingleArchivedVersion(db)
-        })
 
-        it('returns that version when no constraints are given', async () => {
-          const result = await getLatestVersionWithConstraints({
+          result = await getLatestVersionWithConstraints({
             grant: GRANT,
             status: 'active',
             archived: 'true',
             db
           })
+        })
 
-          expect(result).toHaveLength(1)
-          expect(result[0].version).toBe('1.0.0')
+        describe('when no constraints are given', () => {
+          it('returns the version field', async () => {
+            expect(result).toHaveLength(1)
+            expect(result[0].version).toBe('1.0.0')
+          })
+
+          it('returns the status field', async () => {
+            expect(result).toHaveLength(1)
+            expect(result[0].status).toBe('active')
+          })
+
+          it('returns the lastUpdated field', async () => {
+            expect(result).toHaveLength(1)
+            expect(result[0].lastUpdated).toStrictEqual(new Date('2024-01-01'))
+          })
+
+          it('returns the archived field', async () => {
+            expect(result).toHaveLength(1)
+            expect(result[0].archived).toBe(true)
+          })
         })
       })
 
@@ -772,24 +794,34 @@ describe('version-management-repository (integration)', () => {
       })
 
       describe('when there are 5 partially-archived versions of a grant', () => {
+        let result
         beforeEach(async () => {
           await seedFiveVersionsPartiallyArchived(db)
-        })
-
-        it('returns all versions, including the archived ones', async () => {
-          const result = await getAllVersionsWithConstraints({
+          result = await getAllVersionsWithConstraints({
             grant: GRANT,
             status: 'active',
             archived: 'true',
             db
           })
+        })
 
+        it('returns all versions, including the archived ones', async () => {
           expect(result.map((v) => v.version)).toEqual([
             '2.1.3',
             '2.0.0',
             '1.2.0',
             '1.1.0',
             '1.0.0'
+          ])
+        })
+
+        it('returns the corresponding archive value', async () => {
+          expect(result.map((v) => v.archived)).toEqual([
+            undefined,
+            true,
+            true,
+            undefined,
+            undefined
           ])
         })
       })
@@ -1236,6 +1268,18 @@ describe('version-management-repository (integration)', () => {
           expect(
             grantEntry(result, OTHER_GRANT).versions.map((v) => v.version)
           ).toEqual(['3.0.0', '1.5.0'])
+        })
+
+        it('returns the archive field for all of them', async () => {
+          const result = await getAllGrantsAllVersions({ archived: 'true', db })
+
+          expect(result).toHaveLength(2)
+          expect(
+            grantEntry(result, GRANT).versions.map((v) => v.archived)
+          ).toEqual([undefined, undefined, true])
+          expect(
+            grantEntry(result, OTHER_GRANT).versions.map((v) => v.archived)
+          ).toEqual([undefined, true])
         })
       })
 
