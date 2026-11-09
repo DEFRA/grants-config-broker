@@ -53,7 +53,8 @@ export const getLatestVersionHandler = async (req, h) => {
       status: latestVersion[0].status,
       path: getBucketName(),
       manifest: latestVersion[0].manifest,
-      lastUpdated: latestVersion[0].lastUpdated
+      lastUpdated: latestVersion[0].lastUpdated,
+      archived: latestVersion[0].archived
     }
     return h.response(formattedResponse).code(StatusCodes.OK)
   }
@@ -85,7 +86,8 @@ export const getSpecificVersionHandler = async (req, h) => {
       status: versionDetails.status,
       path: getBucketName(),
       manifest: versionDetails.manifest,
-      lastUpdated: versionDetails.lastUpdated
+      lastUpdated: versionDetails.lastUpdated,
+      archived: versionDetails.archived
     }
     return h.response(formattedResponse).code(StatusCodes.OK)
   }
