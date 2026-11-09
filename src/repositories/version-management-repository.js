@@ -135,7 +135,8 @@ export const getAllVersionsWithConstraints = async ({
           _id: 0,
           version: 1,
           status: 1,
-          lastUpdated: 1
+          lastUpdated: 1,
+          archived: 1
         }
       }
     ])
@@ -184,7 +185,8 @@ export const getAllGrantsAllVersions = async ({ status, archived, db }) => {
           grant: 1,
           version: 1,
           status: 1,
-          lastUpdated: 1
+          lastUpdated: 1,
+          archived: 1
         }
       },
       {
@@ -194,7 +196,8 @@ export const getAllGrantsAllVersions = async ({ status, archived, db }) => {
             $push: {
               version: '$version',
               status: '$status',
-              lastUpdated: '$lastUpdated'
+              lastUpdated: '$lastUpdated',
+              archived: '$archived'
             }
           }
         }

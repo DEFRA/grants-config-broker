@@ -89,6 +89,7 @@ describe('version routes (e2e)', () => {
       expect(res.statusCode).toBe(200)
       expect(res.result.grant).toBe(GRANT)
       expect(res.result.version).toBe('2.0.0')
+      expect(res.result.archived).toBe(true)
     })
   })
 
@@ -106,6 +107,7 @@ describe('version routes (e2e)', () => {
 
       expect(res.statusCode).toBe(200)
       expect(res.result.map((v) => v.version)).toEqual(['2.0.0'])
+      expect(res.result.map((v) => v.archived)).toEqual([undefined])
     })
 
     it('applies the archived constraint when not present', async () => {
@@ -136,6 +138,7 @@ describe('version routes (e2e)', () => {
 
       expect(res.statusCode).toBe(200)
       expect(res.result.map((v) => v.version)).toEqual(['2.0.0', '1.0.0'])
+      expect(res.result.map((v) => v.archived)).toEqual([true, undefined])
     })
   })
 
@@ -189,6 +192,9 @@ describe('version routes (e2e)', () => {
         'grant-a',
         'grant-b'
       ])
+      const byGrant = Object.fromEntries(res.result.map((g) => [g.grant, g]))
+      expect(byGrant['grant-a'].versions[0].archived).toBeUndefined()
+      expect(byGrant['grant-b'].versions[0].archived).toBe(true)
     })
   })
 
