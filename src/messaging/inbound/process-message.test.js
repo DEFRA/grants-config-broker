@@ -52,6 +52,7 @@ describe('Process Message test', () => {
       { name: 'some-grant', version: '1.0.0' },
       '1.0.0',
       'draft',
+      undefined,
       ['some-grant/1.0.0/some/file.txt']
     )
     expect(notifyVersion).not.toHaveBeenCalled()
@@ -94,6 +95,7 @@ describe('Process Message test', () => {
       { name: 'some-grant', version: '1.0.0' },
       '1.0.0',
       'draft',
+      undefined,
       ['some-grant/1.0.0/some/file.txt']
     )
     expect(notifyVersion).toHaveBeenCalledWith(releaseInfo, user, mockLogger)
@@ -120,6 +122,7 @@ describe('Process Message test', () => {
       { name: 'some-grant', version: '1.0.0' },
       '1.0.0',
       'draft',
+      undefined,
       ['some-grant/1.0.0/some/file.txt']
     )
   })

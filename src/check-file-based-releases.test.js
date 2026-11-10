@@ -116,5 +116,33 @@ describe('deploy-version', () => {
       expect(mockLogger.info).toHaveBeenCalledWith('Release file found')
       expect(considerRelease).toHaveBeenCalled()
     })
+
+    it('should forward the environment archived flag to considerRelease', async () => {
+      existsSync.mockReturnValueOnce(true)
+      load.mockReturnValueOnce({
+        name: 'example-grant-with-auth',
+        version: '0.0.1',
+        notes: 'Some info about your release',
+        environments: [
+          {
+            name: 'test',
+            status: 'active',
+            archived: true
+          }
+        ]
+      })
+      considerRelease.mockResolvedValueOnce({ grant: 'example-grant' })
+
+      await checkReleaseFileForVersionDeployment(mockDb, mockLogger)
+
+      expect(considerRelease).toHaveBeenCalledWith(
+        mockLogger,
+        mockDb,
+        expect.objectContaining({ name: 'example-grant-with-auth' }),
+        '1.0.0',
+        'active',
+        true
+      )
+    })
   })
 })

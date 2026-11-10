@@ -36,7 +36,7 @@ export const checkReleaseFileForVersionDeployment = async (db, logger) => {
     : [releaseInfo]
   const returnInfo = []
   for (const versionToConsider of allReleasesToConsider) {
-    const { status } = deriveEnvironmentStatus(
+    const { status, archived } = deriveEnvironmentStatus(
       versionToConsider,
       currentEnv,
       logger
@@ -47,7 +47,8 @@ export const checkReleaseFileForVersionDeployment = async (db, logger) => {
         db,
         versionToConsider,
         serviceVersion,
-        status
+        status,
+        archived
       )
       if (releaseVersionInfo) {
         returnInfo.push(releaseVersionInfo)

@@ -29,6 +29,7 @@ export const processInputMessage = async (
     { name: grant, version },
     getServiceVersion(),
     status ?? 'draft',
+    undefined,
     files
   )
 

@@ -202,6 +202,28 @@ describe('deploy-version', () => {
       })
     })
 
+    it('non-existing archived version should store the archived flag and return it', async () => {
+      getBucketName.mockReturnValueOnce('s3://test-bucket')
+      uploadVersionFilesToS3.mockResolvedValueOnce(['some/existing/file.txt'])
+      isLatestVersion.mockResolvedValueOnce(false)
+
+      const releaseInfo = getReleaseInfo()
+      const result = await considerRelease(
+        mockLogger,
+        mockDb,
+        releaseInfo,
+        '1.0.0',
+        'active',
+        true
+      )
+
+      expect(storeVersion).toHaveBeenCalledWith(
+        expect.objectContaining({ archived: true }),
+        mockDb
+      )
+      expect(result).toMatchObject({ archived: true })
+    })
+
     it('non-existing version should call through to upload the files to S3, but return nothing if upload did not occur', async () => {
       getBucketName.mockReturnValueOnce('s3://test-bucket')
       uploadVersionFilesToS3.mockResolvedValueOnce([])
@@ -236,6 +258,7 @@ describe('deploy-version', () => {
         releaseInfo,
         '1.0.0',
         'active',
+        undefined,
         [
           'example-grant-with-auth/0.0.1/some/existing/file.txt',
           'example-grant-with-auth/0.0.1/some/other/file.txt'

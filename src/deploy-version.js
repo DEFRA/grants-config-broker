@@ -16,6 +16,7 @@ export const considerRelease = async (
   releaseInfo,
   serviceVersion,
   status,
+  archived,
   manifest
 ) => {
   //at this point we have a version to release, but we need to check if already released on this env
@@ -41,7 +42,12 @@ export const considerRelease = async (
       })
 
       return {
-        ...createVersionStoreInfo(releaseInfo, status, existingRecord.manifest),
+        ...createVersionStoreInfo(
+          releaseInfo,
+          status,
+          archived,
+          existingRecord.manifest
+        ),
         isLatest: await isLatestVersion(
           releaseInfo.name,
           releaseInfo.version,
@@ -58,6 +64,7 @@ export const considerRelease = async (
     return deployUnreleasedVersion(
       releaseInfo,
       status,
+      archived,
       serviceVersion,
       manifest,
       db,
@@ -69,6 +76,7 @@ export const considerRelease = async (
 const deployUnreleasedVersion = async (
   releaseInfo,
   status,
+  archived,
   serviceVersion,
   manifest,
   db,
@@ -89,7 +97,12 @@ const deployUnreleasedVersion = async (
     manifest = await uploadVersionFilesToS3(releaseInfo, status, logger)
   }
 
-  const versionStoreInfo = createVersionStoreInfo(releaseInfo, status, manifest)
+  const versionStoreInfo = createVersionStoreInfo(
+    releaseInfo,
+    status,
+    archived,
+    manifest
+  )
   if (versionStoreInfo) {
     const { path, ...rest } = versionStoreInfo
     await storeVersion(
@@ -120,13 +133,14 @@ const deployUnreleasedVersion = async (
   return null
 }
 
-const createVersionStoreInfo = (releaseInfo, status, manifest) => {
+const createVersionStoreInfo = (releaseInfo, status, archived, manifest) => {
   const versionSplit = releaseInfo.version.split('.')
 
   return manifest.length
     ? {
         grant: releaseInfo.name,
         version: releaseInfo.version,
+        ...(archived && { archived: true }),
         versionMajor: Number.parseInt(versionSplit[0]),
         versionMinor: Number.parseInt(versionSplit[1]),
         versionPatch: Number.parseInt(versionSplit[2]),
