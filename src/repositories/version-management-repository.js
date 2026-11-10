@@ -70,37 +70,11 @@ export const getLatestVersionWithConstraints = async ({
 
   return db
     .collection(CONFIG_VERSION_COLLECTION)
-    .find({
-      grant,
-      ...(status && { status }),
-      ...(!archived && { archived: { $ne: true } }),
-      versionMajor,
-      versionMinor
-    })
-    .sort({ versionMajor: -1, versionMinor: -1, versionPatch: -1 })
-    .limit(1)
-    .toArray()
-}
-
-export const getAllVersionsWithConstraints = async ({
-  grant,
-  status,
-  major,
-  minor,
-  archived,
-  db
-}) => {
-  const versionMajor = Number.isInteger(major) ? { $eq: major } : { $gte: 0 }
-  const versionMinor = Number.isInteger(minor) ? { $eq: minor } : { $gte: 0 }
-
-  return db
-    .collection(CONFIG_VERSION_COLLECTION)
     .aggregate([
       {
         $match: {
           grant,
           ...(status && { status }),
-          ...(!archived && { archived: { $ne: true } }),
           versionMajor,
           versionMinor
         }
@@ -122,6 +96,65 @@ export const getAllVersionsWithConstraints = async ({
       {
         $replaceRoot: { newRoot: '$doc' }
       },
+      // Decide archived state from each version's newest row, not from older
+      // history rows, so the archived filter is applied after de-duplication.
+      ...(archived ? [] : [{ $match: { archived: { $ne: true } } }]),
+      {
+        $sort: {
+          versionMajor: -1,
+          versionMinor: -1,
+          versionPatch: -1
+        }
+      },
+      {
+        $limit: 1
+      }
+    ])
+    .toArray()
+}
+
+export const getAllVersionsWithConstraints = async ({
+  grant,
+  status,
+  major,
+  minor,
+  archived,
+  db
+}) => {
+  const versionMajor = Number.isInteger(major) ? { $eq: major } : { $gte: 0 }
+  const versionMinor = Number.isInteger(minor) ? { $eq: minor } : { $gte: 0 }
+
+  return db
+    .collection(CONFIG_VERSION_COLLECTION)
+    .aggregate([
+      {
+        $match: {
+          grant,
+          ...(status && { status }),
+          versionMajor,
+          versionMinor
+        }
+      },
+      {
+        $sort: {
+          versionMajor: -1,
+          versionMinor: -1,
+          versionPatch: -1,
+          lastUpdated: -1
+        }
+      },
+      {
+        $group: {
+          _id: '$version',
+          doc: { $first: '$$ROOT' }
+        }
+      },
+      {
+        $replaceRoot: { newRoot: '$doc' }
+      },
+      // Decide archived state from each version's newest row, not from older
+      // history rows, so the archived filter is applied after de-duplication.
+      ...(archived ? [] : [{ $match: { archived: { $ne: true } } }]),
       {
         $sort: {
           versionMajor: -1,
@@ -149,8 +182,7 @@ export const getAllGrantsAllVersions = async ({ status, archived, db }) => {
     .aggregate([
       {
         $match: {
-          ...(status && { status }),
-          ...(!archived && { archived: { $ne: true } })
+          ...(status && { status })
         }
       },
       {
@@ -172,6 +204,9 @@ export const getAllGrantsAllVersions = async ({ status, archived, db }) => {
       {
         $replaceRoot: { newRoot: '$doc' }
       },
+      // Decide archived state from each version's newest row, not from older
+      // history rows, so the archived filter is applied after de-duplication.
+      ...(archived ? [] : [{ $match: { archived: { $ne: true } } }]),
       {
         $sort: {
           versionMajor: -1,

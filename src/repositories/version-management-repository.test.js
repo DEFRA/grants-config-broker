@@ -77,12 +77,10 @@ describe('version-management-repository', () => {
   describe('getLatestVersion', () => {
     it('should return version if found', async () => {
       const toArray = vi.fn().mockReturnValue([{ version: '1.0.0' }])
-      const limit = vi.fn().mockReturnValue({ toArray })
-      const sort = vi.fn().mockReturnValue({ limit })
-      const find = vi.fn().mockReturnValue({ sort })
+      const aggregate = vi.fn().mockReturnValue({ toArray })
       const db = {
         collection: vi.fn().mockReturnValue({
-          find
+          aggregate
         })
       }
 
@@ -91,32 +89,33 @@ describe('version-management-repository', () => {
       const result = await getLatestVersion(grant, status, db)
       expect(result).toEqual([{ version: '1.0.0' }])
       expect(db.collection).toHaveBeenCalledWith('config-versions')
-      expect(find).toHaveBeenCalledWith({
-        grant,
-        status,
-        archived: { $ne: true },
-        versionMajor: { $gte: 0 },
-        versionMinor: { $gte: 0 }
-      })
-      expect(sort).toHaveBeenCalledWith({
-        versionMajor: -1,
-        versionMinor: -1,
-        versionPatch: -1
-      })
-      expect(limit).toHaveBeenCalledWith(1)
+      expect(aggregate).toHaveBeenCalledWith([
+        {
+          $match: {
+            grant,
+            status,
+            versionMajor: { $gte: 0 },
+            versionMinor: { $gte: 0 }
+          }
+        },
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        { $match: { archived: { $ne: true } } },
+        expect.anything(),
+        { $limit: 1 }
+      ])
       expect(toArray).toHaveBeenCalled()
     })
   })
 
   describe('getLatestVersionWithConstraints', () => {
     const toArray = vi.fn().mockReturnValue([{ version: '1.1.0' }])
-    const limit = vi.fn().mockReturnValue({ toArray })
-    const sort = vi.fn().mockReturnValue({ limit })
-    const find = vi.fn().mockReturnValue({ sort })
+    const aggregate = vi.fn().mockReturnValue({ toArray })
     it('should pass constraints to query and return version if found', async () => {
       const db = {
         collection: vi.fn().mockReturnValue({
-          find
+          aggregate
         })
       }
 
@@ -133,26 +132,29 @@ describe('version-management-repository', () => {
       })
       expect(result).toEqual([{ version: '1.1.0' }])
       expect(db.collection).toHaveBeenCalledWith('config-versions')
-      expect(find).toHaveBeenCalledWith({
-        grant,
-        status,
-        archived: { $ne: true },
-        versionMajor: { $eq: 1 },
-        versionMinor: { $eq: 1 }
-      })
-      expect(sort).toHaveBeenCalledWith({
-        versionMajor: -1,
-        versionMinor: -1,
-        versionPatch: -1
-      })
-      expect(limit).toHaveBeenCalledWith(1)
+      expect(aggregate).toHaveBeenCalledWith([
+        {
+          $match: {
+            grant,
+            status,
+            versionMajor: { $eq: 1 },
+            versionMinor: { $eq: 1 }
+          }
+        },
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        { $match: { archived: { $ne: true } } },
+        expect.anything(),
+        { $limit: 1 }
+      ])
       expect(toArray).toHaveBeenCalled()
     })
 
     it('should pass default query when no constraints and return version if found', async () => {
       const db = {
         collection: vi.fn().mockReturnValue({
-          find
+          aggregate
         })
       }
 
@@ -163,41 +165,42 @@ describe('version-management-repository', () => {
       })
       expect(result).toEqual([{ version: '1.1.0' }])
       expect(db.collection).toHaveBeenCalledWith('config-versions')
-      expect(find).toHaveBeenCalledWith({
-        grant,
-        archived: { $ne: true },
-        versionMajor: { $gte: 0 },
-        versionMinor: { $gte: 0 }
-      })
-      expect(sort).toHaveBeenCalledWith({
-        versionMajor: -1,
-        versionMinor: -1,
-        versionPatch: -1
-      })
-      expect(limit).toHaveBeenCalledWith(1)
+      expect(aggregate).toHaveBeenCalledWith([
+        {
+          $match: {
+            grant,
+            versionMajor: { $gte: 0 },
+            versionMinor: { $gte: 0 }
+          }
+        },
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        { $match: { archived: { $ne: true } } },
+        expect.anything(),
+        { $limit: 1 }
+      ])
       expect(toArray).toHaveBeenCalled()
     })
 
-    it('should not constrain on archived when archived is requested', async () => {
+    it('does not filter on archived when archived versions are requested', async () => {
       const db = {
         collection: vi.fn().mockReturnValue({
-          find
+          aggregate
         })
       }
 
-      const grant = 'test-grant'
-      const result = await getLatestVersionWithConstraints({
-        grant,
+      await getLatestVersionWithConstraints({
+        grant: 'test-grant',
         archived: true,
         db
       })
-      expect(result).toEqual([{ version: '1.1.0' }])
-      expect(db.collection).toHaveBeenCalledWith('config-versions')
-      expect(find).toHaveBeenCalledWith({
-        grant,
-        versionMajor: { $gte: 0 },
-        versionMinor: { $gte: 0 }
-      })
+
+      const pipeline = aggregate.mock.calls.at(-1)[0]
+      const archivedMatches = pipeline.filter(
+        (stage) => stage.$match?.archived !== undefined
+      )
+      expect(archivedMatches).toEqual([])
     })
   })
 
@@ -229,7 +232,6 @@ describe('version-management-repository', () => {
           $match: {
             grant,
             status,
-            archived: { $ne: true },
             versionMajor: { $eq: 1 },
             versionMinor: { $eq: 1 }
           }
@@ -237,6 +239,7 @@ describe('version-management-repository', () => {
         expect.anything(),
         expect.anything(),
         expect.anything(),
+        { $match: { archived: { $ne: true } } },
         expect.anything(),
         expect.anything()
       ])
@@ -262,7 +265,6 @@ describe('version-management-repository', () => {
         {
           $match: {
             grant,
-            archived: { $ne: true },
             versionMajor: { $gte: 0 },
             versionMinor: { $gte: 0 }
           }
@@ -270,6 +272,7 @@ describe('version-management-repository', () => {
         expect.anything(),
         expect.anything(),
         expect.anything(),
+        { $match: { archived: { $ne: true } } },
         expect.anything(),
         expect.anything()
       ])
@@ -301,13 +304,13 @@ describe('version-management-repository', () => {
       expect(aggregate).toHaveBeenCalledWith([
         {
           $match: {
-            status,
-            archived: { $ne: true }
+            status
           }
         },
         expect.anything(),
         expect.anything(),
         expect.anything(),
+        { $match: { archived: { $ne: true } } },
         expect.anything(),
         expect.anything(),
         expect.anything(),
@@ -331,13 +334,12 @@ describe('version-management-repository', () => {
       expect(db.collection).toHaveBeenCalledWith('config-versions')
       expect(aggregate).toHaveBeenCalledWith([
         {
-          $match: {
-            archived: { $ne: true }
-          }
+          $match: {}
         },
         expect.anything(),
         expect.anything(),
         expect.anything(),
+        { $match: { archived: { $ne: true } } },
         expect.anything(),
         expect.anything(),
         expect.anything(),
