@@ -56,7 +56,7 @@ paths:
           required: false
           schema:
             type: string
-            enum: [included]
+            enum: [include]
           description: Include archived versions.
       responses:
         '200':
@@ -185,7 +185,7 @@ paths:
           required: false
           schema:
             type: string
-            enum: [included]
+            enum: [include]
           description: Include archived versions.
       responses:
         '200':
@@ -225,7 +225,7 @@ paths:
           required: false
           schema:
             type: string
-            enum: [included]
+            enum: [include]
           description: Include archived versions.
       responses:
         '200':

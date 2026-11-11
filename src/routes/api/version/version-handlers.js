@@ -31,7 +31,7 @@ const getStatusOption = (draft) => {
 }
 
 const getArchivedOption = (archived) =>
-  archived === 'included' ? true : undefined
+  archived === 'include' ? true : undefined
 
 export const getLatestVersionHandler = async (req, h) => {
   const { grant, draft, archived, constrainMajor, constrainMinor } = req.query

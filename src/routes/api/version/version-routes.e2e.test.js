@@ -83,7 +83,7 @@ describe('version routes (e2e)', () => {
 
       const res = await server.inject({
         method: 'GET',
-        url: `/api/latestVersion?grant=${GRANT}&archived=included`
+        url: `/api/latestVersion?grant=${GRANT}&archived=include`
       })
 
       expect(res.statusCode).toBe(200)
@@ -133,7 +133,7 @@ describe('version routes (e2e)', () => {
 
       const res = await server.inject({
         method: 'GET',
-        url: `/api/allVersions?grant=${GRANT}&archived=included`
+        url: `/api/allVersions?grant=${GRANT}&archived=include`
       })
 
       expect(res.statusCode).toBe(200)
@@ -184,7 +184,7 @@ describe('version routes (e2e)', () => {
 
       const res = await server.inject({
         method: 'GET',
-        url: '/api/allGrants?archived=included'
+        url: '/api/allGrants?archived=include'
       })
 
       expect(res.statusCode).toBe(200)
