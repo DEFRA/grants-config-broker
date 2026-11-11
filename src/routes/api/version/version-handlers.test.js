@@ -124,7 +124,8 @@ describe('version-handlers', () => {
         status: 'draft',
         manifest: ['some/file.txt'],
         lastUpdated: expect.any(Date),
-        path: 's3://test-bucket'
+        path: 's3://test-bucket',
+        archived: false
       })
       expect(mockH.code).toHaveBeenCalledWith(200)
     })
@@ -219,7 +220,8 @@ describe('version-handlers', () => {
         status: 'draft',
         manifest: ['some/file.txt'],
         lastUpdated: expect.any(Date),
-        path: 's3://test-bucket'
+        path: 's3://test-bucket',
+        archived: false
       })
       expect(mockH.code).toHaveBeenCalledWith(200)
     })
@@ -303,14 +305,16 @@ describe('version-handlers', () => {
           version: '1.0.0',
           status: 'draft',
           manifest: ['some/file.txt'],
-          updatedInBrokerVersion: '1.0.0'
+          updatedInBrokerVersion: '1.0.0',
+          archived: false
         },
         {
           grant: 'some-grant',
           version: '1.0.1',
           status: 'active',
           manifest: ['some/file.txt'],
-          updatedInBrokerVersion: '1.0.1'
+          updatedInBrokerVersion: '1.0.1',
+          archived: false
         }
       ])
       expect(mockH.code).toHaveBeenCalledWith(200)
@@ -426,12 +430,14 @@ describe('version-handlers', () => {
             {
               version: '1.0.0',
               status: 'draft',
-              updatedInBrokerVersion: '1.0.0'
+              updatedInBrokerVersion: '1.0.0',
+              archived: false
             },
             {
               version: '1.0.1',
               status: 'active',
-              updatedInBrokerVersion: '1.0.1'
+              updatedInBrokerVersion: '1.0.1',
+              archived: false
             }
           ]
         },
@@ -441,7 +447,8 @@ describe('version-handlers', () => {
             {
               version: '1.0.0',
               status: 'draft',
-              updatedInBrokerVersion: '1.0.0'
+              updatedInBrokerVersion: '1.0.0',
+              archived: false
             }
           ]
         }

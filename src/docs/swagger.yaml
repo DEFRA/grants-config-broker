@@ -894,7 +894,7 @@ components:
           description: The timestamp of the last update.
         archived:
           type: boolean
-          description: Whether the version has been archived. Present and true for archived versions; otherwise absent.
+          description: Whether the version has been archived. Always present; true for archived versions, false otherwise.
     ErrorResponse:
       type: object
       properties:
