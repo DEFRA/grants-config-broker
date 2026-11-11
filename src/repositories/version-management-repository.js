@@ -45,7 +45,7 @@ export const findVersionHistory = async (configVersion, grant, db) => {
     .sort({
       lastUpdated: -1
     })
-    .project({ _id: 0, version: 1, status: 1, lastUpdated: 1 })
+    .project({ _id: 0, version: 1, status: 1, lastUpdated: 1, archived: 1 })
     .toArray()
 }
 

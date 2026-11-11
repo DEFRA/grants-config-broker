@@ -492,7 +492,8 @@ describe('version-handlers', () => {
       findVersionHistory.mockResolvedValueOnce([
         {
           version: '1.0.0',
-          status: 'draft'
+          status: 'draft',
+          archived: true
         },
         {
           version: '1.0.0',
@@ -505,7 +506,7 @@ describe('version-handlers', () => {
       ])
     })
 
-    it('should return grant version history for semantic version when found', async () => {
+    it('should return grant version history for semantic version when found, defaulting archived', async () => {
       const mockRequest = {
         query: {
           grant: 'some-grant',
@@ -523,15 +524,18 @@ describe('version-handlers', () => {
       expect(mockH.response).toHaveBeenCalledWith([
         {
           version: '1.0.0',
-          status: 'draft'
+          status: 'draft',
+          archived: true
         },
         {
           version: '1.0.0',
-          status: 'active'
+          status: 'active',
+          archived: false
         },
         {
           version: '1.0.0',
-          status: 'draft'
+          status: 'draft',
+          archived: false
         }
       ])
       expect(mockH.code).toHaveBeenCalledWith(200)

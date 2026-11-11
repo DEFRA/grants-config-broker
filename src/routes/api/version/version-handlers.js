@@ -219,7 +219,9 @@ export const getVersionHistoryHandler = async (req, h) => {
     req.db
   )
   if (versionDetails?.length) {
-    return h.response(versionDetails).code(StatusCodes.OK)
+    return h
+      .response(versionDetails.map(withArchivedDefault))
+      .code(StatusCodes.OK)
   }
   return h
     .response({ error: `Grant ${grant} version ${versionAsString} not found` })

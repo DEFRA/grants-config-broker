@@ -294,8 +294,7 @@ paths:
               schema:
                 type: array
                 items:
-                  type: object
-                  description: Details of the version history entry.
+                  $ref: '#/components/schemas/VersionHistoryEntry'
         '400':
           description: Bad Request - Validation error.
         '401':
@@ -892,6 +891,22 @@ components:
           type: string
           format: date-time
           description: The timestamp of the last update.
+        archived:
+          type: boolean
+          description: Whether the version has been archived. Always present; true for archived versions, false otherwise.
+    VersionHistoryEntry:
+      type: object
+      properties:
+        version:
+          type: string
+          description: The version string.
+        status:
+          type: string
+          description: The status of the version (e.g., active, draft).
+        lastUpdated:
+          type: string
+          format: date-time
+          description: The timestamp of this history entry.
         archived:
           type: boolean
           description: Whether the version has been archived. Always present; true for archived versions, false otherwise.
