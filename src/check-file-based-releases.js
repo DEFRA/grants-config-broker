@@ -42,14 +42,14 @@ export const checkReleaseFileForVersionDeployment = async (db, logger) => {
       logger
     )
     if (status !== 'none') {
-      const releaseVersionInfo = await considerRelease(
+      const releaseVersionInfo = await considerRelease({
         logger,
         db,
-        versionToConsider,
+        releaseInfo: versionToConsider,
         serviceVersion,
         status,
         archived
-      )
+      })
       if (releaseVersionInfo) {
         returnInfo.push(releaseVersionInfo)
       }

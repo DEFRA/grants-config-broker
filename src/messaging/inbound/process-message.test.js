@@ -46,15 +46,14 @@ describe('Process Message test', () => {
       mockServer
     )
 
-    expect(considerRelease).toHaveBeenCalledWith(
-      mockLogger,
-      mockDb,
-      { name: 'some-grant', version: '1.0.0' },
-      '1.0.0',
-      'draft',
-      undefined,
-      ['some-grant/1.0.0/some/file.txt']
-    )
+    expect(considerRelease).toHaveBeenCalledWith({
+      logger: mockLogger,
+      db: mockDb,
+      releaseInfo: { name: 'some-grant', version: '1.0.0' },
+      serviceVersion: '1.0.0',
+      status: 'draft',
+      manifest: ['some-grant/1.0.0/some/file.txt']
+    })
     expect(notifyVersion).not.toHaveBeenCalled()
   })
 
@@ -89,15 +88,14 @@ describe('Process Message test', () => {
       mockServer
     )
 
-    expect(considerRelease).toHaveBeenCalledWith(
-      mockLogger,
-      mockDb,
-      { name: 'some-grant', version: '1.0.0' },
-      '1.0.0',
-      'draft',
-      undefined,
-      ['some-grant/1.0.0/some/file.txt']
-    )
+    expect(considerRelease).toHaveBeenCalledWith({
+      logger: mockLogger,
+      db: mockDb,
+      releaseInfo: { name: 'some-grant', version: '1.0.0' },
+      serviceVersion: '1.0.0',
+      status: 'draft',
+      manifest: ['some-grant/1.0.0/some/file.txt']
+    })
     expect(notifyVersion).toHaveBeenCalledWith(releaseInfo, user, mockLogger)
   })
 
@@ -116,15 +114,14 @@ describe('Process Message test', () => {
       {},
       mockServer
     )
-    expect(considerRelease).toHaveBeenCalledWith(
-      mockLogger,
-      mockDb,
-      { name: 'some-grant', version: '1.0.0' },
-      '1.0.0',
-      'draft',
-      undefined,
-      ['some-grant/1.0.0/some/file.txt']
-    )
+    expect(considerRelease).toHaveBeenCalledWith({
+      logger: mockLogger,
+      db: mockDb,
+      releaseInfo: { name: 'some-grant', version: '1.0.0' },
+      serviceVersion: '1.0.0',
+      status: 'draft',
+      manifest: ['some-grant/1.0.0/some/file.txt']
+    })
   })
 
   it('if incoming message does not validate via schema an error is thrown', async () => {

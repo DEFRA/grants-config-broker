@@ -135,14 +135,16 @@ describe('deploy-version', () => {
 
       await checkReleaseFileForVersionDeployment(mockDb, mockLogger)
 
-      expect(considerRelease).toHaveBeenCalledWith(
-        mockLogger,
-        mockDb,
-        expect.objectContaining({ name: 'example-grant-with-auth' }),
-        '1.0.0',
-        'active',
-        true
-      )
+      expect(considerRelease).toHaveBeenCalledWith({
+        logger: mockLogger,
+        db: mockDb,
+        releaseInfo: expect.objectContaining({
+          name: 'example-grant-with-auth'
+        }),
+        serviceVersion: '1.0.0',
+        status: 'active',
+        archived: true
+      })
     })
   })
 })

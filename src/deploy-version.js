@@ -10,7 +10,7 @@ import { isLatestVersion } from './service/latest-version.js'
 import { trackEvent } from './common/helpers/logging/logger.js'
 import { getBucketName } from '@defra/grants-config-utils/s3-interactions'
 
-export const considerRelease = async (
+export const considerRelease = async ({
   logger,
   db,
   releaseInfo,
@@ -18,7 +18,7 @@ export const considerRelease = async (
   status,
   archived,
   manifest
-) => {
+}) => {
   //at this point we have a version to release, but we need to check if already released on this env
   const existingRecord = await findVersion(
     releaseInfo.version,
