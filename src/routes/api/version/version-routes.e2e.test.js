@@ -198,6 +198,24 @@ describe('version routes (e2e)', () => {
     })
   })
 
+  describe('GET /api/versionHistory', () => {
+    it('returns each history entry with its archived flag defaulted', async () => {
+      await seed([
+        versionDoc({ version: '1.0.0', grant: GRANT, archived: true }),
+        versionDoc({ version: '1.0.0', grant: GRANT })
+      ])
+
+      const res = await server.inject({
+        method: 'GET',
+        url: `/api/versionHistory?grant=${GRANT}&version=1.0.0`
+      })
+
+      expect(res.statusCode).toBe(200)
+      expect(res.result.map((v) => v.version)).toEqual(['1.0.0', '1.0.0'])
+      expect(res.result.map((v) => v.archived).sort()).toEqual([false, true])
+    })
+  })
+
   describe('POST /api/version/archive', () => {
     it('archives a version that is not the latest of its major', async () => {
       await seed([
