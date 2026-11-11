@@ -57,6 +57,57 @@ export const getLatestVersion = async (grant, status, db) => {
   return getLatestVersionWithConstraints({ grant, status, db })
 }
 
+// The deduplicated, constraint-filtered list of a grant's versions, newest
+// first. Callers append their own tail stage (limit, project, ...).
+const constrainedVersionsPipeline = ({
+  grant,
+  status,
+  major,
+  minor,
+  archived
+}) => {
+  const versionMajor = Number.isInteger(major) ? { $eq: major } : { $gte: 0 }
+  const versionMinor = Number.isInteger(minor) ? { $eq: minor } : { $gte: 0 }
+
+  return [
+    {
+      $match: {
+        grant,
+        ...(status && { status }),
+        versionMajor,
+        versionMinor
+      }
+    },
+    {
+      $sort: {
+        versionMajor: -1,
+        versionMinor: -1,
+        versionPatch: -1,
+        lastUpdated: -1
+      }
+    },
+    {
+      $group: {
+        _id: '$version',
+        doc: { $first: '$$ROOT' }
+      }
+    },
+    {
+      $replaceRoot: { newRoot: '$doc' }
+    },
+    // Decide archived state from each version's newest row, not from older
+    // history rows, so the archived filter is applied after de-duplication.
+    ...(archived ? [] : [{ $match: { archived: { $ne: true } } }]),
+    {
+      $sort: {
+        versionMajor: -1,
+        versionMinor: -1,
+        versionPatch: -1
+      }
+    }
+  ]
+}
+
 export const getLatestVersionWithConstraints = async ({
   grant,
   status,
@@ -65,47 +116,10 @@ export const getLatestVersionWithConstraints = async ({
   archived,
   db
 }) => {
-  const versionMajor = Number.isInteger(major) ? { $eq: major } : { $gte: 0 }
-  const versionMinor = Number.isInteger(minor) ? { $eq: minor } : { $gte: 0 }
-
   return db
     .collection(CONFIG_VERSION_COLLECTION)
     .aggregate([
-      {
-        $match: {
-          grant,
-          ...(status && { status }),
-          versionMajor,
-          versionMinor
-        }
-      },
-      {
-        $sort: {
-          versionMajor: -1,
-          versionMinor: -1,
-          versionPatch: -1,
-          lastUpdated: -1
-        }
-      },
-      {
-        $group: {
-          _id: '$version',
-          doc: { $first: '$$ROOT' }
-        }
-      },
-      {
-        $replaceRoot: { newRoot: '$doc' }
-      },
-      // Decide archived state from each version's newest row, not from older
-      // history rows, so the archived filter is applied after de-duplication.
-      ...(archived ? [] : [{ $match: { archived: { $ne: true } } }]),
-      {
-        $sort: {
-          versionMajor: -1,
-          versionMinor: -1,
-          versionPatch: -1
-        }
-      },
+      ...constrainedVersionsPipeline({ grant, status, major, minor, archived }),
       {
         $limit: 1
       }
@@ -121,48 +135,10 @@ export const getAllVersionsWithConstraints = async ({
   archived,
   db
 }) => {
-  const versionMajor = Number.isInteger(major) ? { $eq: major } : { $gte: 0 }
-  const versionMinor = Number.isInteger(minor) ? { $eq: minor } : { $gte: 0 }
-
   return db
     .collection(CONFIG_VERSION_COLLECTION)
     .aggregate([
-      {
-        $match: {
-          grant,
-          ...(status && { status }),
-          versionMajor,
-          versionMinor
-        }
-      },
-      {
-        $sort: {
-          versionMajor: -1,
-          versionMinor: -1,
-          versionPatch: -1,
-          lastUpdated: -1
-        }
-      },
-      {
-        $group: {
-          _id: '$version',
-          doc: { $first: '$$ROOT' }
-        }
-      },
-      {
-        $replaceRoot: { newRoot: '$doc' }
-      },
-      // Decide archived state from each version's newest row, not from older
-      // history rows, so the archived filter is applied after de-duplication.
-      ...(archived ? [] : [{ $match: { archived: { $ne: true } } }]),
-      {
-        $sort: {
-          versionMajor: -1,
-          versionMinor: -1,
-          versionPatch: -1
-        }
-      },
-
+      ...constrainedVersionsPipeline({ grant, status, major, minor, archived }),
       {
         $project: {
           _id: 0,
