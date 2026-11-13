@@ -36,19 +36,20 @@ export const checkReleaseFileForVersionDeployment = async (db, logger) => {
     : [releaseInfo]
   const returnInfo = []
   for (const versionToConsider of allReleasesToConsider) {
-    const { status } = deriveEnvironmentStatus(
+    const { status, archived } = deriveEnvironmentStatus(
       versionToConsider,
       currentEnv,
       logger
     )
     if (status !== 'none') {
-      const releaseVersionInfo = await considerRelease(
+      const releaseVersionInfo = await considerRelease({
         logger,
         db,
-        versionToConsider,
+        releaseInfo: versionToConsider,
         serviceVersion,
-        status
-      )
+        status,
+        archived
+      })
       if (releaseVersionInfo) {
         returnInfo.push(releaseVersionInfo)
       }

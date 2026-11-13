@@ -59,13 +59,13 @@ describe('deploy-version', () => {
         version: '0.0.1',
         status: 'active'
       })
-      const result = await considerRelease(
-        mockLogger,
-        mockDb,
-        getReleaseInfo(),
-        '1.0.0',
-        'active'
-      )
+      const result = await considerRelease({
+        logger: mockLogger,
+        db: mockDb,
+        releaseInfo: getReleaseInfo(),
+        serviceVersion: '1.0.0',
+        status: 'active'
+      })
 
       expect(mockLogger.warn).toHaveBeenCalledWith(
         'example-grant-with-auth Version 0.0.1 already deployed to S3, and no status change. Nothing happened!'
@@ -90,13 +90,13 @@ describe('deploy-version', () => {
 
       const releaseInfo = getReleaseInfo()
 
-      const result = await considerRelease(
-        mockLogger,
-        mockDb,
+      const result = await considerRelease({
+        logger: mockLogger,
+        db: mockDb,
         releaseInfo,
-        '1.0.0',
-        'active'
-      )
+        serviceVersion: '1.0.0',
+        status: 'active'
+      })
 
       expect(uploadMetaDataToS3).toHaveBeenCalledWith(
         releaseInfo,
@@ -148,13 +148,13 @@ describe('deploy-version', () => {
 
       isLatestVersion.mockResolvedValueOnce(true)
       const releaseInfo = getReleaseInfo()
-      const result = await considerRelease(
-        mockLogger,
-        mockDb,
+      const result = await considerRelease({
+        logger: mockLogger,
+        db: mockDb,
         releaseInfo,
-        '1.0.0',
-        'active'
-      )
+        serviceVersion: '1.0.0',
+        status: 'active'
+      })
 
       expect(mockLogger.info).toHaveBeenCalledWith(
         'example-grant-with-auth 0.0.1 will be deployed to S3 with status active'
@@ -202,19 +202,41 @@ describe('deploy-version', () => {
       })
     })
 
+    it('non-existing archived version should store the archived flag and return it', async () => {
+      getBucketName.mockReturnValueOnce('s3://test-bucket')
+      uploadVersionFilesToS3.mockResolvedValueOnce(['some/existing/file.txt'])
+      isLatestVersion.mockResolvedValueOnce(false)
+
+      const releaseInfo = getReleaseInfo()
+      const result = await considerRelease({
+        logger: mockLogger,
+        db: mockDb,
+        releaseInfo,
+        serviceVersion: '1.0.0',
+        status: 'active',
+        archived: true
+      })
+
+      expect(storeVersion).toHaveBeenCalledWith(
+        expect.objectContaining({ archived: true }),
+        mockDb
+      )
+      expect(result).toMatchObject({ archived: true })
+    })
+
     it('non-existing version should call through to upload the files to S3, but return nothing if upload did not occur', async () => {
       getBucketName.mockReturnValueOnce('s3://test-bucket')
       uploadVersionFilesToS3.mockResolvedValueOnce([])
 
       const releaseInfo = getReleaseInfo()
 
-      const result = await considerRelease(
-        mockLogger,
-        mockDb,
+      const result = await considerRelease({
+        logger: mockLogger,
+        db: mockDb,
         releaseInfo,
-        '1.0.0',
-        'active'
-      )
+        serviceVersion: '1.0.0',
+        status: 'active'
+      })
 
       expect(uploadVersionFilesToS3).toHaveBeenCalledWith(
         releaseInfo,
@@ -230,17 +252,17 @@ describe('deploy-version', () => {
 
       isLatestVersion.mockResolvedValueOnce(true)
       const releaseInfo = getReleaseInfo()
-      const result = await considerRelease(
-        mockLogger,
-        mockDb,
+      const result = await considerRelease({
+        logger: mockLogger,
+        db: mockDb,
         releaseInfo,
-        '1.0.0',
-        'active',
-        [
+        serviceVersion: '1.0.0',
+        status: 'active',
+        manifest: [
           'example-grant-with-auth/0.0.1/some/existing/file.txt',
           'example-grant-with-auth/0.0.1/some/other/file.txt'
         ]
-      )
+      })
 
       expect(mockLogger.info).toHaveBeenCalledWith(
         'example-grant-with-auth 0.0.1 (active) already in S3, will update metadata only'

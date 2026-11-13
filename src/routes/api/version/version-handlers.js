@@ -31,7 +31,14 @@ const getStatusOption = (draft) => {
 }
 
 const getArchivedOption = (archived) =>
-  archived === 'included' ? true : undefined
+  archived === 'include' ? true : undefined
+
+// The DB omits the archived flag for versions that have never been archived.
+// Responses always carry it, defaulting to false, so consumers need not guess.
+const withArchivedDefault = (version) => ({
+  ...version,
+  archived: version.archived ?? false
+})
 
 export const getLatestVersionHandler = async (req, h) => {
   const { grant, draft, archived, constrainMajor, constrainMinor } = req.query
@@ -47,7 +54,7 @@ export const getLatestVersionHandler = async (req, h) => {
     db: req.db
   })
   if (latestVersion?.length) {
-    const formattedResponse = {
+    const formattedResponse = withArchivedDefault({
       grant: latestVersion[0].grant,
       version: latestVersion[0].version,
       status: latestVersion[0].status,
@@ -55,7 +62,7 @@ export const getLatestVersionHandler = async (req, h) => {
       manifest: latestVersion[0].manifest,
       lastUpdated: latestVersion[0].lastUpdated,
       archived: latestVersion[0].archived
-    }
+    })
     return h.response(formattedResponse).code(StatusCodes.OK)
   }
   return h
@@ -80,7 +87,7 @@ export const getSpecificVersionHandler = async (req, h) => {
   } = await retrieveRecord(req.query, req.db)
 
   if (versionDetails) {
-    const formattedResponse = {
+    const formattedResponse = withArchivedDefault({
       grant: versionDetails.grant,
       version: versionDetails.version,
       status: versionDetails.status,
@@ -88,7 +95,7 @@ export const getSpecificVersionHandler = async (req, h) => {
       manifest: versionDetails.manifest,
       lastUpdated: versionDetails.lastUpdated,
       archived: versionDetails.archived
-    }
+    })
     return h.response(formattedResponse).code(StatusCodes.OK)
   }
   return h
@@ -182,19 +189,24 @@ export const getAllVersionsHandler = async (req, h) => {
     archived: getArchivedOption(archived),
     db: req.db
   })
-  return h.response(allVersions).code(StatusCodes.OK)
+  return h.response(allVersions.map(withArchivedDefault)).code(StatusCodes.OK)
 }
 
 export const getAllGrantsHandler = async (req, h) => {
   const { draft, archived } = req.query
   const status = getStatusOption(draft)
-  const allVersions = await getAllGrantsAllVersions({
+  const allGrants = await getAllGrantsAllVersions({
     status,
     archived: getArchivedOption(archived),
     db: req.db
   })
 
-  return h.response(allVersions).code(StatusCodes.OK)
+  const withDefaults = allGrants.map((grant) => ({
+    ...grant,
+    versions: grant.versions.map(withArchivedDefault)
+  }))
+
+  return h.response(withDefaults).code(StatusCodes.OK)
 }
 
 export const getVersionHistoryHandler = async (req, h) => {
@@ -207,7 +219,9 @@ export const getVersionHistoryHandler = async (req, h) => {
     req.db
   )
   if (versionDetails?.length) {
-    return h.response(versionDetails).code(StatusCodes.OK)
+    return h
+      .response(versionDetails.map(withArchivedDefault))
+      .code(StatusCodes.OK)
   }
   return h
     .response({ error: `Grant ${grant} version ${versionAsString} not found` })

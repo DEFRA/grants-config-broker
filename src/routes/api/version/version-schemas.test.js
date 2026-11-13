@@ -59,7 +59,7 @@ describe('version-schemas', () => {
     it('should validate successfully when archived is included', () => {
       const result = getLatestVersionSchema.validate({
         grant: 'grant',
-        archived: 'included'
+        archived: 'include'
       })
 
       expect(result.error).toBeUndefined()
@@ -72,7 +72,7 @@ describe('version-schemas', () => {
       })
 
       expect(result.error.stack).to.eql(
-        'ValidationError: "archived" must be [included]'
+        'ValidationError: "archived" must be [include]'
       )
     })
 
@@ -136,7 +136,7 @@ describe('version-schemas', () => {
     it('should validate successfully when archived is included', () => {
       const result = getAllVersionsSchema.validate({
         grant: 'grant',
-        archived: 'included'
+        archived: 'include'
       })
 
       expect(result.error).toBeUndefined()
@@ -149,7 +149,7 @@ describe('version-schemas', () => {
       })
 
       expect(result.error.stack).to.eql(
-        'ValidationError: "archived" must be [included]'
+        'ValidationError: "archived" must be [include]'
       )
     })
 
@@ -180,7 +180,7 @@ describe('version-schemas', () => {
     })
 
     it('should validate successfully when archived is included', () => {
-      const result = getAllGrantsSchema.validate({ archived: 'included' })
+      const result = getAllGrantsSchema.validate({ archived: 'include' })
 
       expect(result.error).toBeUndefined()
     })
@@ -189,7 +189,7 @@ describe('version-schemas', () => {
       const result = getAllGrantsSchema.validate({ archived: 'true' })
 
       expect(result.error.stack).to.eql(
-        'ValidationError: "archived" must be [included]'
+        'ValidationError: "archived" must be [include]'
       )
     })
 

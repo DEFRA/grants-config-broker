@@ -23,14 +23,14 @@ export const processInputMessage = async (
   )
   await validateFilesInS3(grant, version, files, logger)
 
-  const releaseInfo = await considerRelease(
+  const releaseInfo = await considerRelease({
     logger,
     db,
-    { name: grant, version },
-    getServiceVersion(),
-    status ?? 'draft',
-    files
-  )
+    releaseInfo: { name: grant, version },
+    serviceVersion: getServiceVersion(),
+    status: status ?? 'draft',
+    manifest: files
+  })
 
   if (releaseInfo) {
     logger.info('New version released successfully, sending notification')

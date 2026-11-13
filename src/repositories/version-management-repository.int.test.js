@@ -84,6 +84,19 @@ const seedSingleArchivedVersion = (db) =>
     })
   ])
 
+const seedSingleArchivedVersionWithUpdates = (db) =>
+  db.collection(COLLECTION).insertMany([
+    versionDoc({
+      version: '1.0.0',
+      lastUpdated: new Date('2024-01-01')
+    }),
+    versionDoc({
+      version: '1.0.0',
+      archived: true,
+      lastUpdated: new Date('2024-02-01')
+    })
+  ])
+
 const seedActiveAndDraft = (db) =>
   db
     .collection(COLLECTION)
@@ -428,6 +441,43 @@ describe('version-management-repository (integration)', () => {
         })
       })
 
+      describe('when a version has multiple updates and the last one is archived', () => {
+        beforeEach(async () => {
+          await seedSingleArchivedVersionWithUpdates(db)
+        })
+
+        it('returns the version from its newest (archived) row', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            archived: 'true',
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('1.0.0')
+          expect(result[0].archived).toBe(true)
+          expect(result[0].lastUpdated).toStrictEqual(new Date('2024-02-01'))
+        })
+      })
+
+      describe('when a version has been promoted from draft to active', () => {
+        beforeEach(async () => {
+          await seedPromotedVersion(db)
+        })
+
+        it('reports the newest (active) row when no status is given', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            archived: 'true',
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('1.0.0')
+          expect(result[0].status).toBe('active')
+        })
+      })
+
       describe('when a grant has both active and draft versions', () => {
         beforeEach(async () => {
           await seedActiveAndDraft(db)
@@ -699,6 +749,38 @@ describe('version-management-repository (integration)', () => {
           expect(result[0].version).toBe('2.1.0')
         })
       })
+
+      describe('when a version has multiple updates and the last one is archived', () => {
+        beforeEach(async () => {
+          await seedSingleArchivedVersionWithUpdates(db)
+        })
+
+        it('returns empty, as the version is currently archived', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            db
+          })
+
+          expect(result).toEqual([])
+        })
+      })
+
+      describe('when a version has been promoted from draft to active', () => {
+        beforeEach(async () => {
+          await seedPromotedVersion(db)
+        })
+
+        it('reports the newest (active) row when no status is given', async () => {
+          const result = await getLatestVersionWithConstraints({
+            grant: GRANT,
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('1.0.0')
+          expect(result[0].status).toBe('active')
+        })
+      })
     })
   })
 
@@ -880,6 +962,25 @@ describe('version-management-repository (integration)', () => {
           })
 
           expect(result.map((v) => v.version)).toEqual(['1.0.0'])
+        })
+      })
+
+      describe('when a version has multiple updates and the last one is archived', () => {
+        beforeEach(async () => {
+          await seedSingleArchivedVersionWithUpdates(db)
+        })
+
+        it('returns the version from its newest (archived) row', async () => {
+          const result = await getAllVersionsWithConstraints({
+            grant: GRANT,
+            archived: 'true',
+            db
+          })
+
+          expect(result).toHaveLength(1)
+          expect(result[0].version).toBe('1.0.0')
+          expect(result[0].archived).toBe(true)
+          expect(result[0].lastUpdated).toStrictEqual(new Date('2024-02-01'))
         })
       })
 
@@ -1090,6 +1191,21 @@ describe('version-management-repository (integration)', () => {
         })
       })
 
+      describe('when a version has multiple updates and the last one is archived', () => {
+        beforeEach(async () => {
+          await seedSingleArchivedVersionWithUpdates(db)
+        })
+
+        it('returns empty, as the version is currently archived', async () => {
+          const result = await getAllVersionsWithConstraints({
+            grant: GRANT,
+            db
+          })
+
+          expect(result).toEqual([])
+        })
+      })
+
       describe('when a grant has both active and draft versions', () => {
         // The draft (2.1.0) is higher than the newest active (2.0.0), so the
         // status filter has to actually exclude it from the returned list.
@@ -1232,6 +1348,24 @@ describe('version-management-repository (integration)', () => {
           expect(
             grantEntry(result, GRANT).versions.map((v) => v.version)
           ).toEqual(['1.0.0'])
+        })
+      })
+
+      describe('when there is a single grant with multiples updates and last one is archived', () => {
+        beforeEach(async () => {
+          await seedSingleArchivedVersionWithUpdates(db)
+        })
+
+        it('returns that version', async () => {
+          const result = await getAllGrantsAllVersions({ archived: 'true', db })
+
+          expect(result).toHaveLength(1)
+          expect(
+            grantEntry(result, GRANT).versions.map((v) => v.version)
+          ).toEqual(['1.0.0'])
+          expect(
+            grantEntry(result, GRANT).versions.map((v) => v.lastUpdated)
+          ).toStrictEqual([new Date('2024-02-01')])
         })
       })
 
@@ -1396,6 +1530,18 @@ describe('version-management-repository (integration)', () => {
           expect(
             grantEntry(result, GRANT).versions.map((v) => v.version)
           ).toEqual(['1.0.0'])
+        })
+      })
+
+      describe('when there is a single grant with multiples updates and last one is archived', () => {
+        beforeEach(async () => {
+          await seedSingleArchivedVersionWithUpdates(db)
+        })
+
+        it('returns empty', async () => {
+          const result = await getAllGrantsAllVersions({ db })
+
+          expect(result).toEqual([])
         })
       })
 
