@@ -5,8 +5,8 @@
   "main": "src/index.js",
   "type": "module",
   "engines": {
-    "node": ">=24.22.1",
-    "npm": ">=11.10.0"
+    "node": ">=26.13.1",
+    "npm": ">=11.20.0"
   },
   "scripts": {
     "dev": "AWS_EMF_ENVIRONMENT=Local NODE_ENV=development npm run server:watch",
