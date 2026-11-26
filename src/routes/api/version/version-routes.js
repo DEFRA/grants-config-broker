@@ -15,6 +15,7 @@ import {
   getSpecificVersionSchema,
   postArchivingVersionSchema
 } from './version-schemas.js'
+import { BROWSER_SUBJECT } from '../../../utils/constants.js'
 
 export const versionRoutes = [
   {
@@ -53,6 +54,11 @@ export const versionRoutes = [
     options: {
       description: 'Unarchive a specific version of config for a given grant',
       handler: postUnarchiveVersionHandler,
+      plugins: {
+        'service-auth': {
+          allowedSubjects: [BROWSER_SUBJECT]
+        }
+      },
       validate: {
         payload: postArchivingVersionSchema,
         failAction(request, _h, err) {
@@ -68,6 +74,11 @@ export const versionRoutes = [
     options: {
       description: 'Archive a  specific version of config for a given grant',
       handler: postArchiveVersionHandler,
+      plugins: {
+        'service-auth': {
+          allowedSubjects: [BROWSER_SUBJECT]
+        }
+      },
       validate: {
         payload: postArchivingVersionSchema,
         failAction(request, _h, err) {
