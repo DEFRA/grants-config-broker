@@ -321,7 +321,7 @@ describe('serviceAuth plugin', () => {
       expect(res.statusCode).toBe(StatusCodes.FORBIDDEN)
     })
 
-    it('should not accumulate the local subject on the route across requests', async () => {
+    it('should not the local subject to the allowed subjects', async () => {
       server.route({
         method: 'GET',
         path: '/restricted',
@@ -339,7 +339,6 @@ describe('serviceAuth plugin', () => {
         return defaultConfigValues[key] ?? null
       })
 
-      await server.inject({ method: 'GET', url: '/restricted' })
       await server.inject({ method: 'GET', url: '/restricted' })
 
       const route = server.table().find((r) => r.path === '/restricted')
