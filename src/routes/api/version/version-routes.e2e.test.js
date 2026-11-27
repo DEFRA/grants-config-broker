@@ -1,4 +1,4 @@
-vi.mock('../../../plugins/service-auth.js')
+import { BROWSER_SUBJECT } from '../../../utils/constants.js'
 
 const COLLECTION = 'config-versions'
 const GRANT = 'e2e-grant'
@@ -38,6 +38,19 @@ describe('version routes (e2e)', () => {
   })
 
   const seed = (docs) => server.db.collection(COLLECTION).insertMany(docs)
+
+  // The local environment bypasses auth, so to drive the subject gate on the
+  // archive routes we inject the service identity directly: Hapi's `auth`
+  // injection replaces authentication but still runs the subject-check
+  // onPreHandler. Passing no `credentials` serviceName mimics a caller that
+  // authenticated but carries no service subject.
+  const postAs = (url, credentials, payload) =>
+    server.inject({
+      method: 'POST',
+      url,
+      payload,
+      auth: { strategy: 'service', credentials }
+    })
 
   describe('GET /api/latestVersion', () => {
     it('applies the constrainMajor query parameter when querying the DB', async () => {
@@ -223,11 +236,11 @@ describe('version routes (e2e)', () => {
         versionDoc({ version: '1.1.0', grant: GRANT })
       ])
 
-      const res = await server.inject({
-        method: 'POST',
-        url: '/api/version/archive',
-        payload: { grant: GRANT, version: '1.0.0', user: 'someone' }
-      })
+      const res = await postAs(
+        '/api/version/archive',
+        { serviceName: BROWSER_SUBJECT },
+        { grant: GRANT, version: '1.0.0', user: 'someone' }
+      )
 
       expect(res.statusCode).toBe(200)
       expect(res.result).toEqual({ result: 'archived' })
@@ -237,6 +250,36 @@ describe('version routes (e2e)', () => {
         .findOne({ grant: GRANT, version: '1.0.0', archived: true })
       expect(archived).not.toBeNull()
     })
+
+    it('rejects a caller that is not the config browser and leaves the version untouched', async () => {
+      await seed([
+        versionDoc({ version: '1.0.0', grant: GRANT }),
+        versionDoc({ version: '1.1.0', grant: GRANT })
+      ])
+
+      const res = await postAs(
+        '/api/version/archive',
+        { serviceName: 'grants-ui-backend' },
+        { grant: GRANT, version: '1.0.0', user: 'someone' }
+      )
+
+      expect(res.statusCode).toBe(403)
+
+      const untouched = await server.db
+        .collection(COLLECTION)
+        .findOne({ grant: GRANT, version: '1.0.0' })
+      expect(untouched.archived).toBeUndefined()
+    })
+
+    it('rejects a caller that presents no service subject', async () => {
+      const res = await postAs(
+        '/api/version/archive',
+        { authenticated: true },
+        { grant: GRANT, version: '1.0.0', user: 'someone' }
+      )
+
+      expect(res.statusCode).toBe(403)
+    })
   })
 
   describe('POST /api/version/unarchive', () => {
@@ -245,11 +288,11 @@ describe('version routes (e2e)', () => {
         versionDoc({ version: '1.0.0', grant: GRANT, archived: true })
       ])
 
-      const res = await server.inject({
-        method: 'POST',
-        url: '/api/version/unarchive',
-        payload: { grant: GRANT, version: '1.0.0', user: 'someone' }
-      })
+      const res = await postAs(
+        '/api/version/unarchive',
+        { serviceName: BROWSER_SUBJECT },
+        { grant: GRANT, version: '1.0.0', user: 'someone' }
+      )
 
       expect(res.statusCode).toBe(200)
       expect(res.result).toEqual({ result: 'unarchived' })
@@ -258,6 +301,35 @@ describe('version routes (e2e)', () => {
         .collection(COLLECTION)
         .findOne({ grant: GRANT, version: '1.0.0', archived: false })
       expect(unarchived).not.toBeNull()
+    })
+
+    it('rejects a caller that is not the config browser and leaves the version archived', async () => {
+      await seed([
+        versionDoc({ version: '1.0.0', grant: GRANT, archived: true })
+      ])
+
+      const res = await postAs(
+        '/api/version/unarchive',
+        { serviceName: 'grants-ui-backend' },
+        { grant: GRANT, version: '1.0.0', user: 'someone' }
+      )
+
+      expect(res.statusCode).toBe(403)
+
+      const stillArchived = await server.db
+        .collection(COLLECTION)
+        .findOne({ grant: GRANT, version: '1.0.0' })
+      expect(stillArchived.archived).toBe(true)
+    })
+
+    it('rejects a caller that presents no service subject', async () => {
+      const res = await postAs(
+        '/api/version/unarchive',
+        { authenticated: true },
+        { grant: GRANT, version: '1.0.0', user: 'someone' }
+      )
+
+      expect(res.statusCode).toBe(403)
     })
   })
 

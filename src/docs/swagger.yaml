@@ -309,7 +309,10 @@ paths:
   /api/version/archive:
     post:
       summary: Archive a specific version of config for a given grant
-      description: Marks a specific configuration version as archived. The latest version of a major cannot be archived.
+      description: |
+        Marks a specific configuration version as archived. The latest version of a major cannot be archived.
+
+        **Restricted to:** `grants-config-browser`.
       security:
         - bearerAuth: []
           apiKey: []
@@ -344,13 +347,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: Not Found - Grant or version not found.
 
   /api/version/unarchive:
     post:
       summary: Unarchive a specific version of config for a given grant
-      description: Clears the archived flag on a specific configuration version.
+      description: |
+        Clears the archived flag on a specific configuration version.
+
+        **Restricted to:** `grants-config-browser`.
       security:
         - bearerAuth: []
           apiKey: []
@@ -385,13 +393,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: Not Found - Grant or version not found.
 
   /api/release-config:
     post:
       summary: Post release config for a given grant
-      description: Submits a release configuration for a specific grant and version, including a list of files.
+      description: |
+        Submits a release configuration for a specific grant and version, including a list of files.
+
+        **Restricted to:** `grants-config-browser`.
       security:
         - bearerAuth: []
           apiKey: []
@@ -416,6 +429,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
   /api/feature-control/{name}:
     get:
@@ -448,7 +463,10 @@ paths:
   /api/feature-control/{name}/detailed:
     get:
       summary: Get a single feature control by name with full details
-      description: Returns the full details of a feature control, including its update history.
+      description: |
+        Returns the full details of a feature control, including its update history.
+
+        **Restricted to:** `grants-config-browser`.
       security:
         - bearerAuth: []
           apiKey: []
@@ -471,13 +489,18 @@ paths:
           description: Bad Request - Validation error.
         '401':
           description: Unauthorized.
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: Not Found - Feature control does not exist.
 
   /api/feature-control:
     post:
       summary: Add or update a feature control definition
-      description: Creates a new feature control or updates the definition of an existing one. Immutable fields (name, type, initialValue) cannot be updated.
+      description: |
+        Creates a new feature control or updates the definition of an existing one. Immutable fields (name, type, initialValue) cannot be updated.
+
+        **Restricted to:** `grants-config-browser`, `grants-config-feature-controls`.
       security:
         - bearerAuth: []
           apiKey: []
@@ -498,13 +521,18 @@ paths:
           description: Bad Request - Validation error.
         '401':
           description: Unauthorized.
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '409':
           description: Conflict - Attempted to update an immutable field.
 
   /api/feature-control/value:
     put:
       summary: Update a feature control value
-      description: Updates the current value of a feature control for the current environment.
+      description: |
+        Updates the current value of a feature control for the current environment.
+
+        **Restricted to:** `grants-config-browser`.
       security:
         - bearerAuth: []
           apiKey: []
@@ -523,13 +551,18 @@ paths:
           description: Bad Request - Validation error (e.g., value doesn't match type).
         '401':
           description: Unauthorized.
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: Not Found - Feature control does not exist.
 
   /api/feature-control/status:
     put:
       summary: Update a feature control status
-      description: Updates the current status of a feature control for the current environment.
+      description: |
+        Updates the current status of a feature control for the current environment.
+
+        **Restricted to:** `grants-config-browser`, `grants-config-feature-controls`.
       security:
         - bearerAuth: [ ]
           apiKey: [ ]
@@ -548,6 +581,8 @@ paths:
           description: Bad Request - Validation error (e.g., status not valid).
         '401':
           description: Unauthorized.
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: Not Found - Feature control does not exist.
 
@@ -626,6 +661,15 @@ paths:
           description: Unauthorized.
 
 components:
+  responses:
+    Forbidden:
+      description: >-
+        Forbidden - The caller authenticated successfully but its service
+        identity is not in this endpoint's allow-list.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
   schemas:
     FeatureControl:
       type: object
