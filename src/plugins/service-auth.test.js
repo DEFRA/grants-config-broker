@@ -321,6 +321,33 @@ describe('serviceAuth plugin', () => {
       expect(res.statusCode).toBe(StatusCodes.FORBIDDEN)
     })
 
+    it('should not accumulate the local subject on the route across requests', async () => {
+      server.route({
+        method: 'GET',
+        path: '/restricted',
+        handler: () => 'ok',
+        options: {
+          auth: 'service',
+          plugins: {
+            'service-auth': { allowedSubjects: ['grants-config-browser'] }
+          }
+        }
+      })
+
+      config.get.mockImplementation((key) => {
+        if (key === 'cdpEnvironment') return 'local'
+        return defaultConfigValues[key] ?? null
+      })
+
+      await server.inject({ method: 'GET', url: '/restricted' })
+      await server.inject({ method: 'GET', url: '/restricted' })
+
+      const route = server.table().find((r) => r.path === '/restricted')
+      expect(route.settings.plugins['service-auth'].allowedSubjects).toEqual([
+        'grants-config-browser'
+      ])
+    })
+
     it('should pick up default local subject and allow request through for local call ', async () => {
       server.route({
         method: 'GET',
