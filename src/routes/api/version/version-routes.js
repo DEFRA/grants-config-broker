@@ -72,7 +72,7 @@ export const versionRoutes = [
     method: 'POST',
     path: '/api/version/archive',
     options: {
-      description: 'Archive a  specific version of config for a given grant',
+      description: 'Archive a specific version of config for a given grant',
       handler: postArchiveVersionHandler,
       plugins: {
         'service-auth': {
